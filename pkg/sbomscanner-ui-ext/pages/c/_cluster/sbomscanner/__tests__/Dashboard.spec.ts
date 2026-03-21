@@ -39,7 +39,10 @@ describe('Dashboard.vue full coverage', () => {
   beforeEach(() => {
     storeMock = {
       dispatch: jest.fn().mockResolvedValue([]),
-      getters:  { 'cluster/all': jest.fn(() => [makeScanJob()]) },
+      getters:  {
+        'cluster/all':          jest.fn(() => [makeScanJob()]),
+        'activeNamespaceCache': { default: true },
+      },
     };
     jest.useFakeTimers();
   });
@@ -127,19 +130,22 @@ describe('Dashboard.vue full coverage', () => {
     expect(wrapper.vm.durationFromLastScan).toContain('typeLabel.day');
   });
 
-  it('computed: registryOptions returns unique list', async() => {
+  it('method: getregistryOptions returns unique registry list', async() => {
     const wrapper = factory();
 
     await wrapper.setData({
       scanJobsCRD: [
-        makeScanJob({ namespace: 'ns1', registry: 'reg1' }),
-        makeScanJob({ namespace: 'ns1', registry: 'reg1' }),
+        makeScanJob({ namespace: 'default', registry: 'reg1' }),
+        makeScanJob({ namespace: 'default', registry: 'reg1' }),
       ],
     });
+
+    wrapper.vm.getregistryOptions();
+
     const options = wrapper.vm.registryOptions;
 
-    expect(options).toContain('All registries');
-    expect(options).toContain('ns1/reg1');
+    expect(options).toContain('reg1');
+    expect(options).toHaveLength(1);
   });
 
   it('method: getFailedImageCnt calculates correctly', () => {
@@ -258,7 +264,10 @@ describe('Dashboard.vue full coverage', () => {
         mocks: {
           $store: {
             dispatch: mockDispatch,
-            getters:  { 'cluster/all': jest.fn(() => []) },
+            getters:  {
+              'cluster/all':          jest.fn(() => []),
+              'activeNamespaceCache': { default: true },
+            },
           },
           t:           (key) => key,
           $fetchState: { pending: false },
