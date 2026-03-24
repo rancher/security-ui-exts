@@ -8,6 +8,7 @@ const RESOURCE = {
 
 function makeScanJob({
   namespace = 'default',
+  generateName = 'imagescan-',
   registry = 'my-registry',
   scannedImagesCount = 5,
   imagesCount = 10,
@@ -16,7 +17,7 @@ function makeScanJob({
 } = {}, withStatus = true) {
   if (withStatus) {
     return {
-      metadata: { namespace },
+      metadata: { namespace, generateName },
       spec:     { registry },
       status:   {
         imagesCount,
@@ -27,7 +28,7 @@ function makeScanJob({
     };
   } else {
     return {
-      metadata: { namespace },
+      metadata: { namespace, generateName },
       spec:     { registry },
     };
   }
@@ -68,7 +69,7 @@ describe('Dashboard.vue full coverage', () => {
     const wrapper = factory();
 
     expect(wrapper.exists()).toBe(true);
-    expect(wrapper.vm.selectedRegistry).toBe('All registries');
+    expect(wrapper.vm.selectedRegistry).toBe('All matching registries');
     expect(wrapper.vm.scanningStats.lastCompletionTimestamp).toBe(0);
   });
 
@@ -144,8 +145,9 @@ describe('Dashboard.vue full coverage', () => {
 
     const options = wrapper.vm.registryOptions;
 
+    expect(options).toContain('All matching registries');
     expect(options).toContain('reg1');
-    expect(options).toHaveLength(1);
+    expect(options).toHaveLength(2);
   });
 
   it('method: getFailedImageCnt calculates correctly', () => {
@@ -224,10 +226,10 @@ describe('Dashboard.vue full coverage', () => {
     const wrapper = factory();
     const jobs = [
       {
-        metadata: { namespace: 'default' }, spec: { registry: 'my-registry' }, status: { conditions: [{ error: false }] }
+        metadata: { namespace: 'default', generateName: 'imagescan-' }, spec: { registry: 'my-registry' }, status: { conditions: [{ error: false }] }
       },
       {
-        metadata: { namespace: 'default' }, spec: { registry: 'my-registry' }, status: { conditions: [{ error: true }] }
+        metadata: { namespace: 'default', generateName: 'imagescan-' }, spec: { registry: 'my-registry' }, status: { conditions: [{ error: true }] }
       },
     ];
 
@@ -240,6 +242,114 @@ describe('Dashboard.vue full coverage', () => {
     expect(stats.lastCompletionTimestamp).toBe(0);
   });
 
+  it('method: getScanningStats respects selectedRegistry filter', () => {
+    const wrapper = factory();
+    const jobs = [
+      makeScanJob({
+        registry:          'reg-a',
+        scannedImagesCount: 2,
+        imagesCount:       4,
+        conditions:        [{ error: true }],
+        completionTime:    1761480100,
+      }),
+      makeScanJob({
+        registry:          'reg-b',
+        scannedImagesCount: 5,
+        imagesCount:       8,
+        conditions:        [{ error: true }],
+        completionTime:    1761480200,
+      }),
+    ];
+
+    wrapper.vm.scanJobsCRD = jobs;
+    wrapper.vm.selectedRegistry = 'reg-a';
+
+    const stats = wrapper.vm.getScanningStats();
+
+    expect(stats.totalScannedImageCnt).toBe(2);
+    expect(stats.detectedErrorCnt).toBe(1);
+    expect(stats.failedImagesCnt).toBe(2);
+    expect(stats.lastCompletionTimestamp).toBe(1761480100);
+  });
+
+  it('method: getScanningStats excludes workloadscan generated jobs', () => {
+    const wrapper = factory();
+    const jobs = [
+      makeScanJob({
+        generateName:       'workloadscan-abc-',
+        scannedImagesCount: 7,
+        imagesCount:        10,
+        conditions:         [{ error: true }],
+      }),
+      makeScanJob({
+        generateName:       'imagescan-abc-',
+        scannedImagesCount: 3,
+        imagesCount:        5,
+        conditions:         [{ error: true }],
+      }),
+    ];
+
+    wrapper.vm.scanJobsCRD = jobs;
+
+    const stats = wrapper.vm.getScanningStats();
+
+    expect(stats.totalScannedImageCnt).toBe(3);
+    expect(stats.detectedErrorCnt).toBe(1);
+    expect(stats.failedImagesCnt).toBe(2);
+  });
+
+  it('method: getScanningStats identifies workloadscan case-insensitively', () => {
+    const wrapper = factory();
+    const jobs = [
+      makeScanJob({
+        generateName:       'WorkloadScan-xyz-',
+        scannedImagesCount: 9,
+        imagesCount:        12,
+        conditions:         [{ error: true }],
+      }),
+      makeScanJob({
+        generateName:       'imageScan-xyz-',
+        scannedImagesCount: 4,
+        imagesCount:        6,
+        conditions:         [{ error: false }],
+      }),
+    ];
+
+    wrapper.vm.scanJobsCRD = jobs;
+
+    const stats = wrapper.vm.getScanningStats();
+
+    expect(stats.totalScannedImageCnt).toBe(4);
+    expect(stats.detectedErrorCnt).toBe(0);
+    expect(stats.failedImagesCnt).toBe(0);
+  });
+
+  it('method: getScanningStats does not exclude names containing workloadscan in middle', () => {
+    const wrapper = factory();
+    const jobs = [
+      makeScanJob({
+        generateName:       'abc-workloadscan-xyz-',
+        scannedImagesCount: 2,
+        imagesCount:        3,
+        conditions:         [{ error: true }],
+      }),
+      makeScanJob({
+        generateName:       'imagescan-xyz-',
+        scannedImagesCount: 3,
+        imagesCount:        3,
+        conditions:         [{ error: false }],
+      }),
+    ];
+
+    wrapper.vm.scanJobsCRD = jobs;
+
+    const stats = wrapper.vm.getScanningStats();
+
+    expect(stats.totalScannedImageCnt).toBe(5);
+    expect(stats.detectedErrorCnt).toBe(1);
+    expect(stats.failedImagesCnt).toBe(1);
+  });
+
   it('method: loadData replaces data when reloading', async() => {
     const wrapper = factory();
     const mockData = [makeScanJob()];
@@ -248,6 +358,21 @@ describe('Dashboard.vue full coverage', () => {
 
     wrapper.vm.loadData(true);
     expect(storeMock.getters['cluster/all']).toHaveBeenCalledWith(RESOURCE.SCAN_JOB);
+  });
+
+  it('method: loadData filters jobs by active namespace', async() => {
+    const wrapper = factory();
+    const mockData = [
+      makeScanJob({ namespace: 'default', registry: 'reg1' }),
+      makeScanJob({ namespace: 'other', registry: 'reg2' }),
+    ];
+
+    storeMock.getters['cluster/all'].mockReturnValueOnce(mockData);
+
+    await wrapper.vm.loadData();
+
+    expect(wrapper.vm.scanJobsCRD).toHaveLength(1);
+    expect(wrapper.vm.scanJobsCRD[0].metadata.namespace).toBe('default');
   });
 
   it('method: fetch loads data and sets interval', async() => {

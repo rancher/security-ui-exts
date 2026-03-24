@@ -149,6 +149,7 @@ import Loading from '@shell/components/Loading';
 import day from 'dayjs';
 import { Banner } from '@components/Banner';
 import InfoTooltip from '@sbomscanner-ui-ext/components/common/Tooltip';
+import { ALL_REGISTRIES, ALL_MATCHED_REGISTRIES } from '@sbomscanner-ui-ext/constants/securityConstants';
 
 export default {
   name:       'Dashboard',
@@ -177,7 +178,7 @@ export default {
       },
       disabled:         false,
       // lastUpdatedTime: '',
-      selectedRegistry: 'All registries',
+      selectedRegistry: ALL_REGISTRIES,
       tooltip:          this.t('imageScanner.dashboard.scanningStatus.tooltip'),
       // vulnerabilityStats: {
       //   critical: 0,
@@ -314,6 +315,7 @@ export default {
       this.scanningStats = this.getScanningStats();
     },
     globalNamespace(newVal) {
+      console.log('Global namespace changed:', newVal);
       this.loadData();
     }
   },
@@ -328,6 +330,7 @@ export default {
     getregistryOptions() {
       const optionSet = new Set();
 
+      optionSet.add(ALL_REGISTRIES);
       this.scanJobsCRD.filter((scanjob) => Object.keys(this.globalNamespace).includes(scanjob.metadata.namespace)).forEach((scanjob) => {
         optionSet.add(scanjob.spec.registry);
       });
@@ -341,12 +344,14 @@ export default {
       let totalScannedImageCnt = 0;
 
       this.scanJobsCRD.filter((scanjob) => {
-        return this.selectedRegistry === `${ scanjob.spec.registry }` || this.selectedRegistry === 'All registries';
+        return this.selectedRegistry === `${ scanjob.spec.registry }` || this.selectedRegistry === ALL_REGISTRIES;
       }).forEach((scanjob) => {
-        totalScannedImageCnt += (scanjob.status?.scannedImagesCount || 0);
-        detectedErrorCnt += (scanjob.status?.conditions ? (scanjob.status?.conditions.find((condition) => condition.error) ? 1 : 0) : 0);
-        failedImagesCnt += this.getFailedImageCnt(scanjob);
-        lastCompletionTimestamp = Math.max(lastCompletionTimestamp, scanjob.status?.completionTime ? new Date(scanjob.status?.completionTime).getTime() : 0);
+        if (!scanjob.metadata.generateName.toLowerCase().startsWith('workloadscan')) {
+          totalScannedImageCnt += (scanjob.status?.scannedImagesCount || 0);
+          detectedErrorCnt += (scanjob.status?.conditions ? (scanjob.status?.conditions.find((condition) => condition.error) ? 1 : 0) : 0);
+          failedImagesCnt += this.getFailedImageCnt(scanjob);
+          lastCompletionTimestamp = Math.max(lastCompletionTimestamp, scanjob.status?.completionTime ? new Date(scanjob.status?.completionTime).getTime() : 0);
+        }
       });
 
       return {
@@ -357,7 +362,7 @@ export default {
       };
     },
     getFailedImageCnt(scanjob) {
-      if (scanjob.status?.conditions && scanjob.status?.conditions.find((condition) => condition.error ) && scanjob.status?.scannedImagesCount) {
+      if (scanjob.status?.conditions && scanjob.status?.conditions.find((condition) => condition.error)) {
         return (scanjob.status?.imagesCount || 0) - (scanjob.status?.scannedImagesCount || 0);
       }
 
@@ -377,7 +382,7 @@ export default {
 
     //     // Build registry options
     //     this.registryOptions = [
-    //       { label: 'All registries', value: 'all' }
+    //       { label: ALL_REGISTRIES, value: 'all' }
     //     ];
 
     //     registries.forEach(registry => {

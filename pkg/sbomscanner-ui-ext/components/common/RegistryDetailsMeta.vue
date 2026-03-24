@@ -118,9 +118,8 @@ export default {
   display: flex;
   margin-right: 5px;
   padding: 1px 6px;
-  background-color: transparent !important;
+  background-color: transparent;
   border-radius: 4px;
-  border: 1px solid var(--input-border) !important;
   user-select: none;
   height: 24px;
   min-height: auto;
