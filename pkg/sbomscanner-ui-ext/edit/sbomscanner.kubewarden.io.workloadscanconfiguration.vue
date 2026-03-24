@@ -745,12 +745,12 @@ export default {
     align-items: center;
     gap: 8px;
     font-size: 24px;
-    font-weight: 500;
+    font-weight: 400;
     margin: 0;
   }
 
   .badge-state {
-    font-size: 12px;
+    font-size: initial;
     line-height: normal;
     padding: 2px 8px;
     border-radius: 20px;
