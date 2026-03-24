@@ -315,7 +315,6 @@ export default {
       this.scanningStats = this.getScanningStats();
     },
     globalNamespace(newVal) {
-      console.log('Global namespace changed:', newVal);
       this.loadData();
     }
   },
@@ -346,7 +345,7 @@ export default {
       this.scanJobsCRD.filter((scanjob) => {
         return this.selectedRegistry === `${ scanjob.spec.registry }` || this.selectedRegistry === ALL_REGISTRIES;
       }).forEach((scanjob) => {
-        if (!scanjob.metadata.generateName.toLowerCase().startsWith('workloadscan')) {
+        if (!scanjob.metadata?.generateName?.toLowerCase().startsWith('workloadscan')) {
           totalScannedImageCnt += (scanjob.status?.scannedImagesCount || 0);
           detectedErrorCnt += (scanjob.status?.conditions ? (scanjob.status?.conditions.find((condition) => condition.error) ? 1 : 0) : 0);
           failedImagesCnt += this.getFailedImageCnt(scanjob);
