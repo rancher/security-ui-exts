@@ -43,7 +43,10 @@ describe('CruWorkloadScanConfiguration.vue', () => {
           if (mockAppFetchBehavior === 'error') return Promise.reject(new Error('Fetch failed'));
           if (mockAppFetchBehavior === 'empty') return Promise.resolve([]);
           return Promise.resolve([
-            { spec: { name: 'rancher-sbomscanner' }, metadata: { namespace: 'custom-sbom-namespace' } }
+            {
+              spec: { chart: { metadata: { name: 'sbomscanner' } } },
+              metadata: { namespace: 'custom-sbom-namespace' }
+            }
           ]);
         }
       }

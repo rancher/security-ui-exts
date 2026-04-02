@@ -43,7 +43,7 @@ export default {
 
     try {
       const apps = await this.$store.dispatch('cluster/findAll', { type: CATALOG.APP });
-      const sbomApp = apps.find(a => a.spec?.name?.includes('sbomscanner'));
+      const sbomApp = apps.find(a => a.spec?.chart?.metadata?.name ==='sbomscanner');
 
       if (sbomApp?.metadata?.namespace) {
         this.sbomScannerInstallationNamespace = sbomApp.metadata.namespace;
