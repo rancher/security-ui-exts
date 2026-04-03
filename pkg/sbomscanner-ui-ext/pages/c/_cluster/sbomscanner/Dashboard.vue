@@ -330,7 +330,12 @@ export default {
       const optionSet = new Set();
 
       optionSet.add(ALL_REGISTRIES);
-      this.scanJobsCRD.filter((scanjob) => Object.keys(this.globalNamespace).includes(scanjob.metadata.namespace)).forEach((scanjob) => {
+      this.scanJobsCRD.filter((scanjob) => {
+        const isInGlobalNamespace = Object.keys(this.globalNamespace).includes(scanjob.metadata.namespace);
+        const isNotWorkload = !scanjob.spec?.registry?.toLowerCase().startsWith('workloadscan');
+
+        return isInGlobalNamespace && isNotWorkload;
+      }).forEach((scanjob) => {
         optionSet.add(scanjob.spec.registry);
       });
 
@@ -341,36 +346,46 @@ export default {
       let failedImagesCnt = 0;
       let detectedErrorCnt = 0;
       let totalScannedImageCnt = 0;
-      let latestJobTime = 0;
 
-      this.scanJobsCRD.filter((scanjob) => {
-        return this.selectedRegistry === `${ scanjob.spec.registry }` || this.selectedRegistry === ALL_REGISTRIES;
-      }).forEach((scanjob) => {
+      const relevantJobs = this.scanJobsCRD.filter((scanjob) => {
+        return this.selectedRegistry === ALL_REGISTRIES || this.selectedRegistry === scanjob.spec.registry;
+      });
+
+      const latestJobsByRegistry = {};
+
+      relevantJobs.forEach((scanjob) => {
         const isComplete = scanjob.status?.conditions?.some((c) => c.type === 'Complete' && c.status === 'True');
         const isFailed = scanjob.status?.conditions?.some((c) => c.type === 'Failed' && c.status === 'True');
 
-        if (!scanjob.metadata?.generateName?.toLowerCase().startsWith('workloadscan') && (isComplete || isFailed) ) {
+        if (!scanjob.metadata?.generateName?.toLowerCase().startsWith('workloadscan') && (isComplete || isFailed)) {
 
+          const registryKey = scanjob.spec.registry || 'unknown';
           const jobTime = new Date(scanjob.metadata?.creationTimestamp || 0).getTime();
 
-          if (jobTime > latestJobTime) {
-            latestJobTime = jobTime;
-
-            const hasError = scanjob.status?.conditions?.some((condition) => condition.error);
-
-            if (hasError) {
-              detectedErrorCnt = 1;
-              totalScannedImageCnt = 0;
-              failedImagesCnt = scanjob.status?.imagesCount || 0;
-            } else {
-              detectedErrorCnt = 0;
-              totalScannedImageCnt = scanjob.status?.scannedImagesCount || 0;
-              failedImagesCnt = this.getFailedImageCnt(scanjob);
+          if (!latestJobsByRegistry[registryKey]) {
+            latestJobsByRegistry[registryKey] = scanjob;
+          } else {
+            const existingTime = new Date(latestJobsByRegistry[registryKey].metadata?.creationTimestamp || 0).getTime();
+            if (jobTime > existingTime) {
+              latestJobsByRegistry[registryKey] = scanjob;
             }
-
-            lastCompletionTimestamp = scanjob.status?.completionTime ? new Date(scanjob.status.completionTime).getTime() : 0;
           }
         }
+      });
+
+      Object.values(latestJobsByRegistry).forEach((scanjob) => {
+        const hasError = scanjob.status?.conditions?.some((condition) => condition.error);
+
+        if (hasError) {
+          detectedErrorCnt += 1;
+          failedImagesCnt += (scanjob.status?.imagesCount || 0);
+        } else {
+          totalScannedImageCnt += (scanjob.status?.scannedImagesCount || 0);
+          failedImagesCnt += this.getFailedImageCnt(scanjob);
+        }
+
+        const completionTime = scanjob.status?.completionTime ? new Date(scanjob.status.completionTime).getTime() : 0;
+        lastCompletionTimestamp = Math.max(lastCompletionTimestamp, completionTime);
       });
 
       return {
