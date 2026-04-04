@@ -16,7 +16,7 @@ imageScanner:
       description: Install and configure SBOMScanner to get a comprehensive view of your container image vulnerabilities and risk assessment across all your registries.
     button:
       skipToSbomscannerRepo: Skip to Repository of SBOMScanner
-      previous: previous
+      previous: Previous
   dashboard:
     title: Dashboard
     subtitle: Main highlights as of
@@ -467,7 +467,7 @@ imageScanner:
       text1: Provided by
 typeLabel:
   sbomscanner.kubewarden.io.registry: Registries configuration
-  sbomscanner.kubewarden.io.vexhub: Vex Management
+  sbomscanner.kubewarden.io.vexhub: VEX Management
   sbomscanner.kubewarden.io.workloadscanconfiguration: Workloads Scan
   storage.sbomscanner.kubewarden.io.image: Image
   storage.sbomscanner.kubewarden.io.vulnerabilityreport: Vulnerability Report
@@ -552,3 +552,13 @@ resources:
   image: storage.sbomscanner.kubewarden.io.image
   vulnerabilityreport: storage.sbomscanner.kubewarden.io.vulnerabilityreport
   sbom: storage.sbomscanner.kubewarden.io.sbom
+
+asyncButton:
+  cnpgRepository:
+    action: Add CNPG repository
+    success: Added
+    waiting: Adding...
+  sbomscannerRepository:
+    action: Add SBOMScanner repository
+    success: Added
+    waiting: Adding...

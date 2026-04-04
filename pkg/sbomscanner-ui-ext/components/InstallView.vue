@@ -4,7 +4,7 @@ import debounce from 'lodash/debounce';
 import { ref } from 'vue';
 
 import { CATALOG } from '@shell/config/types';
-import { REPO_TYPE, REPO, CHART, VERSION } from '@shell/config/query-params';
+import { REPO_TYPE, REPO, CHART, VERSION, NAMESPACE } from '@shell/config/query-params';
 import ResourceFetch from '@shell/mixins/resource-fetch';
 
 import { Banner } from '@components/Banner';
@@ -310,7 +310,8 @@ export default {
               [REPO_TYPE]: repoType,
               [REPO]:      repoName,
               [CHART]:     chartName,
-              [VERSION]:   latestChartVersion
+              [VERSION]:   latestChartVersion,
+              [NAMESPACE]: 'cnpg-system'
             };
 
             this.$router.push({
