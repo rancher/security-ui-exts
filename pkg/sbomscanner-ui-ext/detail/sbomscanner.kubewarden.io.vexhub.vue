@@ -19,10 +19,10 @@ const defaultMastheadProps = computed(() => {
   return {
     titleBarProps: {
       resource:          vexhub,
-      resourceName:      vexhub?.metadata?.name,
+      resourceName:      vexhub?.metadata?.name ?? '',
       resourceTypeLabel: t('imageScanner.vexManagement.title'),
       resourceTo:        vexhub?.listLocation,
-      description:       vexhub?.description,
+      description:       vexhub?.description ?? '',
       badge:             {
         color: vexhub?.spec?.enabled ? ('bg-success' as 'bg-success') : ('bg-error' as 'bg-error'),
         label: t(`imageScanner.enum.status.${vexhub?.spec?.enabled ? 'enabled' : 'disabled'}`)
@@ -35,10 +35,10 @@ const defaultMastheadProps = computed(() => {
       identifyingInformation: [
         {
           label:         'URI',
-          value:         vexhub?.spec?.url,
+          value:         vexhub?.spec?.url ?? '',
           valueOverride: {
             component: UriExternalLink,
-            props:     { value: vexhub?.spec?.url }
+            props:     { value: vexhub?.spec?.url ?? '' }
           }
         },
         {
@@ -51,10 +51,10 @@ const defaultMastheadProps = computed(() => {
         },
         {
           label:         'Updated',
-          value:         vexhub?.metadata?.creationTimestamp,
+          value:         vexhub?.metadata?.creationTimestamp ?? '',
           valueOverride: {
             component: Date,
-            props:     { value: vexhub?.metadata?.creationTimestamp }
+            props:     { value: vexhub?.metadata?.creationTimestamp ?? '' }
           }
         }
       ],
