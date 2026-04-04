@@ -15,19 +15,17 @@ const props = defineProps<{
 
 const vexhub = props.value;
 
-console.log('vexhub in detail page:', vexhub);
-
 const defaultMastheadProps = computed(() => {
   return {
     titleBarProps: {
       resource:          vexhub,
-      resourceName:      vexhub.metadata.name,
+      resourceName:      vexhub?.metadata?.name,
       resourceTypeLabel: t('imageScanner.vexManagement.title'),
-      resourceTo:        vexhub.listLocation,
-      description:       t('imageScanner.vexManagement.detail.description'),
+      resourceTo:        vexhub?.listLocation,
+      description:       vexhub?.description,
       badge:             {
-        color: vexhub.spec.enabled ? ('bg-success' as 'bg-success') : ('bg-error' as 'bg-error'),
-        label: t(`imageScanner.enum.status.${vexhub.spec.enabled ? 'enabled' : 'disabled'}`)
+        color: vexhub?.spec?.enabled ? ('bg-success' as 'bg-success') : ('bg-error' as 'bg-error'),
+        label: t(`imageScanner.enum.status.${vexhub?.spec?.enabled ? 'enabled' : 'disabled'}`)
       },
       actionMenuResource: vexhub,
       showViewOptions:    false
@@ -37,15 +35,15 @@ const defaultMastheadProps = computed(() => {
       identifyingInformation: [
         {
           label:         'URI',
-          value:         vexhub.spec.url,
+          value:         vexhub?.spec?.url,
           valueOverride: {
             component: UriExternalLink,
-            props:     { value: vexhub.spec.url }
+            props:     { value: vexhub?.spec?.url }
           }
         },
         {
           label: 'Created by',
-          value: Number(vexhub.metadata.generation) === 1 ? 'Rancher' : 'Manual entry'
+          value: Number(vexhub?.metadata?.generation) === 1 ? 'Rancher' : 'Manual entry'
         },
         {
           label: 'Last sync',
@@ -53,10 +51,10 @@ const defaultMastheadProps = computed(() => {
         },
         {
           label:         'Updated',
-          value:         vexhub.metadata.creationTimestamp,
+          value:         vexhub?.metadata?.creationTimestamp,
           valueOverride: {
             component: Date,
-            props:     { value: vexhub.metadata.creationTimestamp }
+            props:     { value: vexhub?.metadata?.creationTimestamp }
           }
         }
       ],
@@ -73,10 +71,11 @@ const defaultMastheadProps = computed(() => {
       <Masthead class="masthead" v-bind="defaultMastheadProps">
         <template #additional-actions>
           <button
-            data-testid="detail-explore-button"
-            type="button"
-            class="btn role-primary actions"
-            @click="value.toggle.invoke()"
+              v-if="value?.toggle"
+              data-testid="detail-explore-button"
+              type="button"
+              class="btn role-primary actions"
+              @click="value.toggle.invoke()"
           >
             <i :class="`icon ${value.toggle.icon}`"></i>
             {{ value.toggle.label }}
