@@ -376,12 +376,11 @@ export default {
       Object.values(latestJobsByRegistry).forEach((scanjob) => {
         const hasError = scanjob.status?.conditions?.some((condition) => condition.error);
 
+        totalScannedImageCnt += (scanjob.status?.scannedImagesCount || 0);
+
         if (hasError) {
           detectedErrorCnt += 1;
           failedImagesCnt += (scanjob.status?.imagesCount || 0);
-        } else {
-          totalScannedImageCnt += (scanjob.status?.scannedImagesCount || 0);
-          failedImagesCnt += this.getFailedImageCnt(scanjob);
         }
 
         const completionTime = scanjob.status?.completionTime ? new Date(scanjob.status.completionTime).getTime() : 0;
@@ -394,13 +393,6 @@ export default {
         failedImagesCnt,
         lastCompletionTimestamp,
       };
-    },
-    getFailedImageCnt(scanjob) {
-      if (scanjob.status?.conditions && scanjob.status?.conditions.find((condition) => condition.error)) {
-        return (scanjob.status?.imagesCount || 0) - (scanjob.status?.scannedImagesCount || 0);
-      }
-
-      return 0;
     },
     // toggleVulnerabilitiesView() {
     //   this.showAllVulnerabilities = !this.showAllVulnerabilities;

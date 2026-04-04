@@ -6,7 +6,6 @@ const RESOURCE = {
   SCAN_JOB: 'sbomscanner.kubewarden.io.scanjob',
 };
 
-// Helper function updated to include creationTimestamp and explicit condition types
 function makeScanJob({
                        namespace = 'default',
                        generateName = 'imagescan-',
@@ -112,23 +111,18 @@ describe('Dashboard.vue full coverage', () => {
   it('computed: durationFromLastScan handles all ranges', () => {
     const wrapper = factory();
 
-    // initialDuration
     wrapper.vm.scanningStats.lastCompletionTimestamp = 0;
     expect(wrapper.vm.durationFromLastScan).toContain('initialDuration');
 
-    // seconds
     wrapper.vm.scanningStats.lastCompletionTimestamp = Date.now() - 10 * 1000;
     expect(wrapper.vm.durationFromLastScan).toContain('typeLabel.second');
 
-    // minutes
     wrapper.vm.scanningStats.lastCompletionTimestamp = Date.now() - 10 * 60 * 1000;
     expect(wrapper.vm.durationFromLastScan).toContain('typeLabel.minute');
 
-    // hours
     wrapper.vm.scanningStats.lastCompletionTimestamp = Date.now() - 2 * 60 * 60 * 1000;
     expect(wrapper.vm.durationFromLastScan).toContain('typeLabel.hour');
 
-    // days
     wrapper.vm.scanningStats.lastCompletionTimestamp = Date.now() - 3 * 24 * 60 * 60 * 1000;
     expect(wrapper.vm.durationFromLastScan).toContain('typeLabel.day');
   });
@@ -140,8 +134,8 @@ describe('Dashboard.vue full coverage', () => {
       scanJobsCRD: [
         makeScanJob({ namespace: 'default', registry: 'reg1', generateName: 'imagescan-' }),
         makeScanJob({ namespace: 'default', registry: 'reg1', generateName: 'imagescan-' }),
-        makeScanJob({ namespace: 'default', registry: 'workloadscan-reg2', generateName: 'workloadscan-' }), // Filtered out (workload)
-        makeScanJob({ namespace: 'other-ns', registry: 'reg3', generateName: 'imagescan-' }), // Filtered out (wrong namespace)
+        makeScanJob({ namespace: 'default', registry: 'workloadscan-reg2', generateName: 'workloadscan-' }),
+        makeScanJob({ namespace: 'other-ns', registry: 'reg3', generateName: 'imagescan-' }),
       ],
     });
 
@@ -153,39 +147,7 @@ describe('Dashboard.vue full coverage', () => {
     expect(options).toContain('reg1');
     expect(options).not.toContain('workloadscan-reg2');
     expect(options).not.toContain('reg3');
-    expect(options).toHaveLength(2); // 'All matching registries' + 'reg1'
-  });
-
-  it('method: getFailedImageCnt calculates correctly', () => {
-    const wrapper = factory();
-
-    const jobWithError = {
-      status: {
-        conditions: [{ type: 'Failed', status: 'True', error: true }], scannedImagesCount: 6, imagesCount: 10
-      }
-    };
-    const jobWithoutError = {
-      status: {
-        conditions: [{ type: 'Complete', status: 'True', error: false }], scannedImagesCount: 8, imagesCount: 8
-      }
-    };
-
-    expect(wrapper.vm.getFailedImageCnt(jobWithError)).toBe(4);
-    expect(wrapper.vm.getFailedImageCnt(jobWithoutError)).toBe(0);
-  });
-
-  it('method: getFailedImageCnt calculates correctly - without status', () => {
-    const wrapper = factory();
-
-    const jobWithError = {
-      status: {
-        conditions: [{ type: 'Failed', status: 'True', error: true }], scannedImagesCount: 6, imagesCount: 10
-      }
-    };
-    const jobWithoutError = {};
-
-    expect(wrapper.vm.getFailedImageCnt(jobWithError)).toBe(4);
-    expect(wrapper.vm.getFailedImageCnt(jobWithoutError)).toBe(0);
+    expect(options).toHaveLength(2);
   });
 
   it('method: getScanningStats calculates using ONLY the most recent completed job per registry', () => {
@@ -200,7 +162,7 @@ describe('Dashboard.vue full coverage', () => {
     });
 
     const newerJob = makeScanJob({
-      registry:           'reg1', // Same registry to trigger overwrite logic
+      registry:           'reg1',
       creationTimestamp:  '2026-04-02T10:00:00Z',
       conditions:         [{ type: 'Failed', status: 'True', error: true }],
       scannedImagesCount: 0,
@@ -211,10 +173,9 @@ describe('Dashboard.vue full coverage', () => {
     wrapper.vm.scanJobsCRD = [olderJob, newerJob];
     const stats = wrapper.vm.getScanningStats();
 
-    // Should only extract stats from the newerJob and discard olderJob
-    expect(stats.totalScannedImageCnt).toBe(0); // Faulty backend override applied on failure
+    expect(stats.totalScannedImageCnt).toBe(0);
     expect(stats.detectedErrorCnt).toBe(1);
-    expect(stats.failedImagesCnt).toBe(5); // imagesCount used entirely because it failed
+    expect(stats.failedImagesCnt).toBe(5);
     expect(stats.lastCompletionTimestamp).toBe(2000000000);
   });
 
@@ -241,20 +202,19 @@ describe('Dashboard.vue full coverage', () => {
     wrapper.vm.scanJobsCRD = [reg1Job, reg2Job];
     const stats = wrapper.vm.getScanningStats();
 
-    // Should sum stats from BOTH registries
-    expect(stats.totalScannedImageCnt).toBe(10); // 10 from reg1, 0 from reg2 (override)
-    expect(stats.detectedErrorCnt).toBe(1); // 1 from reg2
-    expect(stats.failedImagesCnt).toBe(5); // 5 from reg2
+    // Sums both: 10 + 5 = 15 total scanned (per new logic)
+    expect(stats.totalScannedImageCnt).toBe(15);
+    expect(stats.detectedErrorCnt).toBe(1);
+    expect(stats.failedImagesCnt).toBe(5);
     expect(stats.lastCompletionTimestamp).toBe(2000000000);
   });
 
-  it('method: getScanningStats overrides faulty backend data when job completely fails', () => {
+  it('method: getScanningStats calculates backend data when job completely fails', () => {
     const wrapper = factory();
     const failedJob = makeScanJob({
       registry:           'reg1',
       creationTimestamp:  '2026-04-02T10:00:00Z',
       conditions:         [{ type: 'Failed', status: 'True', error: true }],
-      // Backend incorrectly reports 10 scanned even though job failed entirely
       scannedImagesCount: 10,
       imagesCount:        10,
     });
@@ -262,9 +222,10 @@ describe('Dashboard.vue full coverage', () => {
     wrapper.vm.scanJobsCRD = [failedJob];
     const stats = wrapper.vm.getScanningStats();
 
-    expect(stats.totalScannedImageCnt).toBe(0); // Safely overridden to 0
+    // Scanned image count is always added per reviewer feedback
+    expect(stats.totalScannedImageCnt).toBe(10);
     expect(stats.detectedErrorCnt).toBe(1);
-    expect(stats.failedImagesCnt).toBe(10); // Safely sets all images as failed
+    expect(stats.failedImagesCnt).toBe(10);
   });
 
   it('method: getScanningStats ignores jobs that are currently running', () => {
@@ -278,8 +239,8 @@ describe('Dashboard.vue full coverage', () => {
     });
 
     const currentlyRunningJob = makeScanJob({
-      registry:           'reg1', // Same registry
-      creationTimestamp:  '2026-04-03T10:00:00Z', // Newest job, but running
+      registry:           'reg1',
+      creationTimestamp:  '2026-04-03T10:00:00Z',
       conditions:         [{ type: 'InProgress', status: 'True', error: false }],
       scannedImagesCount: 0,
       imagesCount:        10,
@@ -288,7 +249,6 @@ describe('Dashboard.vue full coverage', () => {
     wrapper.vm.scanJobsCRD = [olderCompletedJob, currentlyRunningJob];
     const stats = wrapper.vm.getScanningStats();
 
-    // Should ignore the running job and return stats for the olderCompletedJob
     expect(stats.totalScannedImageCnt).toBe(5);
     expect(stats.failedImagesCnt).toBe(0);
     expect(stats.detectedErrorCnt).toBe(0);
@@ -325,7 +285,7 @@ describe('Dashboard.vue full coverage', () => {
       }),
       makeScanJob({
         registry:           'reg-b',
-        creationTimestamp:  '2026-04-03T10:00:00Z', // Newer job, but wrong registry
+        creationTimestamp:  '2026-04-03T10:00:00Z',
         scannedImagesCount: 5,
         imagesCount:        8,
         conditions:         [{ type: 'Complete', status: 'True', error: false }],
@@ -338,9 +298,9 @@ describe('Dashboard.vue full coverage', () => {
 
     const stats = wrapper.vm.getScanningStats();
 
-    expect(stats.totalScannedImageCnt).toBe(0); // Override applied because it failed
+    expect(stats.totalScannedImageCnt).toBe(2);
     expect(stats.detectedErrorCnt).toBe(1);
-    expect(stats.failedImagesCnt).toBe(4); // 4 images in reg-a failed
+    expect(stats.failedImagesCnt).toBe(4);
     expect(stats.lastCompletionTimestamp).toBe(1761480100);
   });
 
@@ -350,7 +310,7 @@ describe('Dashboard.vue full coverage', () => {
       makeScanJob({
         registry:           'workloadscan-abc-',
         generateName:       'workloadscan-abc-',
-        creationTimestamp:  '2026-04-03T10:00:00Z', // Newest job, but workload
+        creationTimestamp:  '2026-04-03T10:00:00Z',
         scannedImagesCount: 7,
         imagesCount:        10,
         conditions:         [{ type: 'Complete', status: 'True', error: false }],
@@ -358,7 +318,7 @@ describe('Dashboard.vue full coverage', () => {
       makeScanJob({
         registry:           'reg-a',
         generateName:       'imagescan-abc-',
-        creationTimestamp:  '2026-04-02T10:00:00Z', // Older job, but imagescan
+        creationTimestamp:  '2026-04-02T10:00:00Z',
         scannedImagesCount: 3,
         imagesCount:        5,
         conditions:         [{ type: 'Failed', status: 'True', error: true }],
@@ -369,7 +329,7 @@ describe('Dashboard.vue full coverage', () => {
 
     const stats = wrapper.vm.getScanningStats();
 
-    expect(stats.totalScannedImageCnt).toBe(0); // imagescan failed, so 0 successful
+    expect(stats.totalScannedImageCnt).toBe(3);
     expect(stats.detectedErrorCnt).toBe(1);
     expect(stats.failedImagesCnt).toBe(5);
   });
@@ -409,7 +369,7 @@ describe('Dashboard.vue full coverage', () => {
     const jobs = [
       makeScanJob({
         registry:           'reg-a',
-        generateName:       'abc-workloadscan-xyz-', // Valid because it doesn't START with workloadscan
+        generateName:       'abc-workloadscan-xyz-',
         creationTimestamp:  '2026-04-03T10:00:00Z',
         scannedImagesCount: 3,
         imagesCount:        3,
@@ -429,7 +389,6 @@ describe('Dashboard.vue full coverage', () => {
 
     const stats = wrapper.vm.getScanningStats();
 
-    // Should return sum of both
     expect(stats.totalScannedImageCnt).toBe(5);
     expect(stats.detectedErrorCnt).toBe(0);
     expect(stats.failedImagesCnt).toBe(0);
@@ -464,7 +423,7 @@ describe('Dashboard.vue full coverage', () => {
     const mockDispatch = jest.fn().mockResolvedValue([]);
     const mockClearInterval = jest.spyOn(global, 'clearInterval').mockImplementation(() => {});
     const mockSetInterval = jest.spyOn(global, 'setInterval').mockImplementation((fn) => {
-      fn(); // call it immediately
+      fn();
 
       return 123;
     });
@@ -486,14 +445,10 @@ describe('Dashboard.vue full coverage', () => {
     });
 
     await wrapper.vm.$options.fetch.call(wrapper.vm);
-    // verify dispatch called
     expect(mockDispatch).toHaveBeenCalledWith('cluster/findAll', { type: 'sbomscanner.kubewarden.io.scanjob' });
 
-    // verify clearInterval & setInterval called
     expect(mockClearInterval).toHaveBeenCalled();
     expect(mockSetInterval).toHaveBeenCalled();
-
-    // verify keepAliveTimer assigned
     expect(wrapper.vm.keepAliveTimer).toBe(123);
 
     mockSetInterval.mockRestore();
