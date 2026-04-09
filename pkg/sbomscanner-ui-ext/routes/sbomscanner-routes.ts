@@ -4,10 +4,10 @@ import ImageDetails from '@sbomscanner-ui-ext/components/ImageDetails.vue';
 import Entry from '@sbomscanner-ui-ext/pages/c/_cluster/sbomscanner/index.vue';
 import CveDetails from '@sbomscanner-ui-ext/components/CveDetails.vue';
 
-import ListResource from '@shell/pages/c/_cluster/_product/_resource/index.vue';
-import CreateResource from '@shell/pages/c/_cluster/_product/_resource/create.vue';
-import ViewResource from '@shell/pages/c/_cluster/_product/_resource/_id.vue';
-import ViewNamespacedResource from '@shell/pages/c/_cluster/_product/_resource/_namespace/_id.vue';
+import SbomscannerResourceList from '@sbomscanner-ui-ext/pages/c/_cluster/sbomscanner/_resource/index.vue';
+import SbomscannerResourceCreate from '@sbomscanner-ui-ext/pages/c/_cluster/sbomscanner/_resource/create.vue';
+import SbomscannerResourceId from '@sbomscanner-ui-ext/pages/c/_cluster/sbomscanner/_resource/_id.vue';
+import SbomscannerResourceNamespaceId from '@sbomscanner-ui-ext/pages/c/_cluster/sbomscanner/_resource/_namespace/_id.vue';
 
 import {
   PRODUCT_NAME,
@@ -56,25 +56,25 @@ const routes = [
   {
     name:      `c-cluster-${ PRODUCT_NAME }-resource-create`,
     path:      `/c/:cluster/${ PRODUCT_NAME }/:resource/create`,
-    component: CreateResource,
+    component: SbomscannerResourceCreate,
     meta:      { product: PRODUCT_NAME },
   },
   {
     name:      `c-cluster-${ PRODUCT_NAME }-resource-id`,
     path:      `/c/:cluster/${ PRODUCT_NAME }/:resource/:id`,
-    component: ViewResource,
+    component: SbomscannerResourceId,
     meta:      { product: PRODUCT_NAME },
   },
   {
     name:      `c-cluster-${ PRODUCT_NAME }-resource-namespace-id`,
     path:      `/c/:cluster/${ PRODUCT_NAME }/:resource/:namespace/:id`,
-    component: ViewNamespacedResource,
+    component: SbomscannerResourceNamespaceId,
     meta:      { product: PRODUCT_NAME },
   },
   {
     name:      `c-cluster-${ PRODUCT_NAME }-resource`,
     path:      `/c/:cluster/${ PRODUCT_NAME }/:resource`,
-    component: ListResource,
+    component: SbomscannerResourceList,
     meta:      { product: PRODUCT_NAME },
   },
 ];
