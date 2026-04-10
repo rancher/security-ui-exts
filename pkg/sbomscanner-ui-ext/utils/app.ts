@@ -1,4 +1,6 @@
 import { POD, WORKLOAD_TYPES, INGRESS, SERVICE, WORKLOAD_TYPE_TO_KIND_MAPPING } from '@shell/config/types';
+import { RESOURCE } from '@sbomscanner-ui-ext/types';
+
 // Utility method to decode base64 strings
 export function decodeBase64(str: string) {
   try {
@@ -46,8 +48,13 @@ export function getWorkloadLink(row: any, cluster: string, hash?: string, query?
     [WORKLOAD_TYPE_TO_KIND_MAPPING[WORKLOAD_TYPES.JOB]]:          WORKLOAD_TYPES.JOB,
     [WORKLOAD_TYPE_TO_KIND_MAPPING[WORKLOAD_TYPES.STATEFUL_SET]]: WORKLOAD_TYPES.STATEFUL_SET,
     Ingress:                                                      INGRESS,
-    Service:                                                      SERVICE
+    Service:                                                      SERVICE,
+    Cluster:                                                      RESOURCE.WORKLOAD
   };
+
+  if(row.type?.toLowerCase() === 'cluster') {
+    return `${baseUrl}/${routeMap[row.type] || ''}/${row.reportName}`;
+  }
 
   const queryString = query ? `?${query}` : '';
 

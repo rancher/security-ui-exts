@@ -394,6 +394,7 @@ export default {
     parseWorkloadTableData(workloads) {
       return workloads.map((workload) => {
         return {
+          reportName: workload.id,
           name:       workload.metadata.ownerReferences ? workload.metadata.ownerReferences[0]?.name : '',
           type:       workload.metadata.ownerReferences ? workload.metadata.ownerReferences[0]?.kind : '',
           namespace:  workload.metadata.namespace,

@@ -490,6 +490,55 @@ describe('ImageDetails.vue', () => {
     expect(out[0].summary).toEqual({ high: 2 });
   });
 
+  it('parseWorkloadTableData handles missing ownerReferences and computes imagesUsed', () => {
+    wrapper.vm.images = [
+      { imageMetadata: { repository: 'nginx', tag: 'latest' } },
+      { imageMetadata: { repository: 'nginx', tag: 'latest' } },
+      { imageMetadata: { repository: 'busybox', tag: '1.0' } },
+    ];
+
+    const workloads = [
+      {
+        metadata: { namespace: 'default' },
+        spec:     { containers: [{ imageRef: { repository: 'nginx', tag: 'latest' } }] },
+        summary:  { high: 2 },
+      }
+    ];
+
+    const out = wrapper.vm.parseWorkloadTableData(workloads);
+
+    expect(out).toHaveLength(1);
+    expect(out[0].name).toBe('');
+    expect(out[0].type).toBe('');
+    expect(out[0].namespace).toBe('default');
+    expect(out[0].imagesUsed).toBe(2);
+    expect(out[0].summary).toEqual({ high: 2 });
+  });
+
+  it('parseWorkloadTableData correctly maps workload.id to reportName', () => {
+    wrapper.vm.images = [];
+
+    const workloads = [
+      {
+        id: 'cattle-sbomscanner-system/cluster-5a736a4b-acbe-41e9-97a6-f326bf46cac6',
+        metadata: {
+          namespace: 'cattle-sbomscanner-system',
+          ownerReferences: [{ name: 'rancher-sbomscanner-cnpg-cluster', kind: 'Cluster' }]
+        },
+        spec: { containers: [] },
+        summary: { critical: 4, high: 6 },
+      }
+    ];
+
+    const out = wrapper.vm.parseWorkloadTableData(workloads);
+
+    expect(out).toHaveLength(1);
+    expect(out[0].reportName).toBe('cattle-sbomscanner-system/cluster-5a736a4b-acbe-41e9-97a6-f326bf46cac6');
+    expect(out[0].name).toBe('rancher-sbomscanner-cnpg-cluster');
+    expect(out[0].type).toBe('Cluster');
+    expect(out[0].namespace).toBe('cattle-sbomscanner-system');
+  });
+
   it('calls loadImageData without errors', async() => {
     mockStore.getters['cluster/all']
       .mockReturnValueOnce(() => [{ metadata: { name: 'test-image' }, imageMetadata: {} }])

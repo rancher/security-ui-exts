@@ -234,4 +234,19 @@ describe('getWorkloadLink', () => {
 
     expect(result).toBe('/c/local/explorer/cronjob/batch/nightly');
   });
+
+  it('returns the correct direct report link when the workload kind is Cluster', () => {
+    const mockRow = {
+      type:       'Cluster',
+      reportName: 'cattle-sbomscanner-system/cluster-5a736a4b-acbe-41e9-97a6-f326bf46cac6',
+      namespace:  'default',
+      name:       'ignored-name'
+    };
+
+    const clusterId = 'local';
+    const link = getWorkloadLink(mockRow, clusterId);
+
+    // RESOURCE.WORKLOAD resolves to 'storage.sbomscanner.kubewarden.io.workloadscanreport'
+    expect(link).toBe('/c/local/explorer/storage.sbomscanner.kubewarden.io.workloadscanreport/cattle-sbomscanner-system/cluster-5a736a4b-acbe-41e9-97a6-f326bf46cac6');
+  });
 });
