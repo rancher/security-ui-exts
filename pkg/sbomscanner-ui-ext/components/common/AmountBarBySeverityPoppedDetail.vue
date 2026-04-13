@@ -53,10 +53,7 @@
         </div>
 
         <div class="footer">
-          {{ t('imageScanner.general.cvesPanel.text1') }}
-          <a href="/" target="_blank" rel="noopener noreferrer" class="provider-name">
-            {{ footerProvider }}
-          </a>
+          <CvesPanelFooter />
         </div>
       </div>
     </div>
@@ -65,10 +62,11 @@
 
 <script>
 import AmountBarBySeverity from './AmountBarBySeverity.vue';
+import CvesPanelFooter from './CvesPanelFooter.vue';
 
 export default {
   name:       'AmountBarBySeverityPoppedDetail',
-  components: { AmountBarBySeverity },
+  components: { AmountBarBySeverity, CvesPanelFooter },
   props: {
     cveAmount: {
       type:     Object,
@@ -84,10 +82,6 @@ export default {
     viewAllLink: {
       type:    String,
       default: ''
-    },
-    footerProvider: {
-      type:    String,
-      default: 'SBOMScanner'
     },
   },
   data() {
@@ -291,19 +285,6 @@ $gap-size: 10px;
     width: 35px;
     text-align: right;
     color: var(--label-secondary);
-  }
-}
-
-.footer {
-  margin-top: 12px;
-  text-align: right;
-  font-size: 14px;
-  line-height: 140%;
-  color: var(--label-secondary);
-
-  .provider-name {
-    color: var(--label-secondary);
-    text-decoration: underline;
   }
 }
 

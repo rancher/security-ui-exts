@@ -1,5 +1,5 @@
 <script>
-import { Banner } from '@components/Banner';
+import WorkloadBanner from './common/WorkloadBanner.vue';
 import {
   createCsvRows,
   pushCsvRow,
@@ -21,11 +21,11 @@ import VulnerabilityTableSet from './common/VulnerabilityTableSet.vue';
 export default {
   name:       'WorkloadVulnerabilitiesGrid',
   components: {
+    WorkloadBanner,
     VulnerabilityTableSet,
     ImageTableSet,
     Tab,
     Tabbed,
-    Banner,
     DownloadFullReportBtn,
   },
   data() {
@@ -325,19 +325,7 @@ export default {
 
 <template>
   <div class="vul-header">
-    <Banner color="info" class="vul-banner">
-      <span>{{ t('imageScanner.general.workloadBanner.text1') }}</span>
-      <a href="/" target="_blank" rel="noopener noreferrer" class="text-underline">{{ t('imageScanner.general.workloadBanner.product') }}</a>
-      <span>, {{ t('imageScanner.general.workloadBanner.text2') }}</span>
-      <a
-        href="/"
-        class="text-underline"
-        rel="noopener noreferrer"
-        target="_blank">
-        {{ t('imageScanner.general.workloadBanner.documentation') }}
-        <i class="icon icon-external-link icon-underline"></i>
-      </a>
-    </Banner>
+    <WorkloadBanner />
     <!-- Download Full Report Dropdown -->
     <DownloadFullReportBtn
       class="vul-report-menu-btn"
@@ -378,30 +366,12 @@ export default {
 
 
 <style lang="scss" scoped>
-.text-underline {
-  color: var(--body-text);
-  border-bottom: 0.65px solid var(--body-text);
-  &:hover {
-    text-decoration: none;
-  }
-}
-.icon-underline {
-  font-size: 10px;
-}
 .vul-header {
   display: flex;
   height: 40px;
   justify-content: center;
   align-items: center;
   gap: -1px;
-  .vul-banner {
-    display: flex;
-    padding: 10px 16px;
-    align-items: center;
-    gap: 4px;
-    flex: 1 0 0;
-    padding-left: 0;
-  }
 }
 .workload-tabs {
   margin-top: 24px;

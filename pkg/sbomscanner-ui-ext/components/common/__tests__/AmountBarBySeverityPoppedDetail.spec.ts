@@ -120,12 +120,6 @@ describe('VulnerabilityHoverCell.vue', () => {
       expect(wrapper.find('.view-all').exists()).toBe(false);
     });
 
-    it('renders the footer provider name', () => {
-      const wrapper = createWrapper({ footerProvider: 'My Scanner' });
-
-      expect(wrapper.find('.provider-name').text()).toBe('My Scanner');
-    });
-
     it('renders exactly 5 severity rows with correct labels', () => {
       const wrapper = createWrapper();
       const rows = wrapper.findAll('.severity-row');

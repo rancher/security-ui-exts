@@ -458,13 +458,9 @@ imageScanner:
     yes: Yes
     no: No
     workloadBanner:
-      text1: Data provided by
-      text2: Want to learn more about this extension? 
-      text3: Read our
-      product: SBOMScanner
-      documentation: documentation
+      text: Data provided by <product>SBOMScanner</product>, Want to learn more about this extension? Read our <documentation>documentation</documentation>
     cvesPanel:
-      text1: Provided by
+      text: Provided by <provider>SBOMScanner</provider>
 typeLabel:
   sbomscanner.kubewarden.io.registry: Registries configuration
   sbomscanner.kubewarden.io.vexhub: VEX Management
