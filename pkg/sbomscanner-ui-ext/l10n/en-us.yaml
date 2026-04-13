@@ -121,12 +121,8 @@ imageScanner:
         authentication:
           label: Authentication
           create: Create a new Authentication
-          createDescriptionLine1_start: Creating a new authentication in context is not currently supported. Please
-          createDescriptionLine1_link: create a new secret
-          createDescriptionLine1_end: first.
-          createDescriptionLine2_start: Next, continue by clicking this
-          createDescriptionLine2_link: refresh
-          createDescriptionLine2_end: link to asynchronously reload the authentication list above and select the newly created secret.
+          createDescription1: Creating a new authentication in context is not currently supported. Please <secret>create a new secret</secret> first.
+          createDescription2: Next, continue by clicking this <refresh>refresh</refresh> link to asynchronously reload the authentication list above and select the newly created secret.
         scan:
           label: Scanning
           repoName: Repositories to scan

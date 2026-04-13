@@ -13,6 +13,7 @@ import { SBOMSCANNER_INSTALLATION_NAMESPACE, SCAN_INTERVAL_OPTIONS, SCAN_INTERVA
 import { PRODUCT_NAME, PAGE, LOCAT_HOST } from '@sbomscanner-ui-ext/types';
 import { filterUnique } from '@sbomscanner-ui-ext/utils/app';
 import { VALID_PLATFORMS, ALLOWED_VARIANTS, WORKLOAD_SCAN_DOCS_URL } from '@sbomscanner-ui-ext/constants/securityConstants';
+import AuthCreateDescription from '@sbomscanner-ui-ext/components/common/AuthCreateDescription.vue';
 
 const OS_OPTIONS = Object.keys(VALID_PLATFORMS).map((k) => ({ label: k, value: k }));
 
@@ -27,6 +28,7 @@ export default {
     LabeledSelect,
     MatchExpressions,
     Banner,
+    AuthCreateDescription,
   },
 
   mixins: [CreateEditView],
@@ -464,18 +466,10 @@ export default {
       <div v-if="value.spec.authSecret === 'create'" class="row mt-16">
         <div class="col span-12">
           <Banner color="info" class="m-0">
-            <div>
-              <p class="m-0 mb-5">
-                {{ t('imageScanner.registries.configuration.cru.authentication.createDescriptionLine1_start') }}
-                <a :href="secretCreateUrl" target="_blank">{{ t('imageScanner.registries.configuration.cru.authentication.createDescriptionLine1_link') }}</a>
-                {{ t('imageScanner.registries.configuration.cru.authentication.createDescriptionLine1_end') }}
-              </p>
-              <p class="m-0">
-                {{ t('imageScanner.registries.configuration.cru.authentication.createDescriptionLine2_start') }}
-                <a href="#" @click.prevent="refreshList">{{ t('imageScanner.registries.configuration.cru.authentication.createDescriptionLine2_link') }}</a>
-                {{ t('imageScanner.registries.configuration.cru.authentication.createDescriptionLine2_end') }}
-              </p>
-            </div>
+            <AuthCreateDescription
+              :secret-create-url="secretCreateUrl"
+              @refresh="refreshList"
+            />
           </Banner>
         </div>
       </div>
