@@ -8,12 +8,12 @@ import LabeledSelect from '@shell/components/form/LabeledSelect';
 import MatchExpressions from '@shell/components/form/MatchExpressions';
 import Banner from '@components/Banner/Banner.vue';
 import { CATALOG, NAMESPACE, SECRET } from '@shell/config/types';
-import { SECRET_TYPES } from '@shell/config/secret';
 import { SBOMSCANNER_INSTALLATION_NAMESPACE, SCAN_INTERVAL_OPTIONS, SCAN_INTERVALS } from '@sbomscanner-ui-ext/constants';
-import { PRODUCT_NAME, PAGE, LOCAT_HOST } from '@sbomscanner-ui-ext/types';
+import { PRODUCT_NAME, PAGE } from '@sbomscanner-ui-ext/types';
 import { filterUnique } from '@sbomscanner-ui-ext/utils/app';
 import { VALID_PLATFORMS, ALLOWED_VARIANTS, WORKLOAD_SCAN_DOCS_URL } from '@sbomscanner-ui-ext/constants/securityConstants';
 import AuthCreateDescription from '@sbomscanner-ui-ext/components/common/AuthCreateDescription.vue';
+import SelectOrCreateAuthSecret from '@shell/components/form/SelectOrCreateAuthSecret.vue';
 
 const OS_OPTIONS = Object.keys(VALID_PLATFORMS).map((k) => ({ label: k, value: k }));
 
@@ -29,6 +29,7 @@ export default {
     MatchExpressions,
     Banner,
     AuthCreateDescription,
+    SelectOrCreateAuthSecret,
   },
 
   mixins: [CreateEditView],
@@ -63,7 +64,7 @@ export default {
       saveLoading:   false,
       savedEnabledState: true,
       sbomScannerInstallationNamespace: SBOMSCANNER_INSTALLATION_NAMESPACE,
-
+      secretCreateHook: null,
       // Exported constants for the template
       PAGE,
       PRODUCT_NAME,
@@ -128,35 +129,6 @@ export default {
       set(newValue) {
         this.value.spec.scanInterval = newValue;
       }
-    },
-
-    authOptions() {
-      const headerOptions = [
-        { label: this.t('imageScanner.registries.configuration.cru.authentication.create'), value: 'create', kind: 'highlighted' },
-        { label: 'divider', disabled: true, kind: 'divider' },
-        { label: this.t('generic.none'), value: '' }
-      ];
-
-      if (!this.allSecrets) return headerOptions;
-
-      const secretOptions = this.allSecrets
-          .filter((secret) => secret._type === SECRET_TYPES.DOCKER_JSON && secret.metadata.namespace === this.sbomScannerInstallationNamespace)
-          .map((secret) => ({
-            label: `${secret.metadata.name}`,
-            value: secret.metadata.name,
-          }));
-
-      return [...headerOptions, ...secretOptions];
-    },
-
-    validationPassed() {
-      const spec = this.value?.spec || {};
-      return spec.authSecret !== 'create';
-    },
-
-    secretCreateUrl() {
-      const clusterId = this.$route.params.cluster;
-      return `${ LOCAT_HOST.includes(window.location.host) ? '' : '/dashboard' }/c/${ clusterId }/explorer/secret/create?namespace=${this.sbomScannerInstallationNamespace}`;
     },
   },
 
@@ -233,6 +205,10 @@ export default {
       }
     },
 
+    registerSecretHook(hookFunction) {
+      this.secretCreateHook = hookFunction;
+    },
+
     async finish(event) {
       if (event) event.preventDefault();
 
@@ -242,6 +218,9 @@ export default {
       this.cleanBeforeSave();
 
       try {
+        if (this.secretCreateHook) {
+          await this.secretCreateHook();
+        }
         await this.save();
         this.savedEnabledState = this.value.spec.enabled;
 
@@ -303,17 +282,6 @@ export default {
           (p) => p.os && p.arch,
           (p) => `${p.os}-${p.arch}-${p.variant || ''}`
       );
-    },
-
-    async refreshList() {
-      this.authLoading = true;
-      try {
-        this.allSecrets = await this.$store.dispatch(`${ this.inStore }/findAll`, { type: SECRET }, { force: true });
-      } catch (e) {
-        this.errors = [e];
-      } finally {
-        this.authLoading = false;
-      }
     },
 
     onFileSelected(value) {
@@ -382,7 +350,6 @@ export default {
         :resource="value"
         :subtypes="[]"
         :errors="errors"
-        :validation-passed="validationPassed"
         @finish="finish"
         @cancel="done"
     >
@@ -441,17 +408,26 @@ export default {
         {{ t('imageScanner.registries.configuration.cru.authentication.label') }}
       </div>
 
-      <div class="row-half mt-16">
-        <div>
-          <LabeledSelect
+      <div class="row mt-16">
+        <div class="w-half auth-secret-override">
+          <SelectOrCreateAuthSecret
+              data-testid="auth-secret-select"
               v-model:value="value.spec.authSecret"
-              :label="t('imageScanner.registries.configuration.cru.authentication.label')"
               :mode="mode"
-              :options="authOptions"
-              :loading="authLoading"
+              :namespace="sbomScannerInstallationNamespace"
+              :in-store="inStore"
+              :fixed-image-pull-secret="true"
+              image-pull-secret-docker-json-url-config="https://docker.io"
+              :allow-ssh="false"
+              :allow-basic="false"
+              :allow-s3="false"
+              :allow-rke="false"
+              :register-before-hook="registerSecretHook"
+              generate-name="registry-auth-"
+              :label="t('imageScanner.registries.configuration.cru.authentication.label')"
           />
         </div>
-        <div>
+        <div class="col span-6">
           <div class="checkbox-align">
             <Checkbox
                 v-model:value="value.spec.insecure"
@@ -460,17 +436,6 @@ export default {
                 :mode="mode"
             />
           </div>
-        </div>
-      </div>
-
-      <div v-if="value.spec.authSecret === 'create'" class="row mt-16">
-        <div class="col span-12">
-          <Banner color="info" class="m-0">
-            <AuthCreateDescription
-              :secret-create-url="secretCreateUrl"
-              @refresh="refreshList"
-            />
-          </Banner>
         </div>
       </div>
 
@@ -565,7 +530,7 @@ export default {
           <button
               type="button"
               class="btn role-primary"
-              :disabled="!validationPassed || saveLoading"
+              :disabled="saveLoading"
               @click="finish"
           >
             {{ isCreate ? t('generic.create') : t('generic.save') }}
@@ -605,6 +570,22 @@ export default {
 
   .platform-add-row {
     width: $span-10-width;
+  }
+
+  .auth-secret-override {
+    margin-right: 16px;
+    :deep(.select-or-create-auth-secret > .mt-20) {
+      margin-top: 0 !important;
+    }
+
+    :deep(.select-or-create-auth-secret > .row > .col) {
+      flex: 1 1 100%;
+      max-width: 100%;
+      margin-bottom: 12px;
+    }
+    :deep(.select-or-create-auth-secret > .row > .col:last-child) {
+      margin-bottom: 0;
+    }
   }
 
   /* ---- Match Expressions Grid Override ---- */
