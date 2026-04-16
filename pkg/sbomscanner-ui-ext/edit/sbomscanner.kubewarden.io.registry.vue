@@ -13,11 +13,10 @@ import {
   REGISTRY_TYPE_OPTIONS,
   SCAN_INTERVAL_OPTIONS, SCAN_INTERVALS, DEFAULT_REG_URI
 } from '@sbomscanner-ui-ext/constants';
-import { PRODUCT_NAME, PAGE, LOCAT_HOST } from '@sbomscanner-ui-ext/types';
-import { SECRET_TYPES } from '@shell/config/secret';
+import { PRODUCT_NAME, PAGE } from '@sbomscanner-ui-ext/types';
 import { filterUnique } from "@sbomscanner-ui-ext/utils/app";
 import { VALID_PLATFORMS, ALLOWED_VARIANTS } from '@sbomscanner-ui-ext/constants/securityConstants';
-import AuthCreateDescription from '@sbomscanner-ui-ext/components/common/AuthCreateDescription.vue';
+import SelectOrCreateAuthSecret from '@shell/components/form/SelectOrCreateAuthSecret.vue';
 
 export default {
   name: 'CruRegistry',
@@ -30,7 +29,7 @@ export default {
     CruResource,
     LabeledSelect,
     Banner,
-    AuthCreateDescription,
+    SelectOrCreateAuthSecret,
   },
 
   mixins: [CreateEditView],
@@ -74,6 +73,7 @@ export default {
       PRODUCT_NAME,
       authLoading:     false,
       osOptions,
+      secretCreateHook: null
     };
   },
 
@@ -85,52 +85,6 @@ export default {
       set(repoStrings){
         this.value.spec.repositories = repoStrings.map((repoName) => ({ name: repoName }));
       },
-    },
-    /**
-     * Build the options list for the authentication dropdown
-     */
-    options() {
-      const headerOptions = [
-        {
-          label: this.t('imageScanner.registries.configuration.cru.authentication.create'),
-          value: 'create',
-          kind:  'highlighted'
-        },
-        {
-          label:    'divider',
-          disabled: true,
-          kind:     'divider'
-        },
-        {
-          label: this.t('generic.none'),
-          value: '',
-        }
-      ];
-
-      if (!this.allSecrets) {
-        return headerOptions;
-      }
-
-      const currentNamespace = this.value.metadata?.namespace ?? 'default';
-
-      const secretOptions = this.allSecrets
-        .filter((secret) => {
-          return secret.metadata.namespace === currentNamespace &&
-                secret._type === SECRET_TYPES.DOCKER_JSON;
-        })
-        .map((secret) => {
-          const name = secret.metadata.name;
-
-          return {
-            label: name,
-            value: name,
-          };
-        });
-
-      return [
-        ...headerOptions,
-        ...secretOptions
-      ];
     },
 
     SCAN_INTERVAL_OPTIONS() {
@@ -177,15 +131,19 @@ export default {
       const requiresRepositories = spec.catalogType === REGISTRY_TYPE.NO_CATALOG;
       const hasRepositories = !requiresRepositories || !!spec.repositories?.length;
 
-      const validSecret = spec.authSecret !== 'create';
-
-      return hasName && hasCatalogType && hasUri && hasRepositories && validSecret;
+      return hasName && hasCatalogType && hasUri && hasRepositories;
     },
 
-    secretCreateUrl() {
-      const clusterId = this.$route.params.cluster;
+    safeRegistryUrl() {
+      const uri = this.value?.spec?.uri || '';
 
-      return `${ LOCAT_HOST.includes(window.location.host) ? '' : '/dashboard' }/c/${ clusterId }/explorer/secret/create?scope=namespaced`;
+      if (!uri) return '';
+
+      if (!/^https?:\/\//i.test(uri)) {
+        return `https://${uri}`;
+      }
+
+      return uri;
     },
   },
 
@@ -195,6 +153,9 @@ export default {
       this.cleanPlatforms();
 
       try {
+        if (this.secretCreateHook) {
+          await this.secretCreateHook();
+        }
         await this.save(event);
       } catch (e) {
         this.errors = [e];
@@ -211,20 +172,8 @@ export default {
       }
     },
 
-    /**
-     * Manually refresh the list of secrets for the dropdown.
-     */
-    async refreshList() {
-      this.authLoading = true;
-      try {
-        this.allSecrets = await this.$store.dispatch(
-          `${ this.inStore }/findAll`, { type: SECRET }
-        );
-      } catch (e) {
-        this.errors = [e];
-      } finally {
-        this.authLoading = false;
-      }
+    registerSecretHook(hookFunction) {
+      this.secretCreateHook = hookFunction;
     },
 
     onFileSelected(value) {
@@ -372,32 +321,24 @@ export default {
       <div class="registry-input-label mt-24">
         {{ t('imageScanner.registries.configuration.cru.authentication.label') }}
       </div>
-      <div class="row">
-        <div class="col span-6">
-          <LabeledSelect
-            v-model:value="value.spec.authSecret"
-            data-testid="auth-secret-select"
-            :label="t('imageScanner.registries.configuration.cru.authentication.label')"
-            :mode="mode"
-            :options="options"
-            :loading="authLoading"
-          />
-        </div>
-      </div>
-      <div
-        v-if="value.spec.authSecret === 'create' "
-        class="row"
-      >
-        <div class="col span-12">
-          <Banner color="info">
-          <AuthCreateDescription
-            :secret-create-url="secretCreateUrl"
-            @refresh="refreshList"
-          />
-          </Banner>
-        </div>
-      </div>
-      <div :class="['registry-input-label', { 'mt-24': value.spec.authSecret !== 'create' }]">
+      <SelectOrCreateAuthSecret
+          data-testid="auth-secret-select"
+          class="auth-secret-override"
+          v-model:value="value.spec.authSecret"
+          :mode="mode"
+          :namespace="value.metadata.namespace || 'default'"
+          :in-store="inStore"
+          :fixed-image-pull-secret="true"
+          :image-pull-secret-docker-json-url-config="safeRegistryUrl"
+          :allow-ssh="false"
+          :allow-basic="false"
+          :allow-s3="false"
+          :allow-rke="false"
+          :register-before-hook="registerSecretHook"
+          generate-name="registry-auth-"
+          :label="t('imageScanner.registries.configuration.cru.authentication.label')"
+      />
+      <div :class="['registry-input-label', 'mt-24']">
         {{ t('imageScanner.registries.configuration.cru.scan.label') }}
       </div>
 
@@ -522,4 +463,9 @@ export default {
   color: var(--input-label);
   font-size: 12px;
 }
+
+.auth-secret-override :deep(.mt-20) {
+  margin-top: 0 !important;
+}
+
 </style>

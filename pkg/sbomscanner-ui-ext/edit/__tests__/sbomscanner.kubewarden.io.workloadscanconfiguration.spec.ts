@@ -1,9 +1,8 @@
 import { shallowMount } from '@vue/test-utils';
 import CruWorkloadScanConfiguration from '../sbomscanner.kubewarden.io.workloadscanconfiguration.vue';
 import { SCAN_INTERVALS } from '@sbomscanner-ui-ext/constants';
-import { SECRET_TYPES } from '@shell/config/secret';
 
-// 1. We MUST mock the Rancher constants so CATALOG.APP evaluates correctly in the try/catch block
+
 jest.mock('@shell/config/types', () => ({
   CATALOG: { APP: 'catalog.cattle.io.app' },
   NAMESPACE: 'namespace',
@@ -97,7 +96,8 @@ describe('CruWorkloadScanConfiguration.vue', () => {
           Checkbox: true,
           MatchExpressions: true,
           Banner: true,
-          FileSelector: true
+          FileSelector: true,
+          SelectOrCreateAuthSecret: true
         }
       }
     });
@@ -111,6 +111,7 @@ describe('CruWorkloadScanConfiguration.vue', () => {
       wrapper = createWrapper({ enabled: true });
       expect(wrapper.exists()).toBe(true);
       expect(wrapper.vm.savedEnabledState).toBe(true);
+      expect(wrapper.vm.secretCreateHook).toBeNull();
     });
 
     it('does not change savedEnabledState when the checkbox is toggled', async () => {
@@ -172,20 +173,6 @@ describe('CruWorkloadScanConfiguration.vue', () => {
       expect(wrapper.vm.value.spec.artifactsNamespace).toBe('cattle-sbomscanner-system');
     });
 
-    it('updates default artifactsNamespace to dynamic installation namespace if it was cleared to an empty string', async () => {
-      wrapper = createWrapper({}, 'create', {});
-      wrapper.vm.initDefaults();
-
-      // Simulating a user clearing out the field before fetch completes
-      wrapper.vm.value.spec.artifactsNamespace = '';
-
-      // Run fetch to dynamically discover app
-      await wrapper.vm.$options.fetch.call(wrapper.vm);
-
-      // Should override the empty string with the discovered installation namespace
-      expect(wrapper.vm.value.spec.artifactsNamespace).toBe('');
-    });
-
     it('does NOT update artifactsNamespace on fetch if user has already modified it to a custom value', async () => {
       wrapper = createWrapper({}, 'create', {});
       wrapper.vm.initDefaults();
@@ -226,29 +213,6 @@ describe('CruWorkloadScanConfiguration.vue', () => {
       });
     });
 
-    describe('authOptions', () => {
-      it('filters secrets by type DOCKER_JSON and the dynamically fetched installation namespace and uses secret name as label', async () => {
-        wrapper = createWrapper({});
-        await wrapper.vm.$options.fetch.call(wrapper.vm);
-
-        wrapper.vm.allSecrets = [
-          { metadata: { name: 'wrong-ns', namespace: 'default' }, _type: SECRET_TYPES.DOCKER_JSON },
-          { metadata: { name: 'correct-secret-name', namespace: 'custom-sbom-namespace' }, _type: SECRET_TYPES.DOCKER_JSON },
-        ];
-
-        expect(wrapper.vm.authOptions.length).toBe(4); // 3 defaults + 1 valid secret
-        expect(wrapper.vm.authOptions[3].value).toBe('correct-secret-name');
-        expect(wrapper.vm.authOptions[3].label).toBe('correct-secret-name'); // Verifying namespace prefix is dropped
-      });
-    });
-
-    describe('secretCreateUrl', () => {
-      it('generates secretCreateUrl correctly', () => {
-        wrapper = createWrapper();
-        expect(wrapper.vm.secretCreateUrl).toContain('explorer/secret/create?namespace=');
-      });
-    });
-
     describe('matchExpressions setter', () => {
       it('deletes matchExpressions if set to null or empty', () => {
         wrapper = createWrapper({ namespaceSelector: { matchExpressions: [{ key: 'a', operator: 'In', values: ['b'] }] } });
@@ -263,18 +227,6 @@ describe('CruWorkloadScanConfiguration.vue', () => {
         wrapper.vm.selectedScanInterval = '12h';
         expect(wrapper.vm.value.spec.scanInterval).toBe('12h');
       });
-    });
-  });
-
-  describe('Validation', () => {
-    it('passes validation when a valid secret is selected or left blank', () => {
-      wrapper = createWrapper({ authSecret: 'my-secret' });
-      expect(wrapper.vm.validationPassed).toBe(true);
-    });
-
-    it('fails validation when authSecret is set to "create"', () => {
-      wrapper = createWrapper({ authSecret: 'create' });
-      expect(wrapper.vm.validationPassed).toBe(false);
     });
   });
 
@@ -363,15 +315,16 @@ describe('CruWorkloadScanConfiguration.vue', () => {
     });
   });
 
-  describe('Other Methods', () => {
-    it('populates errors if refreshList fails', async () => {
+  describe('SelectOrCreateAuthSecret Integration', () => {
+    it('registerSecretHook should set the secretCreateHook', () => {
       wrapper = createWrapper();
-      wrapper.vm.$store.dispatch = jest.fn().mockRejectedValue(new Error('Refresh failed'));
-      await wrapper.vm.refreshList();
-      expect(wrapper.vm.errors).toEqual([new Error('Refresh failed')]);
-      expect(wrapper.vm.authLoading).toBe(false);
+      const mockHook = jest.fn();
+      wrapper.vm.registerSecretHook(mockHook);
+      expect(wrapper.vm.secretCreateHook).toBe(mockHook);
     });
+  });
 
+  describe('Other Methods', () => {
     it('sets caBundle on onFileSelected', () => {
       wrapper = createWrapper();
       wrapper.vm.onFileSelected('cert-data');
@@ -391,6 +344,32 @@ describe('CruWorkloadScanConfiguration.vue', () => {
       expect(preventDefault).toHaveBeenCalled();
       expect(wrapper.vm.save).toHaveBeenCalled();
       expect(wrapper.vm.savedEnabledState).toBe(false);
+    });
+
+    it('executes secretCreateHook if present before saving', async () => {
+      wrapper = createWrapper({ enabled: true });
+      const mockHook = jest.fn().mockResolvedValue(true);
+      wrapper.vm.registerSecretHook(mockHook);
+      wrapper.vm.save = jest.fn().mockResolvedValue(true);
+
+      await wrapper.vm.finish();
+
+      expect(mockHook).toHaveBeenCalled();
+      expect(wrapper.vm.save).toHaveBeenCalled();
+    });
+
+    it('does not proceed to save if secretCreateHook throws an error', async () => {
+      wrapper = createWrapper({ enabled: true });
+      const error = new Error('Secret creation failed');
+      const mockHook = jest.fn().mockRejectedValue(error);
+      wrapper.vm.registerSecretHook(mockHook);
+      wrapper.vm.save = jest.fn();
+
+      await wrapper.vm.finish();
+
+      expect(mockHook).toHaveBeenCalled();
+      expect(wrapper.vm.save).not.toHaveBeenCalled();
+      expect(wrapper.vm.errors).toEqual([error]);
     });
 
     it('calls finish without event safely', async () => {

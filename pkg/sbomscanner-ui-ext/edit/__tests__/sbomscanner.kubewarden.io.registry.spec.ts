@@ -32,6 +32,7 @@ const stubs = {
   LabeledInput:      true,
   Banner:            { name: 'Banner', template: '<div><slot /></div>' },
   LabeledSelect:     LabeledSelectStub,
+  SelectOrCreateAuthSecret: { name: 'SelectOrCreateAuthSecret', template: '<div class="select-or-create-auth-secret"></div>' },
   Checkbox:          {
     name: 'Checkbox', template: '<input type="checkbox" :checked="value" @change="$emit(\'update:value\', $event.target.checked)" />', props: ['value', 'label', 'tooltip']
   },
@@ -111,6 +112,7 @@ describe('CruRegistry', () => {
       expect(spec.scanInterval).toBeUndefined();
       expect(spec.caBundle).toBe('');
       expect(spec.insecure).toBe(false);
+      expect(wrapper.vm.secretCreateHook).toBeNull();
     });
   });
 
@@ -128,7 +130,6 @@ describe('CruRegistry', () => {
       await flushPromises();
 
       expect(dispatch).toHaveBeenCalledWith('cluster/findAll', { type: SECRET });
-
       expect(wrapper.vm.allSecrets).toStrictEqual(mockSecrets);
     });
   });
@@ -183,41 +184,33 @@ describe('CruRegistry', () => {
     });
   });
 
-  describe('computed: options (Auth Secrets)', () => {
-    beforeEach(async() => {
+  describe('computed: safeRegistryUrl', () => {
+    beforeEach(() => {
       wrapper = createWrapper({});
-      wrapper.vm.allSecrets = mockSecrets;
-      await wrapper.vm.$nextTick();
     });
 
-    it('should return default options if no secrets are loaded', async() => {
-      wrapper.vm.allSecrets = null;
-      await wrapper.vm.$nextTick();
-      const options = wrapper.vm.options;
+    it('should return empty string if URI is empty or undefined', () => {
+      wrapper.vm.value.spec.uri = '';
+      expect(wrapper.vm.safeRegistryUrl).toBe('');
 
-      expect(options.length).toBe(3);
+      wrapper.vm.value.spec.uri = undefined;
+      expect(wrapper.vm.safeRegistryUrl).toBe('');
     });
 
-    it('should filter secrets by namespace (default) and type (docker-json)', () => {
-      const options = wrapper.vm.options;
+    it('should prepend https:// if no protocol is present', () => {
+      wrapper.vm.value.spec.uri = 'ghcr.io';
+      expect(wrapper.vm.safeRegistryUrl).toBe('https://ghcr.io');
 
-      expect(options.length).toBe(4);
-      expect(options[3].label).toBe('secret-1');
+      wrapper.vm.value.spec.uri = 'docker.io';
+      expect(wrapper.vm.safeRegistryUrl).toBe('https://docker.io');
     });
 
-    it('should update options when namespace changes', async() => {
-      await wrapper.setProps({
-        value: {
-          ...defaultProps.value,
-          metadata: { namespace: 'other' },
-          spec:     wrapper.vm.value.spec,
-        },
-      });
-      await wrapper.vm.$nextTick();
-      const options = wrapper.vm.options;
+    it('should not modify the URI if a protocol is already present', () => {
+      wrapper.vm.value.spec.uri = 'https://ghcr.io';
+      expect(wrapper.vm.safeRegistryUrl).toBe('https://ghcr.io');
 
-      expect(options.length).toBe(4);
-      expect(options[3].label).toBe('secret-2');
+      wrapper.vm.value.spec.uri = 'http://localhost:5000';
+      expect(wrapper.vm.safeRegistryUrl).toBe('http://localhost:5000');
     });
   });
 
@@ -260,15 +253,6 @@ describe('CruRegistry', () => {
       const newValue = deepClone(validValue);
 
       newValue.spec.uri = ' ';
-      await wrapper.setProps({ value: newValue });
-      await wrapper.vm.$nextTick();
-      expect(wrapper.vm.validationPassed).toBe(false);
-    });
-
-    it('should fail if authSecret is "create"', async() => {
-      const newValue = deepClone(validValue);
-
-      newValue.spec.authSecret = 'create';
       await wrapper.setProps({ value: newValue });
       await wrapper.vm.$nextTick();
       expect(wrapper.vm.validationPassed).toBe(false);
@@ -359,6 +343,19 @@ describe('CruRegistry', () => {
     });
   });
 
+  describe('methods: SelectOrCreateAuthSecret Hook', () => {
+    beforeEach(() => {
+      wrapper = createWrapper({});
+    });
+
+    it('registerSecretHook should set the secretCreateHook', () => {
+      const mockHook = jest.fn();
+
+      wrapper.vm.registerSecretHook(mockHook);
+      expect(wrapper.vm.secretCreateHook).toBe(mockHook);
+    });
+  });
+
   describe('methods: finish & error handling', () => {
     const save = jest.fn();
 
@@ -381,7 +378,20 @@ describe('CruRegistry', () => {
       });
     });
 
-    it('should call save and route on success', async() => {
+    it('should execute the secretCreateHook if registered before saving', async() => {
+      const mockHook = jest.fn().mockResolvedValue(true);
+
+      wrapper.vm.registerSecretHook(mockHook);
+      save.mockResolvedValue({});
+
+      await wrapper.vm.finish();
+
+      expect(mockHook).toHaveBeenCalled();
+      expect(save).toHaveBeenCalled();
+      expect(mockRouter.push).toHaveBeenCalled();
+    });
+
+    it('should call save and route on success when no hook is present', async() => {
       save.mockResolvedValue({});
       await wrapper.vm.finish();
       expect(save).toHaveBeenCalled();
@@ -423,32 +433,19 @@ describe('CruRegistry', () => {
       expect(mockRouter.push).not.toHaveBeenCalled();
       expect(wrapper.vm.errors).toEqual([error]);
     });
-  });
 
-  describe('methods: refreshList', () => {
-    it('should set loading state and re-fetch secrets', async() => {
-      const newMockSecret = [{ metadata: { name: 'new-secret', namespace: 'default' }, _type: SECRET_TYPES.DOCKER_JSON }];
-      const dispatch = jest.fn().mockResolvedValue(newMockSecret);
-      const specificStore = { ...mockStore, dispatch };
+    it('should set errors and not route on secretCreateHook failure', async() => {
+      const error = new Error('Hook failed');
+      const mockHook = jest.fn().mockRejectedValue(error);
 
-      wrapper = createWrapper({}, specificStore);
+      wrapper.vm.registerSecretHook(mockHook);
 
-      if (wrapper.vm.$options.fetch) {
-        await wrapper.vm.$options.fetch.call(wrapper.vm);
-      }
-      await flushPromises();
-      dispatch.mockClear();
+      await wrapper.vm.finish();
 
-      expect(wrapper.vm.authLoading).toBe(false);
-      const promise = wrapper.vm.refreshList();
-
-      expect(wrapper.vm.authLoading).toBe(true);
-
-      await promise;
-
-      expect(dispatch).toHaveBeenCalledWith('cluster/findAll', { type: SECRET });
-      expect(wrapper.vm.allSecrets).toEqual(newMockSecret);
-      expect(wrapper.vm.authLoading).toBe(false);
+      expect(mockHook).toHaveBeenCalled();
+      expect(save).not.toHaveBeenCalled();
+      expect(mockRouter.push).not.toHaveBeenCalled();
+      expect(wrapper.vm.errors).toEqual([error]);
     });
   });
 
@@ -459,29 +456,17 @@ describe('CruRegistry', () => {
 
       const mockError = { message: 'admission webhook denied the request' };
 
-      // Simulate CruResource emitting an error event (like when ResourceYaml fails to save)
       cruResource.vm.$emit('error', mockError);
       await wrapper.vm.$nextTick();
 
       expect(wrapper.vm.errors).toEqual([mockError]);
     });
 
-    it('should show info banner when authSecret is "create"', async() => {
+    it('should render the SelectOrCreateAuthSecret component', () => {
       wrapper = createWrapper({});
-      await wrapper.setProps({ value: { ...wrapper.vm.value, spec: { ...wrapper.vm.value.spec, authSecret: 'create' } } });
-      await wrapper.vm.$nextTick();
-      const banner = wrapper.findComponent({ name: 'Banner' });
+      const secretComponent = wrapper.findComponent({ name: 'SelectOrCreateAuthSecret' });
 
-      expect(banner.exists()).toBe(true);
-    });
-
-    it('should NOT show info banner when authSecret is not "create"', async() => {
-      wrapper = createWrapper({});
-      await wrapper.setProps({ value: { ...wrapper.vm.value, spec: { ...wrapper.vm.value.spec, authSecret: 'my-secret' } } });
-      await wrapper.vm.$nextTick();
-      const banner = wrapper.findComponent({ name: 'Banner' });
-
-      expect(banner.exists()).toBe(false);
+      expect(secretComponent.exists()).toBe(true);
     });
 
     it('should mark repositories as required when type is NO_CATALOG', async() => {
