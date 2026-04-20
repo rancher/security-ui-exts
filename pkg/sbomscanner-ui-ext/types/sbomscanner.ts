@@ -26,8 +26,8 @@ export const CERT_MANAGER = {
   SCHEMA:     'cert-manager.io.certificate',
 };
 export const SBOMSCANNER_REPOS = {
-  CHARTS_REPO:      'https://charts.kubewarden.io',
-  CHARTS_REPO_NAME: 'kubewarden',
+  CHARTS_REPO:      'oci://dp.apps.rancher.io/charts/suse-security-vulnerability-scanner',
+  CHARTS_REPO_NAME: 'suse-security-vulnerability-scanner',
 };
 export const CNPG_REPOS = {
   CHARTS_REPO:      'https://cloudnative-pg.github.io/charts',

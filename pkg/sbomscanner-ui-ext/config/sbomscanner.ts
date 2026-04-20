@@ -60,15 +60,15 @@ export function init($plugin: any, store: any) {
   ignoreType(WORKLOAD_SCAN_CRD);
 
   virtualType({
-    labelKey: 'imageScanner.workloads.configuration.menu.title',
-    name: VIRTUAL_WORKLOAD_SCAN,
+    labelKey:   'imageScanner.workloads.configuration.menu.title',
+    name:       VIRTUAL_WORKLOAD_SCAN,
     ifHaveType: RESOURCE.REGISTRY,
     weight: 96,
     route: {
       // Use whatever route you previously used to navigate to your singleton CR page
-      name: 'c-cluster-product-resource',
+      name:   'c-cluster-product-resource',
       params: {
-        product: PRODUCT_NAME,
+        product:  PRODUCT_NAME,
         resource: WORKLOAD_SCAN_CRD,
       }
     }
