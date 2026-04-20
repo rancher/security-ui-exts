@@ -13,6 +13,21 @@ export default {
     return { store: this.$store };
   },
 
+  // fetch() {
+  //   const hasSchema = this.$store.getters['cluster/schemaFor'](RESOURCE.REGISTRY);
+  //   if (!hasSchema) {
+  //     setTimeout(() => {
+  //       const groupedMenuEl = document.querySelector('#group-imageScanner');
+  //       const sbomScannerExpandEl = document.querySelector('i[aria-controls="group-imageScanner"]')
+  //       console.log('Mounted InstallationWizard, hiding menu item:', groupedMenuEl, sbomScannerExpandEl); // --- IGNORE ---
+  //       if (groupedMenuEl) {
+  //         groupedMenuEl.style.display = 'none';
+  //         sbomScannerExpandEl.style.display = 'none';
+  //       }
+  //     }, 0);
+  //   }
+  // },
+
   computed: {
     hasSchema() {
       return this.$store.getters['cluster/schemaFor'](RESOURCE.REGISTRY);

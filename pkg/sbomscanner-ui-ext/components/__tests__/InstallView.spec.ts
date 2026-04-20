@@ -5,7 +5,7 @@ import InstallView from '../InstallView.vue'; // update path
 import { handleGrowl } from '../../utils/handle-growl';
 import { jest } from '@jest/globals';
 import { refreshCharts } from '../../utils/chart';
-import { SBOMSCANNER, CNPG } from '../../types';
+import { SBOMSCANNER_REPOS, SBOMSCANNER, CNPG } from '../../types';
 import { CATALOG } from '@shell/config/types';
 import { nextTick } from 'vue';
 
@@ -108,7 +108,11 @@ describe('InstallView.vue', () => {
   });
 
   it('calls refreshCharts twice in fetch()', async() => {
+    wrapper.vm.$store.getters.currentProduct = { inStore: 'cluster' };
+    wrapper.vm.$store.getters['cluster/all'] = jest.fn(() => []);
+    wrapper.vm.$store.dispatch = jest.fn().mockResolvedValue([]);
     wrapper.vm.load = jest.fn(() => Promise.resolve());
+
     await wrapper.vm.$options.fetch.call(wrapper.vm);
     await wrapper.vm.debouncedRefreshCharts();
 
@@ -246,7 +250,7 @@ describe('InstallView.vue', () => {
     expect(wrapper.vm.$store.getters['catalog/chart']).toHaveBeenCalledWith({
       repoName:  'repo-123',
       repoType:  'cluster',
-      chartName: SBOMSCANNER.CONTROLLER
+      chartName: SBOMSCANNER_REPOS.CHARTS_REPO_NAME
     });
     expect(result).toEqual({ chartName: 'sbomscanner-controller' });
   });
@@ -1100,6 +1104,8 @@ describe('chartRoute - InstallView router push', () => {
         'repo':      'repo1',
         'repo-type': 'cluster',
         'version':   '1.0.0',
+        "name": "suse-security-vulnerability-scanner",
+        "namespace": "cattle-sbomscanner-system"
       },
     });
   });

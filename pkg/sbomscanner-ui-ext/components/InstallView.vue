@@ -2,8 +2,6 @@
 import { mapGetters } from 'vuex';
 import debounce from 'lodash/debounce';
 import { ref } from 'vue';
-
-import { CATALOG } from '@shell/config/types';
 import { REPO_TYPE, REPO, CHART, VERSION, NAMESPACE } from '@shell/config/query-params';
 import ResourceFetch from '@shell/mixins/resource-fetch';
 
@@ -14,6 +12,13 @@ import { SBOMSCANNER, SBOMSCANNER_REPOS, CNPG, CNPG_REPOS } from '@sbomscanner-u
 import { handleGrowl } from '@sbomscanner-ui-ext/utils/handle-growl';
 import { refreshCharts, getLatestVersion } from '@sbomscanner-ui-ext/utils/chart';
 import InstallWizard from '@sbomscanner-ui-ext/components/common/InstallWizard';
+import LabeledSelect from '@shell/components/form/LabeledSelect';
+import { LabeledInput } from '@components/Form/LabeledInput';
+import { Checkbox } from '@components/Form/Checkbox';
+import { SECRET_TYPES } from '@shell/config/secret';
+import { CATALOG, SECRET } from '@shell/config/types';
+import FileSelector from '@shell/components/form/FileSelector';
+import SelectOrCreateAuthSecret from '@shell/components/form/SelectOrCreateAuthSecret';
 
 export default {
 
@@ -22,11 +27,17 @@ export default {
     Banner,
     InstallWizard,
     Loading,
+    LabeledSelect,
+    LabeledInput,
+    Checkbox,
+    FileSelector,
+    SelectOrCreateAuthSecret,
   },
 
   mixins: [ResourceFetch],
 
   async fetch() {
+
     this.debouncedRefreshCharts = debounce((init = false) => {
       refreshCharts({
         store:     this.$store,
@@ -39,6 +50,12 @@ export default {
         init
       });
     }, 500);
+
+    const inStore = this.$store.getters['currentProduct'].inStore;
+
+    await this.$store.dispatch(`${ inStore }/findAll`, { type: SECRET });
+
+    this.allSecrets = this.$store.getters[`${ inStore }/all`](SECRET);
 
     await this.load();
   },
@@ -70,6 +87,14 @@ export default {
       initStepIndex:          0,
       isSkipped:              false,
       maxStepNum:             1,
+      auth: {
+        secret: '',
+        caBundle: '',
+        insecurePlainHttp: false,
+        insecureSkipTLSVerify: false,
+      },
+      allSecrets: [],
+      secretCreateHook:        null,
     };
   },
 
@@ -105,7 +130,7 @@ export default {
         return this.$store.getters['catalog/chart']({
           repoName:  this.sbomscannerRepo.id,
           repoType:  'cluster',
-          chartName: SBOMSCANNER.CONTROLLER
+          chartName: SBOMSCANNER_REPOS.CHARTS_REPO_NAME
         });
       }
 
@@ -125,7 +150,7 @@ export default {
     },
 
     sbomscannerRepo() {
-      const chart = this.charts?.find((chart) => chart.chartName === SBOMSCANNER.CONTROLLER);
+      const chart = this.charts?.find((chart) => chart.chartName === SBOMSCANNER_REPOS.CHARTS_REPO_NAME);
 
       return this.repos?.find((repo) => repo.id === chart?.repoName);
     },
@@ -137,12 +162,33 @@ export default {
     },
 
     hasSbomscannerSchema() {
+      console.log('Checking for Sbomscanner schema', this.$store.getters['cluster/schemaFor'](SBOMSCANNER.SCHEMA));
       return this.$store.getters['cluster/schemaFor'](SBOMSCANNER.SCHEMA);
     },
 
     hasCnpgSchema() {
+      console.log('Checking for CNPG schema', this.$store.getters['cluster/schemaFor'](CNPG.SCHEMA));
       return this.$store.getters['cluster/schemaFor'](CNPG.SCHEMA);
-    }
+    },
+
+    authOptions() {
+      const headerOptions = [
+        { label: this.t('imageScanner.registries.configuration.cru.authentication.create'), value: 'create', kind: 'highlighted' },
+        { label: 'divider', disabled: true, kind: 'divider' },
+        { label: this.t('generic.none'), value: '' }
+      ];
+
+      if (!this.allSecrets) return headerOptions;
+
+      const secretOptions = this.allSecrets
+          .filter((secret) => secret._type === SECRET_TYPES.DOCKER_JSON)
+          .map((secret) => ({
+            label: `${secret.metadata.name}`,
+            value: secret.metadata.name,
+          }));
+
+      return [...headerOptions, ...secretOptions];
+    },
   },
 
   methods: {
@@ -239,10 +285,19 @@ export default {
         return;
       }
       try {
+        let secret = null;
+        if (this.secretCreateHook) {
+          secret = await this.secretCreateHook();
+        }
         const sbomscannerRepoObj = await this.$store.dispatch('cluster/create', {
           type:     CATALOG.CLUSTER_REPO,
           metadata: { name: SBOMSCANNER_REPOS.CHARTS_REPO_NAME },
-          spec:     { url: SBOMSCANNER_REPOS.CHARTS_REPO },
+          spec:     {
+            url: SBOMSCANNER_REPOS.CHARTS_REPO,
+            clientSecret: this.auth.authSecret || secret?.metadata?.name || null,
+            insecurePlainHttp: this.auth.insecurePlainHttp,
+            insecureSkipTLSVerify: this.auth.insecureSkipTLSVerify,
+          },
         });
 
         try {
@@ -347,7 +402,9 @@ export default {
               [REPO_TYPE]: repoType,
               [REPO]:      repoName,
               [CHART]:     chartName,
-              [VERSION]:   latestChartVersion
+              [VERSION]:   latestChartVersion,
+              [NAMESPACE]: 'cattle-sbomscanner-system',
+              name: SBOMSCANNER_REPOS.CHARTS_REPO_NAME,
             };
 
             this.$router.push({
@@ -375,7 +432,15 @@ export default {
 
     reload() {
       this.$router.go();
-    }
+    },
+
+    onFileSelected(value) {
+      this.auth.caBundle = value;
+    },
+
+    registerSecretHook(hookFunction) {
+      this.secretCreateHook = hookFunction;
+    },
   }
 };
 </script>
@@ -460,6 +525,48 @@ export default {
             <p class="mb-20">
               {{ t("imageScanner.installationWizard.repo4Sbomscanner.description") }}
             </p>
+            <SelectOrCreateAuthSecret
+              class="mt-16 create-secret-banner"
+              v-model:value="auth.authSecret"
+              :mode="mode"
+              data-testid="clusterrepo-auth-secret"
+              :register-before-hook="registerSecretHook"
+              :limit-to-namespace="false"
+              :namespace="'default'"
+              :in-store="inStore"
+              :allow-ssh="false"
+              generate-name="clusterrepo-auth-"
+              :cache-secrets="true"
+            />
+
+            <div class="ca-bundle-section mt-16">
+              <LabeledInput
+                  v-model:value="auth.caBundle"
+                  type="multiline"
+                  :label="t('imageScanner.registries.configuration.cru.registry.caBundle.label')"
+                  style="max-height: 110px; overflow-y: auto;"
+                  :placeholder="t('imageScanner.registries.configuration.cru.registry.caBundle.placeholder')"
+              />
+              <div class="mt-16">
+                <FileSelector class="btn btn-sm role-tertiary" :label="t('generic.readFromFile')" @selected="onFileSelected" />
+              </div>
+            </div>
+            <div class="row create-secret-banner mb-16">
+              <Checkbox
+                v-model:value="auth.insecureSkipTLSVerify"
+                class="mt-10"
+                :mode="mode"
+                :label="t('catalog.repo.oci.skipTlsVerifications')"
+                data-testid="clusterrepo-oci-skip-tls-checkbox"
+              />
+              <Checkbox
+                v-model:value="auth.insecurePlainHttp"
+                class="mt-10"
+                :mode="mode"
+                :label="t('catalog.repo.oci.insecurePlainHttp')"
+                data-testid="clusterrepo-oci-insecure-plain-http"
+              />
+            </div>
             <div style="display: flex; align-items: center; gap: 24px;">
               <button
                 class="btn role-secondary"
@@ -573,5 +680,30 @@ export default {
   & .airgap-align {
     justify-content: start;
   }
+}
+
+.w-half {
+  width: calc(50% - 8px); /* 50% minus half of the 16px gap */
+}
+
+.create-secret-banner, .ca-bundle-section {
+  width: 100%
+}
+
+/* 8-Point Grid Spacing Classes */
+.mt-6 { margin-top: 6px; }
+.mt-8  { margin-top: 8px; }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+.mt-32 { margin-top: 32px; }
+
+.mb-8  { margin-bottom: 8px; }
+.mb-10 { margin-bottom: 10px; }
+.mb-16 { margin-bottom: 16px; }
+.mb-24 { margin-bottom: 24px; }
+
+/* ---- Miscellaneous Overrides ---- */
+.checkbox-align {
+  padding-top: 14px;
 }
 </style>
