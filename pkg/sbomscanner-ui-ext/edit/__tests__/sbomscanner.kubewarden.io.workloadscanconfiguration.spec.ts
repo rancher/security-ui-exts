@@ -107,6 +107,21 @@ describe('CruWorkloadScanConfiguration.vue', () => {
   afterEach(() => { jest.clearAllMocks(); });
 
   describe('Initialization and State', () => {
+    it('sets default scanInterval to THREE_HOURS when creating a new configuration', () => {
+      wrapper = createWrapper({}, 'create', {});
+      wrapper.vm.initDefaults();
+      expect(wrapper.vm.value.spec.scanInterval).toBe(SCAN_INTERVALS.THREE_HOURS);
+    });
+
+    it('does not overwrite missing scanInterval (Manual mode) when editing an existing configuration', () => {
+      const existingConfig = { metadata: { name: 'default' }, spec: { enabled: true } };
+      wrapper = createWrapper({}, 'edit', existingConfig);
+
+      wrapper.vm.initDefaults();
+
+      expect(wrapper.vm.value.spec.scanInterval).toBeUndefined();
+    });
+
     it('renders correctly and captures initial savedEnabledState', () => {
       wrapper = createWrapper({ enabled: true });
       expect(wrapper.exists()).toBe(true);

@@ -185,8 +185,11 @@ export default {
         caBundle:           '',
         insecure:           false,
         platforms:          [],
-        scanInterval:       SCAN_INTERVALS.THREE_HOURS,
       };
+
+      if (this.isCreate) {
+        defaultSpec.scanInterval = SCAN_INTERVALS.THREE_HOURS;
+      }
 
       for (const [key, val] of Object.entries(defaultSpec)) {
         if (this.value.spec[key] === undefined) {
