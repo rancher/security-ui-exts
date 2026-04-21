@@ -171,24 +171,6 @@ export default {
       return this.$store.getters['cluster/schemaFor'](CNPG.SCHEMA);
     },
 
-    authOptions() {
-      const headerOptions = [
-        { label: this.t('imageScanner.registries.configuration.cru.authentication.create'), value: 'create', kind: 'highlighted' },
-        { label: 'divider', disabled: true, kind: 'divider' },
-        { label: this.t('generic.none'), value: '' }
-      ];
-
-      if (!this.allSecrets) return headerOptions;
-
-      const secretOptions = this.allSecrets
-          .filter((secret) => secret._type === SECRET_TYPES.DOCKER_JSON)
-          .map((secret) => ({
-            label: `${secret.metadata.name}`,
-            value: secret.metadata.name,
-          }));
-
-      return [...headerOptions, ...secretOptions];
-    },
   },
 
   methods: {
