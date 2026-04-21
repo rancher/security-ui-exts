@@ -16,7 +16,7 @@ imageScanner:
       description: Install and configure SBOMScanner to get a comprehensive view of your container image vulnerabilities and risk assessment across all your registries.
     button:
       skipToSbomscannerRepo: Skip to Repository of SBOMScanner
-      previous: previous
+      previous: Previous
   dashboard:
     title: Dashboard
     subtitle: Main highlights as of
@@ -110,6 +110,7 @@ imageScanner:
             label: URI
             placeholder: "The registry address URI"
           caBundle:
+            label: CA Cert Bundle
             placeholder: "You can enter this manually or import it from a file using the button below."
           insecure:
             label: "Allow insecure connections"
@@ -120,12 +121,8 @@ imageScanner:
         authentication:
           label: Authentication
           create: Create a new Authentication
-          createDescriptionLine1_start: Creating a new authentication in context is not currently supported. Please
-          createDescriptionLine1_link: create a new secret
-          createDescriptionLine1_end: first.
-          createDescriptionLine2_start: Next, continue by clicking this
-          createDescriptionLine2_link: refresh
-          createDescriptionLine2_end: link to asynchronously reload the authentication list above and select the newly created secret.
+          createDescription1: Creating a new authentication in context is not currently supported. Please <secret>create a new secret</secret> first.
+          createDescription2: Next, continue by clicking this <refresh>refresh</refresh> link to asynchronously reload the authentication list above and select the newly created secret.
         scan:
           label: Scanning
           repoName: Repositories to scan
@@ -134,20 +131,20 @@ imageScanner:
             nocatalog: Add at least one repository. Type and press Enter to add.
           schedule:
             label: Scan Interval
-            manualScan: Manual scan
+            manualScan: Manual
             placeholder: Selecting '{manualScan}' disables automatic scanning
         filters:
           label: Filter by
           os: OS
           arch: Architecture
-          variant: Variable
+          variant: Variant
           add: Add Platform
       scan: Start Scan
       meta:
         namespace: Namespace
         uri: URI
         repositories: Repositories
-        schedule: Schedule
+        schedule: Scan Interval
         platforms: Platforms
       scanTable:
         header:
@@ -164,9 +161,11 @@ imageScanner:
       registryScanComplete: Registry scan is started successfully
   images:
     title: Images
+    titleSingle: Image
     downloadReport: Download full report
     downloadSBOM: Download SBOM
     downloadImageDetailReport: Image detail report (CSV)
+    downloadWorkloadsReport: Workloads report (CSV)
     downloadVulnerabilityReport: Vulnerability report (JSON)
     imageBySeverityChart:
       title: Most affected images at risk
@@ -190,8 +189,9 @@ imageScanner:
       checkbox:
         groupByRepo: Group by repository
       headers:
-        imageName: Image Reference
-        identifiedCVEs: CVEs
+        imageName: Image reference
+        identifiedCVEs: Affecting CVEs
+        inUse: In use
         repository: Repository
         registry: Registry
         imageId: Digest
@@ -202,13 +202,22 @@ imageScanner:
       filters:
         placeholder:
           image: Search by name
+          affectedCVEs: affecting CVEs
         label:
           image: Image
           severity: Severity
+          inUse: In use
           repository: Repository
           registry: Registry
           platform: Platform
           container: Container
+      popup:
+        imageUsedBy: Image used by
+        inUseTooltip: |-
+          {count, plural,
+          =1 {{count} workload.}
+          other {{count} workloads.}
+          }
   imageDetails:
     status: Status
     vulnerabilities: Vulnerabilities
@@ -255,6 +264,8 @@ imageScanner:
     selection:
       vulnerability: vulnerability selected
       vulnerabilities: vulnerabilities selected
+      workload: workload selected
+      workloads: workloads selected
     table:
       headers:
         cveId: CVE ID
@@ -270,6 +281,17 @@ imageScanner:
         packageVersion: Package version
         packagePath: Package path
         images: Images
+        image: Image
+    tabs:
+      vulnerabilities: Vulnerabilities
+      workloads: Workloads
+    severityFilterOptions:
+      any: Any
+      critical: Critical
+      high: High
+      medium: Medium
+      low: Low
+      unknown: Unknown
   vulnerabilities:
     title: Vulnerabilities
     vulnerabilitiesBySeverityChart:
@@ -303,6 +325,8 @@ imageScanner:
           packagePath: Package path
           repository: Repository
           registry: Registry
+    popup:
+      viewAll: View all
   vexManagement:
     title: VEX management
     description: Configure the security scanner to use up-to-date VEX reports. This will prioritize remediation efforts, focusing on vulnerabilities that are confirmed to be exploitable and reducing the noise coming from false positives.
@@ -340,9 +364,50 @@ imageScanner:
     detail:
       description: VEX management hub description, if any
   workloads:
+    configuration:
+      menu:
+        title: Workloads Scan
+      title: Workloads Scan Configuration
+      cru:
+        name:
+          label: Name
+        general:
+          descriptionStart: The Workloads Scan automatically discovers images in running pods and generates consolidated reports for workload vulnerabilities. Want to learn more? Read our
+          documentationLink: documentation
+          enabled: Enabled
+          enabledTooltip: Enable or disable workload scanning
+          scanOnChange: Scan on registry change
+          scanOnChangeTooltip: Automatically scan for vulnerabilities whenever a new container image is detected in your running workloads.
+          namespaces: Leave empty to scan all namespaces
+          artifactsNamespace: Artifacts Namespace
+          artifactsNamespacePlaceholder: e.g. cattle-sbomscanner-system
+          artifactsNamespaceTooltip: Namespace where managed Registry, ScanJob, Image, SBOM, and VulnerabilityReport resources are created. If omitted or empty, managed artifacts are created in the workload's namespace.
+          successMessage: Workloads Scan successfully configured
+        resourceLocation:
+          label: Resource Location
+          description: Changing the Artifacts Namespace is an expensive operation and might cause rescans. If the Artifacts Namespace is not specified, artifacts will be created in the same namespace as the discovered workloads.
+          defaultInfo: If the Artifacts Namespace is not specified, artifacts will be created in the same namespace as the discovered workloads.
+          lockedWarning: If you want to change the Artifacts Namespace, first you have to disable the current configuration and save any other changes you have made.
+        scanning:
+          label: Scanning
+          namespaces: Namespace selectors
+          namespacesTooltip: A standard Kubernetes label selector. Only workloads in namespaces matching the selector are scanned. If omitted, workloads in all namespaces are scanned.
     tabs:
       images: Images
       affectingCVEs: Affecting CVEs
+    table:
+      headers:
+        workloadName: Workload
+        namespace: Namespace
+        type: Type
+        affectingCVEs: Affecting CVEs
+        severity: Severity distribution
+        imagesUsed: Images used
+    buttons:
+      downloadReport: Download report
+      downloadImagesCsv: Images report (CSV)
+      downloadWorkloadDetailCsv: Workload detail report (CSV)
+      downloadVulnerabilityJson: Vulnerability report (JSON)
   enum:
     cve:
       critical: Critical
@@ -356,7 +421,7 @@ imageScanner:
       pending: Pending
       scheduled: Scheduled
       inprogress: In progress
-      complete: Finished
+      complete: Completed
       failed: Failed
       none: n/a
       enabled: Enabled
@@ -368,6 +433,7 @@ imageScanner:
       complete: Finished at
       failed: Failed at
   general:
+    product: SBOMScanner
     refresh: Refresh data
     ago: ago
     justNow: Just now
@@ -380,15 +446,111 @@ imageScanner:
     every: Every
     unknown: Unknown
     noActions: No actions
-
+    learnMore: Learn more
+    saved: Saved
+    active: Active
+    inactive: Inactive
+    apply: Apply
+    yes: Yes
+    no: No
+    workloadBanner:
+      text: Data provided by <product>SBOMScanner</product>, Want to learn more about this extension? Read our <documentation>documentation</documentation>
+    cvesPanel:
+      text: Provided by <provider>SBOMScanner</provider>
 typeLabel:
   sbomscanner.kubewarden.io.registry: Registries configuration
-  sbomscanner.kubewarden.io.vexhub: Vex Management
+  sbomscanner.kubewarden.io.vexhub: VEX Management
+  sbomscanner.kubewarden.io.workloadscanconfiguration: Workloads Scan
   storage.sbomscanner.kubewarden.io.image: Image
   storage.sbomscanner.kubewarden.io.vulnerabilityreport: Vulnerability Report
   storage.sbomscanner.kubewarden.io.sbom: SBOM
+  vulnerability: |-
+    {count, plural,
+    =1 {vulnerability}
+    other {vulnerabilities}
+    }
+  vulnerabilityInTotal: |-
+    {count, plural,
+    =1 {vulnerability in total}
+    other {vulnerabilities in total}
+    }
+  scan: |-
+    {count, plural,
+    =1 {registry scan}
+    other {registry scans}
+    }
+  error: |-
+    {count, plural,
+    =1 {error}
+    other {errors}
+    }
+  image: |-
+    {count, plural,
+    =1 {image}
+    other {images}
+    }
+  imageSelected: |-
+    {count, plural,
+    =1 {image selected}
+    other {images selected}
+    }
+  repositorySelected: |-
+    {count, plural,
+    =1 {repository selected}
+    other {repositories selected}
+    }
+  registrySelected: |-
+    {count, plural,
+    =1 {registry selected}
+    other {registries selected}
+    }
+  vulnerabilitySelected: |-
+    {count, plural,
+    =1 {vulnerability selected}
+    other {vulnerabilities selected}
+    }
+  workloadSelected: |-
+    {count, plural,
+    =1 {workload selected}
+    other {workloads selected}
+    }
+  affectedCVE: |-
+    {count, plural,
+    =1 {affected CVE}
+    other {affected CVEs}
+    }
+  second: |-
+    {count, plural,
+    =1 {second}
+    other {seconds}
+    }
+  minute: |-
+    {count, plural,
+    =1 {minute}
+    other {minutes}
+    }
+  hour: |-
+    {count, plural,
+    =1 {hour}
+    other {hours}
+    }
+  day: |-
+    {count, plural,
+    =1 {day}
+    other {days}
+    }
 
 resources:
   image: storage.sbomscanner.kubewarden.io.image
   vulnerabilityreport: storage.sbomscanner.kubewarden.io.vulnerabilityreport
   sbom: storage.sbomscanner.kubewarden.io.sbom
+
+asyncButton:
+  cnpgRepository:
+    action: Add CNPG repository
+    success: Added
+    waiting: Adding...
+  sbomscannerRepository:
+    action: Add SBOMScanner repository
+    success: Added
+    waiting: Adding...

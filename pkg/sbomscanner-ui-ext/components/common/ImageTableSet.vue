@@ -25,20 +25,23 @@
             :multiple="false"
           />
         </div>
+        <div class="filter-item" v-if="!isInWorkloadContext">
+          <label>{{ t('imageScanner.images.listTable.filters.label.inUse') }}</label>
+          <LabeledSelect
+              v-model:value="filters.inUseSearch"
+              :options="inUseOptions"
+              :close-on-select="true"
+              :multiple="false"
+          />
+        </div>
         <div class="filter-item" v-if="isInWorkloadContext">
           <label>{{ t('imageScanner.images.listTable.filters.label.container') }}</label>
-          <div class="filter-input-wrapper">
-            <input
-              v-model="filters.containerSearch"
-              type="text"
-              :placeholder="t('imageScanner.images.listTable.filters.placeholder.image')"
-              class="filter-input"
-            />
-            <i
-              class="icon icon-search"
-              style="color: #6C6C76; margin-left: 8px;"
-            ></i>
-          </div>
+           <LabeledSelect
+              v-model:value="filters.containerSearch"
+              :options="containerOptions"
+              :close-on-select="true"
+              :multiple="false"
+          />
         </div>
         <div class="filter-item">
           <label>{{ t('imageScanner.images.listTable.filters.label.repository') }}</label>
@@ -60,18 +63,12 @@
         </div>
         <div class="filter-item">
           <label>{{ t('imageScanner.images.listTable.filters.label.platform') }}</label>
-          <div class="filter-input-wrapper">
-            <input
-              v-model="filters.platformSearch"
-              type="text"
-              :placeholder="t('imageScanner.images.listTable.filters.placeholder.image')"
-              class="filter-input"
-            />
-            <i
-              class="icon icon-search"
-              style="color: #6C6C76; margin-left: 8px;"
-            ></i>
-          </div>
+          <LabeledSelect
+              v-model:value="filters.platformSearch"
+              :options="platformOptions"
+              :close-on-select="true"
+              :multiple="false"
+          />
         </div>
       </div>
     </div>
@@ -80,14 +77,14 @@
       :namespaced="false"
       :search="false"
       :paging="true"
-      :row-actions="!isGrouped"
+      :row-actions="!isGrouped && !isInWorkloadContext"
       :table-actions="true"
       :sub-expandable="isGrouped"
       :sub-rows="isGrouped"
       :sub-expand-column="isGrouped"
       :rows="isGrouped ? rowsByRepo : filteredRows.rows"
       :loading="isLoading"
-      :key-field="'id'"
+      :key-field="isInWorkloadContext ? 'imageMetadata.digest' : 'id'"
       @selection="onSelectionChange"
     >
       <template #header-left>
@@ -101,11 +98,14 @@
             @click="downloadCSVReport(selectedRows, isGrouped)"
           >
             <i class="icon icon-download me-3"></i>
-            {{ t('imageScanner.images.buttons.downloadCustomReport') }}
+            {{ isInWorkloadContext ? t('imageScanner.workloads.buttons.downloadReport') : t('imageScanner.images.buttons.downloadCustomReport')}}
           </button>
+          <span class="selected-count ms-4" v-if="selectedRows && selectedRows.length">
+            {{ selectedRows.length }} {{ isGrouped ? t('typeLabel.repositorySelected', { count: selectedRows.length }, true) : t('typeLabel.imageSelected', { count: selectedRows.length }, true) }}
+          </span>
         </div>
       </template>
-      <template #header-right>
+      <template #header-right v-if="!isInWorkloadContext">
         <Checkbox
           v-model:value="isGrouped"
           style="margin: auto 0;"
@@ -238,6 +238,11 @@ export default {
         label: this.t('imageScanner.enum.cve.unknown')
       },
     ];
+    const inUseOptions = [
+      { value: 'Any', label: this.t('imageScanner.general.any') },
+      { value: 'true', label: this.t('imageScanner.general.yes') },
+      { value: 'false', label: this.t('imageScanner.general.no') }
+    ];
 
     return {
       REPO_BASED_TABLE,
@@ -250,23 +255,26 @@ export default {
       filterCveOptions,
       filterImageOptions,
       severityOptions,
+      inUseOptions,
       selectedCveFilter:   filterCveOptions[0],
       selectedImageFilter: filterImageOptions[0],
       filters:             {
         imageSearch:      '',
         severitySearch:   severityOptions[0].value,
-        containerSearch:  '',
+        containerSearch:  'Any',
         repositorySearch: 'Any',
         registrySearch:   'Any',
-        platformSearch:   '',
+        platformSearch:   'Any',
+        inUseSearch:      'Any',
       },
       debouncedFilters: {
         imageSearch:      '',
         severitySearch:   severityOptions[0].value,
-        containerSearch:  '',
+        containerSearch:  'Any',
         repositorySearch: 'Any',
         registrySearch:   'Any',
-        platformSearch:   '',
+        platformSearch:   'Any',
+        inUseSearch:      'Any',
       },
       registryCrds: [],
     };
@@ -282,6 +290,7 @@ export default {
   computed: {
     filteredRows() {
       const filters = this.debouncedFilters;
+
       const filteredRows = this.rows.filter((row) => {
         const imageName = constructImageName(row.imageMetadata);
         const imageMatch = !filters.imageSearch || imageName.toLowerCase().includes(filters.imageSearch.toLowerCase());
@@ -289,26 +298,28 @@ export default {
           if (filters.severitySearch === 'any') {
             return true;
           }
-          let result = false;
-          const severityLevels = ['critical', 'high', 'medium', 'low', 'unknown'];
 
-          for (const level of severityLevels) {
-            if (level === filters.severitySearch && row.report.summary[level] > 0) {
-              result = true;
-              break;
-            } else if (level !== filters.severitySearch && row.report.summary[level] > 0) {
-              break;
-            }
-          }
+          return row.report.summary[filters.severitySearch] && row.report.summary[filters.severitySearch] > 0;
+        })();
+        const inUseMatch = (()=>{
+          if (filters.inUseSearch === 'Any') return true;
+          if (filters.inUseSearch === 'true') return row.workloadCount && row.workloadCount > 0;
+          if (filters.inUseSearch === 'false') return !row.workloadCount || row.workloadCount === 0;
 
-          return result;
+          return true;
         })();
         const repositoryMatch = filters.repositorySearch === 'Any' || row.imageMetadata.repository === filters.repositorySearch;
         const registryMatch = filters.registrySearch === 'Any' || `${ row.metadata.namespace }/${ row.imageMetadata.registry }` === filters.registrySearch;
-        const platformMatch = !filters.platformSearch || (row.imageMetadata.platform && row.imageMetadata.platform.toLowerCase().includes(filters.platformSearch.toLowerCase()));
-        const containerMatch = !filters.containerSearch || (row.imageMetadata.container && row.imageMetadata.container.toLowerCase().includes(filters.containerSearch.toLowerCase()));
+        const platformMatch = filters.platformSearch === 'Any' || (row.imageMetadata.platform && row.imageMetadata.platform.toLowerCase().includes(filters.platformSearch.toLowerCase()));
+        const containerMatch = filters.containerSearch === 'Any' || (row.metadata.container && row.metadata.container.toLowerCase().includes(filters.containerSearch.toLowerCase()));
 
-        return imageMatch && severityMatch && repositoryMatch && registryMatch && platformMatch && containerMatch;
+        return imageMatch && severityMatch && inUseMatch && repositoryMatch && registryMatch && platformMatch && containerMatch;
+      }).map((row) => {
+        return {
+          ...row,
+          source:         'workload',
+          imageReference: constructImageName(row.imageMetadata)
+        };
       });
 
       this.rowsByRepo = this.preprocessData(filteredRows);
@@ -356,6 +367,28 @@ export default {
         downloadJson
       ];
     },
+    containerOptions() {
+      const containerSet = new Set();
+
+      this.rows.forEach((row) => {
+        if (row.metadata && row.metadata.container) {
+          containerSet.add(row.metadata.container);
+        }
+      });
+
+      return ['Any', ...containerSet];
+    },
+    platformOptions() {
+      const platformSet = new Set();
+
+      this.rows.forEach((row) => {
+        if (row.imageMetadata && row.imageMetadata.platform) {
+          platformSet.add(row.imageMetadata.platform);
+        }
+      });
+
+      return ['Any', ...platformSet];
+    },
     repositoryOptions() {
       const repoSet = new Set();
 
@@ -365,10 +398,30 @@ export default {
         }
       });
 
+      this.rows.forEach((row) => {
+        if (row.imageMetadata && row.imageMetadata.repository) {
+          repoSet.add(row.imageMetadata.repository);
+        }
+      });
+
       return ['Any', ...repoSet];
     },
     registryOptions() {
-      return ['Any', ...(this.registryCrds || []).map((reg) => `${ reg.metadata.namespace }/${ reg.metadata.name }`)];
+      const registrySet = new Set();
+
+      (this.registryCrds || []).forEach((reg) => {
+        if (reg.metadata && reg.metadata.namespace && reg.metadata.name) {
+          registrySet.add(`${ reg.metadata.namespace }/${ reg.metadata.name }`);
+        }
+      });
+
+      this.rows.forEach((row) => {
+        if (row.imageMetadata && row.imageMetadata.registry && row.metadata && row.metadata.namespace) {
+          registrySet.add(`${ row.metadata.namespace }/${ row.imageMetadata.registry }`);
+        }
+      });
+
+      return ['Any', ...registrySet];
     }
   },
 
@@ -383,16 +436,18 @@ export default {
 
         const imageList = imagesData.map((row) => {
           return {
-            'IMAGE REFERENCE': isDataGrouped ? constructImageName(row.imageMetadata) : row.imageReference,
+            'IMAGE REFERENCE': isDataGrouped ? row.imageReference : constructImageName(row.imageMetadata),
             'CVEs(Critical)':  isDataGrouped ? row.scanResult.critical : row.report.summary.critical,
             'CVEs(High)':      isDataGrouped ? row.scanResult.high : row.report.summary.high,
             'CVEs(Medium)':    isDataGrouped ? row.scanResult.medium : row.report.summary.medium,
             'CVEs(Low)':       isDataGrouped ? row.scanResult.low : row.report.summary.low,
             'CVEs(None)':      isDataGrouped ? row.scanResult.unknown : row.report.summary.unknown,
-            'IMAGE ID':        row.imageMetadata.digest,
+            'IN USE':          row.workloadCount && row.workloadCount > 0 ? 'Yes' : 'No',
+            'WORKLOAD COUNT':  row.workloadCount || 0,
             REGISTRY:          row.imageMetadata.registry,
             REPOSITORY:        row.imageMetadata.repository,
             PLATFORM:          row.imageMetadata.platform,
+            DIGEST:            row.imageMetadata.digest,
           };
         });
         const csvBlob = new Blob([Papa.unparse(imageList)], { type: 'text/csv;charset=utf-8' });
@@ -497,7 +552,7 @@ export default {
             {
               id:             report.id,
               imageMetadata:  report.imageMetadata,
-              metadata:       { name: report.metadata.name },
+              metadata:       { name: report.metadata.name, namespace: report.metadata.namespace },
               imageReference: constructImageName(report.imageMetadata),
               scanResult:     currImageScanResult,
             }
@@ -514,7 +569,7 @@ export default {
               {
                 id:             report.id,
                 imageMetadata:  report.imageMetadata,
-                metadata:       { name: report.metadata.name },
+                metadata:       { name: report.metadata.name, namespace: report.metadata.namespace },
                 imageReference: constructImageName(report.imageMetadata),
                 scanResult:     currImageScanResult,
               }
@@ -561,7 +616,7 @@ export default {
 
   .filter-row {
     display: flex;
-    gap: 24px;
+    gap: 16px;
     margin-bottom: 24px;
   }
 
@@ -570,6 +625,7 @@ export default {
     flex-direction: column;
     gap: 8px;
     flex: 1;
+    max-width: calc(((100vw - 320px - 80px) / 6) - 8px);
   }
 
   .filter-item label {
@@ -643,6 +699,14 @@ export default {
 
   .me-3 {
     margin-right: 12px;
+  }
+
+  .selected-count {
+    font-weight: 400;
+  }
+
+  .ms-4 {
+    margin-left: 16px;
   }
 
 </style>

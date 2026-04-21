@@ -1,0 +1,18 @@
+
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+# UI ext automation
+_reports_/
+jsonReports/
+package-lock.json
+package.json
+pw_report_summary.html
+tests/sbomscanner.test.ts-snapshots/
+uiversion.json
+summary.out

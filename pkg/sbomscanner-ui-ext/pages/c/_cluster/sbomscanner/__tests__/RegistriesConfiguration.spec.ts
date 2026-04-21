@@ -28,6 +28,7 @@ const mockT = (key: string) => key;
 const mockStore = {
   dispatch: jest.fn().mockResolvedValue([]),
   getters:  {
+    'activeNamespaceCache':       {},
     'cluster/schemaFor':         jest.fn().mockReturnValue({ kind: 'Registry' }),
     'cluster/paginationEnabled': jest.fn().mockReturnValue(false),
     'management/byId':           jest.fn().mockReturnValue({ kind: 'Registry' }),
@@ -426,21 +427,6 @@ describe('RegistriesOverview.vue', () => {
     const res = wrapper.vm.getSummaryData(mockJobs);
 
     expect(res.registryStatusList.length).toBe(5);
-  });
-
-  it('filterByStatus updates selectedStatus', () => {
-    const wrapper = factory();
-
-    wrapper.vm.filterByStatus('complete');
-    expect(wrapper.vm.selectedStatus).toBe('complete');
-  });
-
-  it('filterByStatus sets selectedStatus reactively', async() => {
-    const wrapper = factory();
-
-    wrapper.vm.filterByStatus('failed');
-    await wrapper.vm.$nextTick();
-    expect(wrapper.vm.selectedStatus).toBe('failed');
   });
 
   it('getLastTransitionTime returns the latest timestamp', () => {

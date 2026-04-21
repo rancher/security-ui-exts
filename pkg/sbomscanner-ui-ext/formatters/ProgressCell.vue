@@ -18,7 +18,8 @@ export default {
         :value="`${value.progress}%`"
         :detail="{ title: `${value.metadata?.name || value.registryName} - ${value.progress}%`, message: value.progressDetail, type: 'info' }"
       />
-      <span v-if="value.error">|
+      <span v-if="value.error">
+        <span class="separator">|</span>
         <TextWithPoppedDetail
           :value="t('imageScanner.general.error')"
           :detail="{title: `${value.metadata?.name || value.registryName} - ${t('imageScanner.registries.configuration.scanTable.header.error')}`, message: value.error, type: 'error' }"
@@ -44,5 +45,8 @@ export default {
       margin-left: 12px;
     }
   }
+}
+.separator {
+  color: #BFC1D1;
 }
 </style>

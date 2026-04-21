@@ -1,7 +1,8 @@
 import { importTypes } from '@rancher/auto-import';
-import { IPlugin, TabLocation } from '@shell/core/types';
 import imageScanRoutes from '@sbomscanner-ui-ext/routes/sbomscanner-routes';
-import { POD, WORKLOAD_TYPES, INGRESS, SERVICE } from '@shell/config/types';
+import { getPodListWorkloadScanReportValue, getWorkloadScanReportValue } from '@sbomscanner-ui-ext/utils/workload-scan-report';
+import { POD, WORKLOAD_TYPES } from '@shell/config/types';
+import { IPlugin, TableColumnLocation, TabLocation } from '@shell/core/types';
 
 // Init the package
 export default function(plugin: IPlugin): void {
@@ -17,6 +18,47 @@ export default function(plugin: IPlugin): void {
   // Add Vue Routes
   plugin.addRoutes(imageScanRoutes);
 
+  plugin.addTableColumn(
+    TableColumnLocation.RESOURCE,
+    {
+      resource: [
+        WORKLOAD_TYPES.CRON_JOB,
+        WORKLOAD_TYPES.DAEMON_SET,
+        WORKLOAD_TYPES.DEPLOYMENT,
+        WORKLOAD_TYPES.JOB,
+        WORKLOAD_TYPES.STATEFUL_SET,
+      ],
+      mode: ['detail'],
+      hash: ['pod']
+    },
+    {
+      name:      'vulnerabilities',
+      labelKey:  'imageScanner.images.listTable.headers.vulnerabilities',
+      label:     'Vulnerabilities',
+      weight:    7,
+      width:     150,
+      formatter: 'IdentifiedCVEsPercentagePopupCell',
+      getValue:  getWorkloadScanReportValue,
+    }
+  );
+
+  plugin.addTableColumn(
+    TableColumnLocation.RESOURCE,
+    {
+      resource: [POD],
+      mode:     ['list']
+    },
+    {
+      name:      'vulnerabilities',
+      labelKey:  'imageScanner.images.listTable.headers.vulnerabilities',
+      label:     'Vulnerabilities',
+      weight:    7,
+      width:     150,
+      formatter: 'IdentifiedCVEsPercentagePopupCell',
+      getValue:  getPodListWorkloadScanReportValue,
+    }
+  );
+
   // Add a tab to workload detail page to show vulnerabilities for v2.12.6, v2.13.2, v2.14.0 and above
   plugin.addTab(
     TabLocation.RESOURCE_DETAIL_PAGE,
@@ -28,8 +70,6 @@ export default function(plugin: IPlugin): void {
         WORKLOAD_TYPES.DEPLOYMENT,
         WORKLOAD_TYPES.JOB,
         WORKLOAD_TYPES.STATEFUL_SET,
-        INGRESS,
-        SERVICE
       ],
     },
     {
@@ -52,8 +92,6 @@ export default function(plugin: IPlugin): void {
         WORKLOAD_TYPES.DEPLOYMENT,
         WORKLOAD_TYPES.JOB,
         WORKLOAD_TYPES.STATEFUL_SET,
-        INGRESS,
-        SERVICE
       ],
     },
     {

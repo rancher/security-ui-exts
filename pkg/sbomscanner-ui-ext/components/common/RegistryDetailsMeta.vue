@@ -21,7 +21,7 @@
             :propertyName="properties.repositories.label"
             :rows="repositories"
             type="active"
-            @show-configuration="(returnFocusSelector) => emit('show-configuration', returnFocusSelector, 'labels-and-annotations')"
+            @show-configuration="onShowConfiguration"
           />
         </div>
         <div class="column column-3">
@@ -41,11 +41,12 @@
 </template>
 
 <script>
-import KeyValue from '../rancher-rewritten/shell/components/KeyValue.vue';
 import jsyaml from 'js-yaml';
+import KeyValue from '../rancher-rewritten/shell/components/KeyValue.vue'; //'@shell/components/Resource/Detail/Metadata/KeyValue.vue';
 export default {
   name:       'RegistryDetailsMeta',
   components: { KeyValue },
+  emits:      ['show-configuration'],
   props:      {
     properties: {
       type:     Object,
@@ -54,6 +55,9 @@ export default {
     },
   },
   methods: {
+    onShowConfiguration(returnFocusSelector) {
+      this.$emit('show-configuration', returnFocusSelector, 'repositories');
+    },
     getPlatformTag(platform) {
       const { os, arch, variant } = platform;
 
@@ -62,7 +66,7 @@ export default {
   },
   computed: {
     repositories() {
-      return this.properties.repositories.list?.map((repo) => ({ key: repo.name, value: jsyaml.dump(repo) })) || [];
+      return this.properties.repositories?.list?.map((repo) => ({ key: repo.name, value: jsyaml.dump(repo) })) || [];
     }
   }
 };
@@ -140,7 +144,7 @@ export default {
 }
 
 .vendor-tag:hover, .vendor-tag.active {
-  background-color: #EDEFF3;
+  background-color: var(--sortable-table-hover-bg);
 }
 .hover-panel {
   position: absolute;
@@ -201,6 +205,6 @@ export default {
 }
 
 .heading {
-    margin-bottom: 8px;
+    margin-bottom: 12px;
 }
 </style>

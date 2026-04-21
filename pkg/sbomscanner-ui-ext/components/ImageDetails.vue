@@ -9,7 +9,7 @@
             class="resource-link"
             :to="`/c/${$route.params.cluster}/${ PRODUCT_NAME }/${PAGE.IMAGES}`"
           >
-            {{ t('imageScanner.images.title') }}:
+            {{ t('imageScanner.images.titleSingle') }}:
           </RouterLink>
           <span class="resource-header-name">
             {{ displayImageName }}
@@ -30,7 +30,8 @@
           <DownloadFullReportBtn
             :image-name="imageName"
             :vulnerability-details="vulnerabilityDetails"
-            :vulnerability-report="vulnerabilityReport"
+            :reportMeta="reportMeta"
+            :csv-report-data1="generateCSVFromVulnerabilityReport(vulnerabilityDetails)"
           />
         </div>
       </div>
@@ -38,48 +39,82 @@
       <RancherMeta :properties="imageDetails" />
     </div>
 
-    <!-- Summary Section -->
-    <div
-      v-if="vulnerabilityDetails.length > 0"
-      class="summary-section"
+    <ResourceTabs
+      :needRelated="false"
+      :needEvents="false"
+      @changed="onReportTabChanged"
     >
-      <!-- Most Severe Vulnerabilities Section -->
-      <MostSevereVulnerabilities :vulnerability-report="loadedVulnerabilityReport" />
+      <Tab
+        name="vulnerabilities"
+        :weight="2"
+        :label="t('imageScanner.imageDetails.tabs.vulnerabilities')"
+      >
+         <!-- Summary Section -->
+        <div
+          v-if="vulnerabilityDetails.length > 0"
+          class="summary-section"
+        >
+          <!-- Most Severe Vulnerabilities Section -->
+          <MostSevereVulnerabilities :vulnerability-report="loadedVulnerabilityReport" />
 
-      <!-- Severity Distribution Section -->
-      <DistributionChart
-        v-if="severityDistribution"
-        :title="t('imageScanner.imageDetails.severityDistribution.title')"
-        :chart-data="severityDistribution"
-        color-prefix="cve"
-        :description="t('imageScanner.imageDetails.severityDistribution.subTitle')"
-        :filter-fn="filterBySeverity"
-        :tooltip="t('imageScanner.imageDetails.severityDistribution.tooltip')"
-      />
-    </div>
+          <!-- Severity Distribution Section -->
+          <DistributionChart
+            v-if="severityDistribution"
+            :title="t('imageScanner.imageDetails.severityDistribution.title')"
+            :chart-data="severityDistribution"
+            color-prefix="cve"
+            :type-label="'vulnerability'"
+            :filter-fn="filterBySeverity"
+            :tooltip="t('imageScanner.imageDetails.severityDistribution.tooltip')"
+          />
+        </div>
 
-    <!-- Vulnerability table with column based filters -->
-    <VulnerabilityTableSet
-      :vulnerabilityDetails="vulnerabilityDetails"
-      :severity="severity"
-    />
-
+        <VulnerabilityTableSet
+          :vulnerabilityDetails="vulnerabilityDetails"
+          :severity="severity"
+          :asset-name="imageName"
+          :current-image="image"
+          :is-in-image-context="true"
+        />
+      </Tab>
+      <Tab
+        name="workloads"
+        :weight="1"
+        :label="t('imageScanner.imageDetails.tabs.workloads')"
+      >
+        <WorkloadTableSet
+          :workloads="workloads"
+          :image-name="imageName"
+          :current-image="image"
+          :is-in-image-context="true"
+        />
+      </Tab>
+    </ResourceTabs>
   </div>
 </template>
 
 <script>
 import { BadgeState } from '@components/BadgeState';
-import { PRODUCT_NAME, RESOURCE, PAGE } from '@sbomscanner-ui-ext/types';
-import day from 'dayjs';
-import Loading from '@shell/components/Loading';
 import DistributionChart from '@sbomscanner-ui-ext/components/DistributionChart';
-import RancherMeta from './common/RancherMeta.vue';
-import MostSevereVulnerabilities from './common/MostSevereVulnerabilities.vue';
-import DownloadSBOMBtn from './common/DownloadSBOMBtn';
-import DownloadFullReportBtn from './common/DownloadFullReportBtn.vue';
-import { getHighestScore, getSeverityNum, getScoreNum } from '../utils/report';
+import {
+  createCsvRows,
+  IMAGE_VULNERABILITY_REPORT_HEADERS,
+  pushCsvRow,
+  WORKLOADS_REPORT_HEADERS,
+} from '@sbomscanner-ui-ext/config/csv-report';
+import { PAGE, PRODUCT_NAME, RESOURCE } from '@sbomscanner-ui-ext/types';
 import { constructImageName } from '@sbomscanner-ui-ext/utils/image';
+import Loading from '@shell/components/Loading';
+import Tab from '@shell/components/Tabbed/Tab';
+import ResourceTabs from '@shell/components/form/ResourceTabs';
+import day from 'dayjs';
+import { getHighestScore, getPackagePath, getScoreNum, getSeverityNum } from '../utils/report';
+import DownloadFullReportBtn from './common/DownloadFullReportBtn.vue';
+import DownloadSBOMBtn from './common/DownloadSBOMBtn';
+import MostSevereVulnerabilities from './common/MostSevereVulnerabilities.vue';
+import RancherMeta from './common/RancherMeta.vue';
 import VulnerabilityTableSet from './common/VulnerabilityTableSet.vue';
+import WorkloadTableSet from './common/WorkloadTableSet.vue';
 
 export default {
   name:       'ImageDetails',
@@ -92,20 +127,37 @@ export default {
     DownloadFullReportBtn,
     Loading,
     VulnerabilityTableSet,
+    Tab,
+    ResourceTabs,
+    WorkloadTableSet,
   },
   data() {
     return {
+      image:                         null,
+      images:                        [],
       imageName:                     '',
       severity:                      '',
       loadedVulnerabilityReport:     null,
       loadedSbom:                    null,
+      workloads:                     [],
       // Cache filtered results to prevent selection issues
       cachedFilteredVulnerabilities: [],
       // Download dropdown state
       showDownloadDropdown:          false,
+      activeReportTab:               'vulnerabilities',
       PRODUCT_NAME,
       RESOURCE,
       PAGE,
+      reportMeta:                    {
+        csvReportBtnName1:  this.t('imageScanner.images.downloadImageDetailReport'),
+        // csvReportBtnName2:  this.t('imageScanner.images.downloadWorkloadsReport'),
+        csvReportFileName1: `${ this.$route.params.id }-image-detail-report_${ day(new Date().getTime()).format('MMDDYYYY_HHmmss') }.csv`,
+        // csvReportFileName2: `${ this.$route.params.id }-workloads-report_${ day(new Date().getTime()).format('MMDDYYYY_HHmmss') }.csv`,
+        // jsonReportBtnName:  this.t('imageScanner.images.downloadVulnerabilityReport'),
+        // jsonReportFileName: `${ this.$route.params.id }-vulnerability-report_${ day(new Date().getTime()).format('MMDDYYYY_HHmmss') }.json`,
+        resourceName1:      this.$route.params.id,
+        mainResourceIndex:  1,
+      }
     };
   },
 
@@ -119,24 +171,17 @@ export default {
 
     // Load the image resource and its associated data
     await this.loadImageData();
+    if (this.image) {
+      await this.loadWorkloads();
+    }
   },
 
   computed: {
-    // Get the current image resource from Steve API
-    currentImage() {
-      if (!this.imageName) return null;
-
-      // Get all images and find the one with matching name
-      const allImages = this.$store.getters['cluster/all'](RESOURCE.IMAGE) || [];
-
-      return allImages.find((img) => img.metadata.name === this.imageName);
-    },
-
     // Display human-readable image name
     displayImageName() {
-      if (!this.currentImage) return this.imageName;
+      if (!this.image) return this.imageName;
 
-      return constructImageName(this.currentImage.imageMetadata) || this.imageName;
+      return constructImageName(this.image.imageMetadata) || this.imageName;
     },
 
     // Get the vulnerability report for this image
@@ -151,7 +196,7 @@ export default {
 
     // Get image details from the current image resource
     imageDetails() {
-      if (!this.currentImage) return [];
+      if (!this.image) return [];
 
       return [
         {
@@ -161,40 +206,40 @@ export default {
         },
         {
           type:  'text',
-          label: this.t('imageScanner.imageDetails.repository'),
-          value: this.currentImage.imageMetadata?.repository || this.t('imageScanner.general.unknown'),
-        },
-        {
-          type:  'route',
-          label: this.t('imageScanner.imageDetails.registry'),
-          value: this.currentImage.imageMetadata?.registry && this.currentImage.metadata?.namespace ? `${this.currentImage.metadata.namespace}/${this.currentImage.imageMetadata.registry}` : this.t('imageScanner.general.unknown'),
-          route: this.currentImage.imageMetadata?.registry && this.currentImage.metadata?.namespace ? this.registryDetailLink : null,
-        },
-        {
-          type:  'text',
           label: this.t('imageScanner.imageDetails.architecture'),
-          value: this.currentImage.imageMetadata?.platform?.split('/')[0] || this.t('imageScanner.general.unknown'),
-        },
-        {
-          type:  'text',
-          label: this.t('imageScanner.imageDetails.operatingSystem'),
-          value: this.currentImage.imageMetadata?.platform?.split('/')[1] || this.t('imageScanner.general.unknown'),
-        },
-        {
-          type:  'text',
-          label: this.t('imageScanner.imageDetails.created'),
-          value: this.currentImage.metadata ? `${ day(new Date(this.currentImage.metadata?.creationTimestamp).getTime()).format('MMM D, YYYY') } ${ day(new Date(this.currentImage.metadata?.creationTimestamp).getTime()).format('h:mm a') }` : this.t('imageScanner.general.unknown'),
+          value: this.image.imageMetadata?.platform?.split('/')[0] || this.t('imageScanner.general.unknown'),
         },
         {
           type:  'text',
           label: this.t('imageScanner.imageDetails.imageId'),
-          value: this.currentImage.imageMetadata?.digest || this.t('imageScanner.general.unknown'),
+          value: this.image.imageMetadata?.digest || this.t('imageScanner.general.unknown'),
+        },
+        {
+          type:  'text',
+          label: this.t('imageScanner.imageDetails.repository'),
+          value: this.image.imageMetadata?.repository || this.t('imageScanner.general.unknown'),
+        },
+        {
+          type:  'text',
+          label: this.t('imageScanner.imageDetails.operatingSystem'),
+          value: this.image.imageMetadata?.platform?.split('/')[1] || this.t('imageScanner.general.unknown'),
         },
         {
           type:  'text',
           label: this.t('imageScanner.imageDetails.layers'),
-          value: this.currentImage.layers?.length || this.currentImage.spec?.layers?.length || this.t('imageScanner.general.unknown'),
-        }
+          value: this.image.layers?.length || this.image.spec?.layers?.length || this.t('imageScanner.general.unknown'),
+        },
+        {
+          type:  'route',
+          label: this.t('imageScanner.imageDetails.registry'),
+          value: this.image.imageMetadata?.registry && this.image.metadata?.namespace ? `${this.image.metadata.namespace}/${this.image.imageMetadata.registry}` : this.t('imageScanner.general.unknown'),
+          route: this.image.imageMetadata?.registry && this.image.metadata?.namespace ? this.registryDetailLink : null,
+        },
+        {
+          type:  'text',
+          label: this.t('imageScanner.imageDetails.created'),
+          value: this.image.metadata ? `${ day(new Date(this.image.metadata?.creationTimestamp).getTime()).format('MMM D, YYYY') } ${ day(new Date(this.image.metadata?.creationTimestamp).getTime()).format('h:mm a') }` : this.t('imageScanner.general.unknown'),
+        },
       ];
     },
 
@@ -223,11 +268,19 @@ export default {
 
       // Try to access vulnerabilities directly from the report data
       let vulnerabilities = [];
+      const vulnerabilityMap = new Map();
 
       if (this.vulnerabilityReport.report && this.vulnerabilityReport.report.results) {
         this.vulnerabilityReport.report.results.forEach((result) => {
           if (result && result.vulnerabilities) {
-            vulnerabilities = vulnerabilities.concat(result.vulnerabilities);
+            result.vulnerabilities.forEach((vuln) => {
+              const key = `${ vuln.cve }-${ vuln.packageName }-${ vuln.installedVersion }`;
+
+              if ( !vulnerabilityMap.has(key) ) {
+                vulnerabilityMap.set(key, vuln);
+              }
+            });
+            vulnerabilities = Array.from(vulnerabilityMap.values());
           }
         });
       }
@@ -248,12 +301,13 @@ export default {
           scoreNum:         getScoreNum(score),
           package:          vuln.packageName,
           packageVersion:   vuln.installedVersion,
-          packagePath:      this.getPackagePath(vuln.purl),
+          packagePath:      getPackagePath(vuln.purl),
           fixAvailable:     vuln.fixedVersions && vuln.fixedVersions.length > 0,
           fixVersion:       vuln.fixedVersions ? vuln.fixedVersions.join(', ') : '',
           severity:         vuln.severity?.toLowerCase() || this.t('imageScanner.general.unknown'),
           severityNum:      getSeverityNum(vuln.severity),
           exploitability:   vuln.suppressed ? this.t('imageScanner.imageDetails.suppressed') : this.t('imageScanner.imageDetails.affected'),
+          vexStatement:     vuln.suppressed ? vuln.vexStatus?.statement : '',
           description:      vuln.description,
           title:            vuln.title,
           references:       vuln.references || [],
@@ -308,8 +362,8 @@ export default {
           cluster:   this.$route.params.cluster,
           product:   PRODUCT_NAME,
           resource:  RESOURCE.REGISTRY,
-          namespace: this.currentImage.metadata.namespace,
-          id:        this.currentImage.imageMetadata?.registry,
+          namespace: this.image.metadata.namespace,
+          id:        this.image.imageMetadata?.registry,
         }
       };
     }
@@ -317,8 +371,40 @@ export default {
 
   methods: {
 
+    onReportTabChanged({ selectedName }) {
+      this.activeReportTab = selectedName || 'vulnerabilities';
+      this.reportMeta.mainResourceIndex = this.activeReportTab === 'workloads' ? 2 : 1;
+    },
+
     filterBySeverity(severity) {
       this.severity = severity;
+    },
+
+    async loadWorkloads() {
+      const workloads = await this.$store.dispatch('cluster/findAll', { type: RESOURCE.WORKLOAD }).then((reports) => {
+        return reports.filter((report) => {
+          return report.spec.containers?.some((container) => {
+            return container.imageRef.namespace === this.image.metadata.namespace && container.imageRef.repository === this.image.imageMetadata.repository && container.imageRef.tag === this.image.imageMetadata.tag;
+          });
+        });
+      });
+
+      this.workloads = this.parseWorkloadTableData(workloads);
+    },
+
+    parseWorkloadTableData(workloads) {
+      return workloads.map((workload) => {
+        return {
+          reportName: workload.id,
+          name:       workload.metadata.ownerReferences ? workload.metadata.ownerReferences[0]?.name : '',
+          type:       workload.metadata.ownerReferences ? workload.metadata.ownerReferences[0]?.kind : '',
+          namespace:  workload.metadata.namespace,
+          imagesUsed: this.images.filter((img) => {
+            return workload.spec.containers.some((container) => container.imageRef.repository === img.imageMetadata.repository && container.imageRef.tag === img.imageMetadata.tag);
+          }).length,
+          summary: workload.summary,
+        };
+      });
     },
 
     async loadImageData() {
@@ -344,11 +430,12 @@ export default {
         // Force component to re-render after data is loaded
         await this.$nextTick();
 
-        // Find the specific image
-        const allImages = this.$store.getters['cluster/all'](RESOURCE.IMAGE) || [];
-        const foundImage = allImages.find((img) => img.metadata.name === this.imageName);
+        this.images = await this.$store.dispatch('cluster/findAll', { type: RESOURCE.IMAGE }) || [];
 
-        if (foundImage) {
+        // Find the specific image
+        this.image = await this.$store.dispatch('cluster/find', { type: RESOURCE.IMAGE, id: `${this.$route.params.namespace}/${this.$route.params.id}` });
+
+        if (this.image) {
           // Find matching vulnerability report and SBOM
           const vulnReports = this.$store.getters['cluster/all'](RESOURCE.VULNERABILITY_REPORT) || [];
           const sboms = this.$store.getters['cluster/all'](RESOURCE.SBOM) || [];
@@ -359,7 +446,6 @@ export default {
           const matchingSbom = sboms.find((sbom) => sbom.metadata?.name === this.imageName
           );
 
-          // Set the loaded resources directly
           this.loadedVulnerabilityReport = matchingVulnReport;
           this.loadedSbom = matchingSbom;
 
@@ -374,11 +460,70 @@ export default {
         }, { root: true });
       }
     },
+    generateCSVFromVulnerabilityReport(vulnerabilityDetails) {
+      const csvRows = createCsvRows(IMAGE_VULNERABILITY_REPORT_HEADERS);
 
-    getPackagePath(purl) {
-      const packagePaths = typeof purl === 'string' ? purl.match(/(?<=:)([^@]+?)(?=@)/) : [];
+      vulnerabilityDetails.forEach((vuln) => {
+        const row = [
+          `"${ this.displayImageName }"`,
+          `"${ this.image.imageMetadata?.registry || '' }"`,
+          `"${ this.image.imageMetadata?.repository || '' }"`,
+          `"${ this.image.imageMetadata?.platform || '' }"`,
+          `"${ this.image.imageMetadata?.digest || '' }"`,
+          `"${ this.workloads && this.workloads.length > 0 ? 'Yes' : 'No' }"`,
+          `"${ this.workloads ? this.workloads.length : 0 }"`,
+          `"${ vuln.cveId || '' }"`,
+          `"${ vuln.score || '' }"`,
+          `"${ vuln.severity || '' }"`,
+          `"${ vuln.package || '' }"`,
+          `"${ vuln.fixAvailable || '' }"`,
+          `"${ vuln.fixVersion || '' }"`,
+          `"${ vuln.exploitability || '' }"`,
+          `"${ vuln.vexStatement || '' }"`,
+          `"${ vuln.installedVersion || '' }"`,
+          `"${ vuln.packagePath || '' }"`,
+          `"${ (vuln.description || '').replace(/"/g, "'").replace(/[\r\n]+/g, ' ') }"`,
+        ];
 
-      return packagePaths && Array.isArray(packagePaths) ? packagePaths[0] : '';
+        pushCsvRow(csvRows, IMAGE_VULNERABILITY_REPORT_HEADERS, row);
+      });
+
+      return csvRows.join('\n');
+    },
+    generateCSVFromWorkloadsReport(workloads) {
+      const csvRows = createCsvRows(WORKLOADS_REPORT_HEADERS);
+      const workloadRows = Array.isArray(workloads) ? workloads : [];
+
+      workloadRows.forEach((workload) => {
+        const summary = workload?.summary || {};
+        const critical = summary.critical || 0;
+        const high = summary.high || 0;
+        const medium = summary.medium || 0;
+        const low = summary.low || 0;
+        const unknown = summary.unknown || 0;
+
+        const row = [
+          `"${ this.displayImageName }"`,
+          `"${ this.image?.imageMetadata?.registry || '' }"`,
+          `"${ this.image?.imageMetadata?.repository || '' }"`,
+          `"${ this.image?.imageMetadata?.platform || '' }"`,
+          `"${ this.image?.imageMetadata?.digest || '' }"`,
+          `"${ workload?.name || '' }"`,
+          `"${ workload?.type || '' }"`,
+          `"${ workload?.namespace || '' }"`,
+          `"${ workload?.imagesUsed || 0 }"`,
+          `"${ critical + high + medium + low + unknown }"`,
+          `"${ critical }"`,
+          `"${ high }"`,
+          `"${ medium }"`,
+          `"${ low }"`,
+          `"${ unknown }"`,
+        ];
+
+        pushCsvRow(csvRows, WORKLOADS_REPORT_HEADERS, row);
+      });
+
+      return csvRows.join('\n');
     },
   },
 };
@@ -457,7 +602,7 @@ export default {
 
     &.none{
       background: $na-color;
-      color: #717179 !important;
+      color: $low-na-text !important;
     }
 }
 
@@ -508,6 +653,7 @@ export default {
   align-self: stretch;
   border-radius: 6px;
   border: solid var(--border-width) var(--input-border);
+  margin-bottom: 24px;;
 }
 
 .severity-section {

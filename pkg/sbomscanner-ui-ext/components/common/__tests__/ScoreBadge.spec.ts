@@ -39,46 +39,58 @@ describe('ScoreBadge.vue', () => {
   });
 
   describe('Severity Classes (computedSeverity)', () => {
-    it('applies class "na" when severity is not provided', () => {
+    it('returns "na" when severity is not provided', () => {
       const wrapper = shallowMount(ScoreBadge);
 
-      expect(wrapper.classes()).toContain('na');
+      expect(wrapper.vm.computedSeverity).toBe('na');
     });
 
-    it('applies class "critical" for CRITICAL severity', () => {
+    it('returns "na" when score is missing even if severity is provided', () => {
       const wrapper = shallowMount(ScoreBadge, { props: { severity: 'critical' } });
 
-      expect(wrapper.classes()).toContain(SEVERITY.CRITICAL);
+      expect(wrapper.vm.computedSeverity).toBe('na');
+    });
+
+    it('returns "critical" for CRITICAL severity', () => {
+      const wrapper = shallowMount(ScoreBadge, { props: { severity: 'critical', score: '9.0' } });
+
+      expect(wrapper.vm.computedSeverity).toBe(SEVERITY.CRITICAL);
     });
 
     it('is case-insensitive for "Critical"', () => {
-      const wrapper = shallowMount(ScoreBadge, { props: { severity: 'Critical' } });
+      const wrapper = shallowMount(ScoreBadge, { props: { severity: 'Critical', score: '9.0' } });
 
-      expect(wrapper.classes()).toContain(SEVERITY.CRITICAL);
+      expect(wrapper.vm.computedSeverity).toBe(SEVERITY.CRITICAL);
     });
 
-    it('applies class "high" for HIGH severity', () => {
-      const wrapper = shallowMount(ScoreBadge, { props: { severity: 'high' } });
+    it('returns "high" for HIGH severity', () => {
+      const wrapper = shallowMount(ScoreBadge, { props: { severity: 'high', score: '8.0' } });
 
-      expect(wrapper.classes()).toContain(SEVERITY.HIGH);
+      expect(wrapper.vm.computedSeverity).toBe(SEVERITY.HIGH);
     });
 
-    it('applies class "medium" for MEDIUM severity', () => {
-      const wrapper = shallowMount(ScoreBadge, { props: { severity: 'medium' } });
+    it('returns "medium" for MEDIUM severity', () => {
+      const wrapper = shallowMount(ScoreBadge, { props: { severity: 'medium', score: '6.0' } });
 
-      expect(wrapper.classes()).toContain(SEVERITY.MEDIUM);
+      expect(wrapper.vm.computedSeverity).toBe(SEVERITY.MEDIUM);
     });
 
-    it('applies class "low" for LOW severity', () => {
-      const wrapper = shallowMount(ScoreBadge, { props: { severity: 'low' } });
+    it('returns "low" for LOW severity', () => {
+      const wrapper = shallowMount(ScoreBadge, { props: { severity: 'low', score: '3.0' } });
 
-      expect(wrapper.classes()).toContain(SEVERITY.LOW);
+      expect(wrapper.vm.computedSeverity).toBe(SEVERITY.LOW);
     });
 
-    it('applies class "na" for unknown severity', () => {
-      const wrapper = shallowMount(ScoreBadge, { props: { severity: 'unknown' } });
+    it('returns "na" for unknown severity', () => {
+      const wrapper = shallowMount(ScoreBadge, { props: { severity: 'unknown', score: '5.0' } });
 
-      expect(wrapper.classes()).toContain('na');
+      expect(wrapper.vm.computedSeverity).toBe('na');
+    });
+
+    it('applies the computed severity class to the root element', () => {
+      const wrapper = shallowMount(ScoreBadge, { props: { severity: 'high', score: '8.0' } });
+
+      expect(wrapper.classes()).toContain('high');
     });
   });
 });

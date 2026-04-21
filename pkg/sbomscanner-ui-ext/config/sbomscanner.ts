@@ -6,17 +6,19 @@ import {
 
 export function init($plugin: any, store: any) {
   const {
-    product, virtualType, basicType, weightType
+    product, virtualType, basicType, weightType, configureType, ignoreType,
   } = $plugin.DSL(store, PRODUCT_NAME);
 
   product({
-    icon:    'pod_security',
-    inStore: 'cluster',
+    icon:                'pod_security',
+    inStore:             'cluster',
+    showNamespaceFilter: true,
   });
 
   virtualType({
     labelKey:   'imageScanner.dashboard.title',
     name:       PAGE.DASHBOARD,
+    weight:     98,
     namespaced: false,
     route:      {
       name:   `c-cluster-${PRODUCT_NAME}-${PAGE.DASHBOARD}`,
@@ -29,6 +31,7 @@ export function init($plugin: any, store: any) {
   virtualType({
     labelKey:   'imageScanner.images.title',
     name:       PAGE.IMAGES,
+    weight:     97,
     ifHaveType: RESOURCE.REGISTRY,
     namespaced: false,
     route:      {
@@ -51,10 +54,33 @@ export function init($plugin: any, store: any) {
   //   },
   // });
 
-  weightType(PAGE.DASHBOARD, 98, true);
-  weightType(PAGE.IMAGES, 97, true);
+  const WORKLOAD_SCAN_CRD = RESOURCE.WORKLOAD_SCAN_CONFIGURATION;
+  const VIRTUAL_WORKLOAD_SCAN = "virtual-workloads-scan"
+
+  ignoreType(WORKLOAD_SCAN_CRD);
+
+  virtualType({
+    labelKey: 'imageScanner.workloads.configuration.menu.title',
+    name: VIRTUAL_WORKLOAD_SCAN,
+    ifHaveType: RESOURCE.REGISTRY,
+    weight: 96,
+    route: {
+      // Use whatever route you previously used to navigate to your singleton CR page
+      name: 'c-cluster-product-resource',
+      params: {
+        product: PRODUCT_NAME,
+        resource: WORKLOAD_SCAN_CRD,
+      }
+    }
+  });
+
+  configureType(RESOURCE.WORKLOAD_SCAN_CONFIGURATION, {
+    resourceEditMasthead: false
+  })
+
   // weightType(PAGE.VULNERABILITIES, 96, true);
-  weightType(PAGE.VEX_MANAGEMENT, 95, true);
+  weightType(RESOURCE.REGISTRY, 95, true);
+  weightType(RESOURCE.VEX_HUB, 94, true);
 
   basicType([
     PAGE.DASHBOARD,
@@ -62,5 +88,5 @@ export function init($plugin: any, store: any) {
     // PAGE.VULNERABILITIES,
   ]);
 
-  basicType([RESOURCE.REGISTRY, RESOURCE.VEX_HUB], 'Advanced');
+  basicType([VIRTUAL_WORKLOAD_SCAN, RESOURCE.REGISTRY, RESOURCE.VEX_HUB], 'Advanced');
 }

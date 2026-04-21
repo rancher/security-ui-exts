@@ -30,6 +30,7 @@ const config: Config.InitialOptions = {
     '<rootDir>/assets/',
     '<rootDir>/charts/',
     '<rootDir>/extensions/',
+    '<rootDir>/tests/e2e/',
   ],
   coverageDirectory:   '<rootDir>/coverage/unit',
   collectCoverage:     true,

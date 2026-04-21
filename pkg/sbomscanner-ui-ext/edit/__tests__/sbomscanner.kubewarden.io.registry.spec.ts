@@ -26,7 +26,6 @@ const LabeledSelectStub = {
   props: ['value', 'options', 'optionKey', 'optionLabel', 'required', 'dataTestid'],
 };
 
-// Updated stubs to include Checkbox and FileSelector
 const stubs = {
   CruResource:       { name: 'CruResource', template: '<div><slot /></div>' },
   NameNsDescription: true,
@@ -61,13 +60,12 @@ const mockRoute = { params: { cluster: 'c-123' } };
 const defaultProps = {
   mode:  'create',
   value: {
-    metadata: { name: '', namespace: 'default' },
+    metadata: { name: 'test-registry', namespace: 'default' },
     spec:     {
       catalogType:  REGISTRY_TYPE.OCI_DISTRIBUTION,
       authSecret:   '',
       uri:          '',
       repositories: [],
-      scanInterval: SCAN_INTERVALS.MANUAL,
       caBundle:     '',
       insecure:     false,
       platforms:    []
@@ -104,34 +102,15 @@ describe('CruRegistry', () => {
 
   describe('Initialization', () => {
     it('should initialize spec with defaults if it is undefined', () => {
-      wrapper = createWrapper({});
+      wrapper = createWrapper({
+        value: { metadata: { name: '', namespace: 'default' } }
+      });
       const spec = wrapper.vm.value.spec;
 
       expect(spec.catalogType).toBe(REGISTRY_TYPE.OCI_DISTRIBUTION);
-      expect(spec.scanInterval).toBe(SCAN_INTERVALS.MANUAL);
-      // New fields checks
+      expect(spec.scanInterval).toBeUndefined();
       expect(spec.caBundle).toBe('');
       expect(spec.insecure).toBe(false);
-      // expect(spec.platforms).toEqual([]);
-    });
-
-    it('should default scanInterval to MANUAL if it is null', () => {
-      const props = {
-        value: {
-          metadata: { namespace: 'default' },
-          spec:     {
-            catalogType:  REGISTRY_TYPE.NO_CATALOG,
-            authSecret:   'my-secret',
-            uri:          'http://my.registry',
-            repositories: [{ name: 'repo1' }],
-            scanInterval: null,
-            platforms:    []
-          },
-        },
-      };
-
-      wrapper = createWrapper(props);
-      expect(wrapper.vm.value.spec.scanInterval).toBe(SCAN_INTERVALS.MANUAL);
     });
   });
 
@@ -151,6 +130,31 @@ describe('CruRegistry', () => {
       expect(dispatch).toHaveBeenCalledWith('cluster/findAll', { type: SECRET });
 
       expect(wrapper.vm.allSecrets).toStrictEqual(mockSecrets);
+    });
+  });
+
+  describe('computed: selectedScanInterval', () => {
+    beforeEach(() => {
+      wrapper = createWrapper({});
+    });
+
+    it('should return MANUAL if scanInterval is undefined or set to MANUAL', () => {
+      wrapper.vm.value.spec.scanInterval = undefined;
+      expect(wrapper.vm.selectedScanInterval).toBe(SCAN_INTERVALS.MANUAL);
+
+      wrapper.vm.value.spec.scanInterval = SCAN_INTERVALS.MANUAL;
+      expect(wrapper.vm.selectedScanInterval).toBe(SCAN_INTERVALS.MANUAL);
+    });
+
+    it('should delete scanInterval from spec when set to MANUAL', () => {
+      wrapper.vm.value.spec.scanInterval = '12h';
+      wrapper.vm.selectedScanInterval = SCAN_INTERVALS.MANUAL;
+      expect(wrapper.vm.value.spec.scanInterval).toBeUndefined();
+    });
+
+    it('should set scanInterval to the selected value if not MANUAL', () => {
+      wrapper.vm.selectedScanInterval = '24h';
+      expect(wrapper.vm.value.spec.scanInterval).toBe('24h');
     });
   });
 
@@ -178,7 +182,6 @@ describe('CruRegistry', () => {
       ]);
     });
   });
-  // ---------------------------------------------
 
   describe('computed: options (Auth Secrets)', () => {
     beforeEach(async() => {
@@ -292,7 +295,6 @@ describe('CruRegistry', () => {
     });
   });
 
-  // --- NEW METHODS TESTS ---
   describe('methods: Platforms & Files', () => {
     beforeEach(() => {
       wrapper = createWrapper({});
@@ -331,11 +333,10 @@ describe('CruRegistry', () => {
         os: '', arch: '', variant: 'v7'
       };
 
-      // Testing Linux which has 'amd64' in the allowed list
       wrapper.vm.updateOS(platform, 'linux');
       expect(platform.os).toBe('linux');
-      expect(platform.arch).toBe('amd64'); // Should auto-select amd64
-      expect(platform.variant).toBe(''); // Should clear variant
+      expect(platform.arch).toBe('amd64');
+      expect(platform.variant).toBe('');
     });
 
     it('updateArch should set Arch and clear Variant if unsupported', () => {
@@ -343,30 +344,22 @@ describe('CruRegistry', () => {
         os: 'linux', arch: 'arm', variant: 'v7'
       };
 
-      // Change to amd64 (does not support variants)
       wrapper.vm.updateArch(platform, 'amd64');
       expect(platform.arch).toBe('amd64');
       expect(platform.variant).toBe('');
     });
 
     it('updateArch should keep Variant if supported (manually logic check)', () => {
-      // Logic check: updateArch clears it if !isVariantSupported.
-      // If we manually change it to something supported, it logic implies it won't clear it,
-      // but the method implementation clears it if NOT supported.
-      // So checking the negative case:
       const platform = {
         os: 'linux', arch: 'amd64', variant: ''
       };
 
       wrapper.vm.updateArch(platform, 'arm');
-      // The method does NOT auto-set a variant, but it shouldn't force clear it if it was set (though here it is empty)
-      // The key is that it doesn't run the clearing logic.
       expect(platform.arch).toBe('arm');
     });
   });
-  // -------------------------
 
-  describe('methods: finish', () => {
+  describe('methods: finish & error handling', () => {
     const save = jest.fn();
 
     beforeEach(() => {
@@ -388,20 +381,9 @@ describe('CruRegistry', () => {
       });
     });
 
-    it('should delete scanInterval if MANUAL and call save, then route', async() => {
+    it('should call save and route on success', async() => {
       save.mockResolvedValue({});
       await wrapper.vm.finish();
-      expect(wrapper.vm.value.spec.scanInterval).toBeUndefined();
-      expect(save).toHaveBeenCalled();
-      expect(mockRouter.push).toHaveBeenCalled();
-    });
-
-    it('should NOT delete scanInterval if not MANUAL', async() => {
-      save.mockResolvedValue({});
-      wrapper.vm.value.spec.scanInterval = SCAN_INTERVALS.ONE_HOUR;
-      await wrapper.vm.$nextTick();
-      await wrapper.vm.finish();
-      expect(wrapper.vm.value.spec.scanInterval).toBe(SCAN_INTERVALS.ONE_HOUR);
       expect(save).toHaveBeenCalled();
       expect(mockRouter.push).toHaveBeenCalled();
     });
@@ -430,17 +412,6 @@ describe('CruRegistry', () => {
       expect(wrapper.vm.value.spec.platforms[0].os).toBe('linux');
       expect(wrapper.vm.value.spec.platforms[1].os).toBe('windows');
       expect(save).toHaveBeenCalled();
-    });
-
-    it('should handle undefined platforms gracefully in cleanPlatforms', async() => {
-      save.mockResolvedValue({});
-      wrapper.vm.value.spec.platforms = undefined;
-
-      await wrapper.vm.finish();
-
-      expect(save).toHaveBeenCalled();
-      // Ensure it remains undefined (was not accessed/crashed)
-      expect(wrapper.vm.value.spec.platforms).toBeUndefined();
     });
 
     it('should set errors and not route on save failure', async() => {
@@ -481,7 +452,20 @@ describe('CruRegistry', () => {
     });
   });
 
-  describe('Template', () => {
+  describe('Template & CruResource Event Handlers', () => {
+    it('should capture errors emitted from CruResource (e.g. YAML save errors)', async() => {
+      wrapper = createWrapper({});
+      const cruResource = wrapper.findComponent({ name: 'CruResource' });
+
+      const mockError = { message: 'admission webhook denied the request' };
+
+      // Simulate CruResource emitting an error event (like when ResourceYaml fails to save)
+      cruResource.vm.$emit('error', mockError);
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.vm.errors).toEqual([mockError]);
+    });
+
     it('should show info banner when authSecret is "create"', async() => {
       wrapper = createWrapper({});
       await wrapper.setProps({ value: { ...wrapper.vm.value, spec: { ...wrapper.vm.value.spec, authSecret: 'create' } } });

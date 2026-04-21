@@ -1,7 +1,7 @@
 {
   "name": "sbomscanner-ui-ext",
   "description": "SBOMscanner UI extension for rancher manager",
-  "version": "0.4.3",
+  "version": "0.7.2",
   "private": false,
   "icon": "https://raw.githubusercontent.com/neuvector/security-ui-exts/main/pkg/sbomscanner-ui-ext/assets/img/icon-sbomscanner.svg",
   "rancher": {
@@ -13,7 +13,7 @@
   },
   "scripts": {},
   "engines": {
-    "node": ">=16"
+    "node": ">=24"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "~5.0.0",

@@ -44,6 +44,8 @@ export const RESOURCE = {
   VULNERABILITY_REPORT: 'storage.sbomscanner.kubewarden.io.vulnerabilityreport',
   IMAGE:                'storage.sbomscanner.kubewarden.io.image',
   SBOM:                 'storage.sbomscanner.kubewarden.io.sbom',
+  WORKLOAD:             'storage.sbomscanner.kubewarden.io.workloadscanreport',
+  WORKLOAD_SCAN_CONFIGURATION: 'sbomscanner.kubewarden.io.workloadscanconfiguration',
 };
 export const PAGE = {
   DASHBOARD:       'dashboard',

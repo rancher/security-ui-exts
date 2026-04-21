@@ -5,11 +5,11 @@
   >
     <RecentUpdatedRegistries :registry-status-list="registryStatusList" />
     <DistributionChart
-      :filter-fn="filterByStatus"
+      :filter-fn="filterFn"
       :chart-data="statusSummary"
       :title="t('imageScanner.registries.StatusDistribution.title')"
       color-prefix="status"
-      :description="t('imageScanner.registries.StatusDistribution.subTitle')"
+      :type-label="'scan'"
       :tooltip="t('imageScanner.registries.StatusDistribution.tooltip')"
     />
   </div>
@@ -32,6 +32,13 @@ export default {
   components: {
     RecentUpdatedRegistries,
     DistributionChart,
+  },
+  props: {
+    filterFn: {
+      type:     Function,
+      required: false,
+      default:  null
+    },
   },
   data() {
     const STATUS_OPTIONS = [
@@ -67,7 +74,7 @@ export default {
   },
   methods: {
     async loadData() {
-      this.scanJobCRD = await this.$store.dispatch('cluster/findAll', { type: RESOURCE.SCAN_JOB });
+      this.scanJobCRD = await this.$store.dispatch('cluster/findAll', { type: RESOURCE.SCAN_JOB }) || [];
       await this.preprocessData();
       clearInterval(this.keepAliveTimer);
       this.keepAliveTimer = setInterval(async() => {
@@ -77,6 +84,12 @@ export default {
     async preprocessData() {
       this.registryStatusList = [];
       this.statusSummary = {};
+      const globalNs = Object.keys(this.$store.getters['activeNamespaceCache']);
+      const scanJobs = await this.$store.dispatch('cluster/findAll', { type: RESOURCE.SCAN_JOB }) || [];
+
+      this.scanJobCRD = globalNs.length > 0 ? scanJobs.filter((job) => {
+        return globalNs.includes(job?.metadata?.namespace);
+      }) : scanJobs;
       const summaryData = this.getSummaryData(this.scanJobCRD);
 
       this.registryStatusList = summaryData.registryStatusList;
@@ -84,9 +97,6 @@ export default {
     },
     refresh() {
       this.loadData();
-    },
-    filterByStatus(status) {
-      this.selectedStatus = status;
     },
     openAddEditRegistry() {
       this.$router.push({
@@ -276,7 +286,16 @@ export default {
     canPaginate() {
       return this.$store.getters[`cluster/paginationEnabled`](RESOURCE.REGISTRY);
     },
+    globalNamespace() {
+      return this.$store.getters['activeNamespaceCache'];
+    }
   },
+
+  watch: {
+    globalNamespace(newVal) {
+      this.preprocessData();
+    }
+  }
 };
 </script>
 
@@ -365,13 +384,13 @@ export default {
 
   .summary-section {
     display: flex;
-    min-width: 912px;
+    min-width: 1360px;
     align-items: flex-start;
     align-self: stretch;
     border-radius: 6px;
     border: solid var(--border-width) var(--input-border);
     background: var(--input-bg);
-    // margin: 24px 0 0 0;
+    margin-bottom: 24px;
   }
 
   .score-input {

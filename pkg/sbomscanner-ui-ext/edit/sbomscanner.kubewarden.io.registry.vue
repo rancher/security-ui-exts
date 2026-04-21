@@ -11,33 +11,13 @@ import { SECRET } from '@shell/config/types';
 import {
   REGISTRY_TYPE,
   REGISTRY_TYPE_OPTIONS,
-  SCAN_INTERVAL_OPTIONS, SCAN_INTERVALS
+  SCAN_INTERVAL_OPTIONS, SCAN_INTERVALS, DEFAULT_REG_URI
 } from '@sbomscanner-ui-ext/constants';
 import { PRODUCT_NAME, PAGE, LOCAT_HOST } from '@sbomscanner-ui-ext/types';
 import { SECRET_TYPES } from '@shell/config/secret';
-
-const VALID_PLATFORMS = {
-  linux:     ['amd64', 'arm', 'arm64', 's390x','386', 'loong64', 'mips', 'mipsle', 'mips64', 'mips64le', 'ppc64', 'ppc64le', 'riscv64'],
-  aix:       ['ppc64'],
-  android:   ['amd64', 'arm', 'arm64','386'],
-  darwin:    ['amd64', 'arm64'],
-  dragonfly: ['amd64'],
-  freebsd:   ['amd64', 'arm', '386'],
-  illumos:   ['amd64'],
-  ios:       ['arm64'],
-  js:        ['wasm'],
-  netbsd:    ['amd64', 'arm', '386'],
-  openbsd:   ['amd64', 'arm', 'arm64', '386'],
-  plan9:     ['amd64', 'arm', '386'],
-  solaris:   ['amd64'],
-  wasip1:    ['wasm'],
-  windows:   ['amd64', 'arm', 'arm64', '386']
-};
-
-const ALLOWED_VARIANTS = {
-  arm:   ['v6', 'v7', 'v8'],
-  arm64: ['v8']
-};
+import { filterUnique } from "@sbomscanner-ui-ext/utils/app";
+import { VALID_PLATFORMS, ALLOWED_VARIANTS } from '@sbomscanner-ui-ext/constants/securityConstants';
+import AuthCreateDescription from '@sbomscanner-ui-ext/components/common/AuthCreateDescription.vue';
 
 export default {
   name: 'CruRegistry',
@@ -50,6 +30,7 @@ export default {
     CruResource,
     LabeledSelect,
     Banner,
+    AuthCreateDescription,
   },
 
   mixins: [CreateEditView],
@@ -65,9 +46,8 @@ export default {
       this.value.spec = {
         catalogType:  REGISTRY_TYPE.OCI_DISTRIBUTION,
         authSecret:   '',
-        uri:          '',
+        uri:          DEFAULT_REG_URI,
         repositories: [],
-        scanInterval: SCAN_INTERVALS.MANUAL,
         caBundle:     '',
         insecure:     false,
       };
@@ -80,9 +60,6 @@ export default {
     if (this.value.spec.insecure === undefined) this.value.spec.insecure = false;
     if (this.value.spec.caBundle === undefined) this.value.spec.caBundle = '';
 
-    if ( this.value.spec.scanInterval === null) {
-      this.value.spec.scanInterval = SCAN_INTERVALS.MANUAL;
-    }
 
     const osOptions = Object.keys(VALID_PLATFORMS).map((k) => ({
       label: k,
@@ -91,13 +68,12 @@ export default {
 
     return {
       inStore:         this.$store.getters['currentProduct'].inStore,
-      errors:          null,
       allSecrets:      null,
       filteredSecrets: null,
       PAGE,
       PRODUCT_NAME,
       authLoading:     false,
-      osOptions:       osOptions,
+      osOptions,
     };
   },
 
@@ -172,7 +148,11 @@ export default {
         return currentInterval;
       },
       set(newValue) {
-        this.value.spec.scanInterval = newValue;
+        if (newValue === SCAN_INTERVALS.MANUAL) {
+          delete this.value.spec.scanInterval;
+        } else {
+          this.value.spec.scanInterval = newValue;
+        }
       }
     },
 
@@ -211,9 +191,6 @@ export default {
 
   methods: {
     async finish(event) {
-      if (this.value.spec.scanInterval === SCAN_INTERVALS.MANUAL) {
-        delete this.value.spec.scanInterval;
-      }
 
       this.cleanPlatforms();
 
@@ -307,21 +284,12 @@ export default {
 
     cleanPlatforms() {
       if (!this.value.spec.platforms) return;
-      const uniqueSet = new Set();
 
-      this.value.spec.platforms = this.value.spec.platforms.filter((p) => {
-        if (!p.os || !p.arch) {
-          return false;
-        }
-        const key = `${p.os}-${p.arch}-${p.variant || ''}`;
-
-        if (uniqueSet.has(key)) {
-          return false;
-        }
-        uniqueSet.add(key);
-
-        return true;
-      });
+      this.value.spec.platforms = filterUnique(
+          this.value.spec.platforms,
+          (p) => p.os && p.arch,
+          (p) => `${p.os}-${p.arch}-${p.variant || ''}`
+      );
     }
   }
 };
@@ -336,6 +304,7 @@ export default {
       :subtypes="[]"
       :errors="errors"
       :validation-passed="validationPassed"
+      @error="e => errors = Array.isArray(e) ? e : [e]"
       @finish="finish"
       @cancel="done"
     >
@@ -376,7 +345,7 @@ export default {
           <LabeledInput
               v-model:value="value.spec.caBundle"
               type="multiline"
-              label="CA Cert Bundle"
+              :label="t('imageScanner.registries.configuration.cru.registry.caBundle.label')"
               style="max-height: 110px; overflow-y: auto;"
               data-testid="auth-ca-bundle-input"
               :placeholder="t('imageScanner.registries.configuration.cru.registry.caBundle.placeholder')"
@@ -421,29 +390,10 @@ export default {
       >
         <div class="col span-12">
           <Banner color="info">
-            <div>
-              <p class="m-0 mb-5">
-                {{ t('imageScanner.registries.configuration.cru.authentication.createDescriptionLine1_start') }}
-                <a
-                  :href="secretCreateUrl"
-                  target="_blank"
-                >
-                  {{ t('imageScanner.registries.configuration.cru.authentication.createDescriptionLine1_link') }}
-                </a>
-                {{ t('imageScanner.registries.configuration.cru.authentication.createDescriptionLine1_end') }}
-              </p>
-
-              <p class="m-0">
-                {{ t('imageScanner.registries.configuration.cru.authentication.createDescriptionLine2_start') }}
-                <a
-                  href="#"
-                  @click.prevent="refreshList"
-                >
-                  {{ t('imageScanner.registries.configuration.cru.authentication.createDescriptionLine2_link') }}
-                </a>
-                {{ t('imageScanner.registries.configuration.cru.authentication.createDescriptionLine2_end') }}
-              </p>
-            </div>
+          <AuthCreateDescription
+            :secret-create-url="secretCreateUrl"
+            @refresh="refreshList"
+          />
           </Banner>
         </div>
       </div>

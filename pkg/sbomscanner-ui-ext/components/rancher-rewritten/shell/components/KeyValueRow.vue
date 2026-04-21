@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import CopyToClipboard from '@shell/components/Resource/Detail/CopyToClipboard.vue';
-import { Row } from '@shell/components/Resource/Detail/Metadata/KeyValue.vue';
-import Preview from './Preview.vue';
-import { nextTick, ref } from 'vue';
 import RcTag from '@components/Pill/RcTag/RcTag.vue';
 import RcButton from '@components/RcButton/RcButton.vue';
+import CopyToClipboard from '@shell/components/Resource/Detail/CopyToClipboard.vue';
+import { Row } from '@shell/components/Resource/Detail/Metadata/KeyValue.vue';
+import { computed, nextTick, ref } from 'vue';
+import Preview from './Preview.vue';
 // import { Type } from '@components/Pill/types';
-import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { randomStr } from '@shell/utils/string';
+import { useStore } from 'vuex';
 
 export interface KeyValueRowProps {
     row: Row;
@@ -25,6 +25,7 @@ const i18n = useI18n(store);
 const showPreview = ref(false);
 const element = ref<HTMLElement | null>(null);
 const button = ref<HTMLElement | null>(null);
+const previewAnchorElement = computed(() => element.value as unknown as HTMLElement | null);
 
 const onClose = (keyboardExit: boolean) => {
   showPreview.value = false;
@@ -49,6 +50,7 @@ const previewId = randomStr();
       aria-haspopup="dialog"
       :aria-expanded="showPreview"
       :aria-controls="previewId"
+      class="ps-0"
       :aria-label="i18n.t('component.resource.detail.metadata.keyValue.ariaLabel.showPreview')"
       @click="() => showPreview = true"
     >
@@ -59,14 +61,14 @@ const previewId = randomStr();
         <div class="tag-data" :class="{'suffix-filter': props.row.value.includes('matchConditions')}">{{ props.row.key }}</div>
       </RcTag>
     </RcButton>
-    <CopyToClipboard :value="row.value" />
+    <CopyToClipboard class="cp-board" :value="row.value" />
     <Preview
       v-if="showPreview"
       :id="previewId"
       class="preview"
       :title="row.key"
       :value="row.value"
-      :anchor-element="element"
+      :anchor-element="previewAnchorElement"
       aria-live="polite"
       @close="onClose"
     />
@@ -158,8 +160,19 @@ const previewId = randomStr();
     height: 12px;
     margin-top: 2px;
     margin-left: 8px;
-    background: url('../../../../assets/img/filter.svg') no-repeat center center;
-    background-size: contain;
+    background-color: var(--body-text);
+    -webkit-mask: url('../../../../assets/img/filter.svg') no-repeat center center;
+    mask: url('../../../../assets/img/filter.svg') no-repeat center center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+  }
+  .ps-0 {
+    padding-left: 0 !important;
+  }
+
+  .cp-board {
+    right: -16px;
+    top: -2px;
   }
 }
 </style>

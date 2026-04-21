@@ -9,7 +9,7 @@
         </div>
       </div>
       <div
-        v-if="scanningStats.lastCompletionTimestamp > 0"
+        v-if="allScanJobs.length > 0"
         class="filter-dropdown"
       >
         <LabeledSelect
@@ -21,7 +21,7 @@
       </div>
     </div>
     <Banner
-      v-if="scanningStats.lastCompletionTimestamp === 0"
+      v-if="allScanJobs.length === 0"
       test-id="no-scan-info"
       color="info"
     >
@@ -149,6 +149,7 @@ import Loading from '@shell/components/Loading';
 import day from 'dayjs';
 import { Banner } from '@components/Banner';
 import InfoTooltip from '@sbomscanner-ui-ext/components/common/Tooltip';
+import { ALL_REGISTRIES, ALL_MATCHED_REGISTRIES } from '@sbomscanner-ui-ext/constants/securityConstants';
 
 export default {
   name:       'Dashboard',
@@ -166,8 +167,10 @@ export default {
     return {
       PRODUCT_NAME,
       PAGE,
-      scanJobsCRD:   [],
-      scanningStats: {
+      allScanJobs:     [],
+      scanJobsCRD:     [],
+      registryOptions: [],
+      scanningStats:   {
         totalScannedImageCnt:    0,
         detectedErrorCnt:        0,
         failedImagesCnt:         0,
@@ -175,7 +178,7 @@ export default {
       },
       disabled:         false,
       // lastUpdatedTime: '',
-      selectedRegistry: 'All registries',
+      selectedRegistry: ALL_REGISTRIES,
       tooltip:          this.t('imageScanner.dashboard.scanningStatus.tooltip'),
       // vulnerabilityStats: {
       //   critical: 0,
@@ -235,6 +238,9 @@ export default {
     clearInterval(this.keepAliveTimer);
   },
   computed: {
+    globalNamespace() {
+      return this.$store.getters['activeNamespaceCache'];
+    },
     displayedCurrDate() {
       return day(new Date().getTime()).format('MMM D, YYYY');
     },
@@ -242,19 +248,13 @@ export default {
       return day(new Date().getTime()).format('h:mm a');
     },
     displayedDetectedErrorCnt() {
-      const suffix = this.scanningStats.detectedErrorCnt > 1 ? 'errors' : 'error';
-
-      return `${ this.scanningStats.detectedErrorCnt } ${ suffix }`;
+      return `${ this.scanningStats.detectedErrorCnt } ${ this.t('typeLabel.error', { count: this.scanningStats.detectedErrorCnt }, true) }`;
     },
     displayedFailedImagesCnt() {
-      const suffix = this.scanningStats.failedImagesCnt > 1 ? 'images' : 'image';
-
-      return `${ this.scanningStats.failedImagesCnt } ${ suffix }`;
+      return `${ this.scanningStats.failedImagesCnt } ${ this.t('typeLabel.image', { count: this.scanningStats.failedImagesCnt }, true) }`;
     },
     displayedTotalScannedImageCnt() {
-      const suffix = this.scanningStats.totalScannedImageCnt > 1 ? 'images' : 'image';
-
-      return `${ this.scanningStats.totalScannedImageCnt } ${ suffix }`;
+      return `${ this.scanningStats.totalScannedImageCnt } ${ this.t('typeLabel.image', { count: this.scanningStats.totalScannedImageCnt }, true) }`;
     },
     durationFromLastScan() {
       if (this.scanningStats.lastCompletionTimestamp === 0) {
@@ -265,25 +265,24 @@ export default {
       const diffSec = Math.floor(diffMs / 1000);
 
       if (Math.abs(diffSec) < 60) {
-        return diffSec > 1 ? `${ diffSec } seconds` : `${ diffSec } second`;
+        return `${ diffSec } ${ this.t('typeLabel.second', { count: diffSec }, true) }`;
       }
 
       const diffMin = Math.floor(diffSec / 60);
 
       if (Math.abs(diffMin) < 60) {
-        return diffMin > 1 ? `${ diffMin } minutes` : `${ diffMin } minute`;
+        return `${ diffMin } ${ this.t('typeLabel.minute', { count: diffMin }, true) }`;
       }
 
       const diffHours = Math.floor(diffMin / 60);
 
       if (Math.abs(diffHours) < 24) {
-        return diffHours > 1 ? `${ diffHours } hours` : `${ diffHours } hour`;
+        return `${ diffHours } ${ this.t('typeLabel.hour', { count: diffHours }, true) }`;
       }
 
       const diffDays = Math.floor(diffHours / 24);
 
-      return diffDays > 1 ? `${ diffDays } days` : `${ diffDays } day`;
-    },
+      return `${ diffDays } ${ this.t('typeLabel.day', { count: diffDays }, true) }`;    },
     // displayedVulnerabilities() {
     //   if (this.showAllVulnerabilities) {
     //     return this.topVulnerabilities;
@@ -302,36 +301,45 @@ export default {
     // shouldShowImagesViewAll() {
     //   return this.mostAffectedImages.length >= 10;
     // },
-    registryOptions() {
-      const optionSet = new Set();
-
-      optionSet.add('All registries');
-      this.scanJobsCRD.forEach((scanjob) => {
-        optionSet.add(`${ scanjob.metadata.namespace }/${ scanjob.spec.registry }`);
-      });
-
-      return Array.from(optionSet);
-    },
   },
   async fetch() {
-    this.scanJobsCRD = await this.$store.dispatch('cluster/findAll', { type: RESOURCE.SCAN_JOB });
-    this.loadData(false);
+    await this.$store.dispatch('cluster/findAll', { type: RESOURCE.SCAN_JOB });
+    await this.loadData();
     clearInterval(this.keepAliveTimer);
     this.keepAliveTimer = setInterval(async() => {
-      this.loadData(true);
+      this.loadData();
     }, 20 * 1000);
   },
   watch: {
     selectedRegistry() {
       this.scanningStats = this.getScanningStats();
+    },
+    globalNamespace(newVal) {
+      this.loadData();
     }
   },
   methods: {
-    loadData(isReloading) {
-      if (isReloading) {
-        this.scanJobsCRD = this.$store.getters['cluster/all'](RESOURCE.SCAN_JOB);
-      }
+    async loadData() {
+      this.allScanJobs = await this.$store.getters['cluster/all'](RESOURCE.SCAN_JOB) || [];
+
+      this.scanJobsCRD = this.allScanJobs.filter((scanjob) => Object.keys(this.globalNamespace).includes(scanjob.metadata.namespace));
       this.scanningStats = this.getScanningStats();
+      this.getregistryOptions();
+    },
+    getregistryOptions() {
+      const optionSet = new Set();
+
+      optionSet.add(ALL_REGISTRIES);
+      this.scanJobsCRD.filter((scanjob) => {
+        const isInGlobalNamespace = Object.keys(this.globalNamespace).includes(scanjob.metadata.namespace);
+        const isNotWorkload = !scanjob.spec?.registry?.toLowerCase().startsWith('workloadscan');
+
+        return isInGlobalNamespace && isNotWorkload;
+      }).forEach((scanjob) => {
+        optionSet.add(scanjob.spec.registry);
+      });
+
+      this.registryOptions = Array.from(optionSet);
     },
     getScanningStats() {
       let lastCompletionTimestamp = 0;
@@ -339,13 +347,44 @@ export default {
       let detectedErrorCnt = 0;
       let totalScannedImageCnt = 0;
 
-      this.scanJobsCRD.filter((scanjob) => {
-        return this.selectedRegistry === `${ scanjob.metadata.namespace }/${ scanjob.spec.registry }` || this.selectedRegistry === 'All registries';
-      }).forEach((scanjob) => {
+      const relevantJobs = this.scanJobsCRD.filter((scanjob) => {
+        return this.selectedRegistry === ALL_REGISTRIES || this.selectedRegistry === scanjob.spec.registry;
+      });
+
+      const latestJobsByRegistry = {};
+
+      relevantJobs.forEach((scanjob) => {
+        const isComplete = scanjob.status?.conditions?.some((c) => c.type === 'Complete' && c.status === 'True');
+        const isFailed = scanjob.status?.conditions?.some((c) => c.type === 'Failed' && c.status === 'True');
+
+        if (!scanjob.metadata?.generateName?.toLowerCase().startsWith('workloadscan') && (isComplete || isFailed)) {
+
+          const registryKey = scanjob.spec.registry || 'unknown';
+          const jobTime = new Date(scanjob.metadata?.creationTimestamp || 0).getTime();
+
+          if (!latestJobsByRegistry[registryKey]) {
+            latestJobsByRegistry[registryKey] = scanjob;
+          } else {
+            const existingTime = new Date(latestJobsByRegistry[registryKey].metadata?.creationTimestamp || 0).getTime();
+            if (jobTime > existingTime) {
+              latestJobsByRegistry[registryKey] = scanjob;
+            }
+          }
+        }
+      });
+
+      Object.values(latestJobsByRegistry).forEach((scanjob) => {
+        const hasError = scanjob.status?.conditions?.some((condition) => condition.error);
+
         totalScannedImageCnt += (scanjob.status?.scannedImagesCount || 0);
-        detectedErrorCnt += (scanjob.status?.conditions ? (scanjob.status?.conditions.find((condition) => condition.error) ? 1 : 0) : 0);
-        failedImagesCnt += this.getFailedImageCnt(scanjob);
-        lastCompletionTimestamp = Math.max(lastCompletionTimestamp, scanjob.status?.completionTime ? new Date(scanjob.status?.completionTime).getTime() : 0);
+
+        if (hasError) {
+          detectedErrorCnt += 1;
+          failedImagesCnt += (scanjob.status?.imagesCount || 0);
+        }
+
+        const completionTime = scanjob.status?.completionTime ? new Date(scanjob.status.completionTime).getTime() : 0;
+        lastCompletionTimestamp = Math.max(lastCompletionTimestamp, completionTime);
       });
 
       return {
@@ -354,13 +393,6 @@ export default {
         failedImagesCnt,
         lastCompletionTimestamp,
       };
-    },
-    getFailedImageCnt(scanjob) {
-      if (scanjob.status?.conditions && scanjob.status?.conditions.find((condition) => condition.error )) {
-        return (scanjob.status?.imagesCount || 0) - (scanjob.status?.scannedImagesCount || 0);
-      }
-
-      return 0;
     },
     // toggleVulnerabilitiesView() {
     //   this.showAllVulnerabilities = !this.showAllVulnerabilities;
@@ -376,7 +408,7 @@ export default {
 
     //     // Build registry options
     //     this.registryOptions = [
-    //       { label: 'All registries', value: 'all' }
+    //       { label: ALL_REGISTRIES, value: 'all' }
     //     ];
 
     //     registries.forEach(registry => {

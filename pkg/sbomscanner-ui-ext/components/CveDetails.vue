@@ -182,22 +182,23 @@ export default {
         <div class="column column-1">
           <div class="stats-item">
             <div class="stat-item">
-              <span class="label">{{ t('imageScanner.vulnerabilities.details.score') }}:</span>
+              <span class="label">{{ t('imageScanner.vulnerabilities.details.score') }}</span>
               <span class="value">{{ cveDetail?.score || t('imageScanner.general.unknown') }}</span>
             </div>
             <div class="stat-item">
-              <span class="label">{{ t('imageScanner.vulnerabilities.details.imageIdentifiedIn') }}:</span>
+              <span class="label">{{ t('imageScanner.vulnerabilities.details.imageIdentifiedIn') }}</span>
               <span class="value">{{ cveDetail?.totalImages || t('imageScanner.general.unknown') }}</span>
             </div>
             <div class="stat-item">
               <span class="label">Sources</span>
               <span
                 v-if="cveDetail?.sources?.length"
-                class="value"
+                class="value sources-value"
               >
                 <span
                   v-for="(source, index) in cveDetail?.sources"
                   :key="index"
+                  class="source-item"
                 >
                   <template v-if="source.link">
                     <a
@@ -211,7 +212,7 @@ export default {
                   <template v-else>
                     {{ source.name }}
                   </template>
-                  <span v-if="index < cveDetail?.sources?.length - 1">, </span>
+                  <span v-if="index < cveDetail?.sources?.length - 1">,&nbsp;</span>
                 </span>
               </span>
               <span
@@ -335,12 +336,7 @@ export default {
 }
 
 .description {
-  display: flex;
-  max-width: 900px;
-  max-height: calc(21px * 3);
-  flex-direction: column;
-  justify-content: center;
-  overflow-y: auto;
+  display: block;
   color: var(--disabled-text);
   font-family: Lato;
   font-size: 14px;
@@ -486,7 +482,19 @@ export default {
 .source-link {
   color: #5696ce;
   text-decoration: none;
-  margin-bottom: 5px;
+  margin-bottom: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+.sources-value {
+  display: block;
+}
+
+.source-item {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
 }
 
 .cvss-link:hover, .source-link:hover {
@@ -514,22 +522,22 @@ export default {
 
   &.low {
     background: $low-color;
-    color:      white !important;
+    color:      $low-na-text !important;
   }
 
   &.na{
     background: $na-color;
-    color:      #717179 !important;
+    color:      $low-na-text!important;
   }
 
   &.none{
     background: $na-color;
-    color:      #717179 !important;
+    color:      $low-na-text !important;
   }
 
   &.unknown{
     background: $na-color;
-    color:      #717179 !important;
+    color:      $low-na-text !important;
   }
 }
 

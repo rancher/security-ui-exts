@@ -1010,6 +1010,7 @@ describe('chartRoute - InstallView router push', () => {
         'repo':      'repo1',
         'repo-type': 'cluster',
         'version':   '1.0.0',
+        'namespace': 'cnpg-system',
       },
     });
   });

@@ -5,6 +5,7 @@ export const REGISTRY_SCAN_TABLE = [
     value:     'metadata.name',
     sort:      'metadata.name',
     formatter: 'RegistryNameCell',
+    width:     200,
   },
   {
     name:     'namespace',
@@ -134,7 +135,7 @@ export const VEX_MANAGEMENT_TABLE = [
     value:    (row: any) => {
       const gen = Number(row?.metadata?.generation);
 
-      return gen === 1 ? 'Rancher' : 'Manual entry';
+      return gen === 1 ? 'Rancher' : 'Rancher user';
     },
     sort: 'metadata.generation',
   },
@@ -169,7 +170,16 @@ export const IMAGE_LIST_TABLE = [
       'report.summary.unknown',
     ],
     width: 300,
-  },{
+  },
+  {
+    name:      'inUse',
+    labelKey:  'imageScanner.images.listTable.headers.inUse',
+    value:     'workloadCount',
+    sort:      'workloadCount',
+    formatter: 'ImageInUsePopupCell',
+    width:     100,
+  },
+  {
     name:     'repository',
     labelKey: 'imageScanner.images.listTable.headers.repository',
     value:    'imageMetadata.repository',
@@ -180,6 +190,7 @@ export const IMAGE_LIST_TABLE = [
     value:     'imageMetadata.registry',
     formatter: 'RegistryCellLink',
     sort:      ['metadata.namespace','imageMetadata.registry'],
+    width:     200,
   },{
     name:     'platform',
     labelKey: 'imageScanner.images.listTable.headers.platform',
@@ -219,8 +230,8 @@ export const WORKLOAD_IMAGE_LIST_TABLE = [
   },{
     name:     'container',
     labelKey: 'imageScanner.images.listTable.headers.container',
-    value:    'imageMetadata.container',
-    sort:     'imageMetadata.container',
+    value:    'metadata.container',
+    sort:     'metadata.container',
   },{
     name:     'repository',
     labelKey: 'imageScanner.images.listTable.headers.repository',
@@ -367,12 +378,13 @@ export const VULNERABILITY_DETAILS_TABLE = [
     width:     '16%',
   },
   {
-    name:      'score',
-    labelKey:  'imageScanner.imageDetails.table.headers.score',
-    value:     'score',
-    formatter: 'ScoreCell',
-    sort:      ['scoreNum', 'severityNum'],
-    width:     '12%',
+    name:        'score',
+    labelKey:    'imageScanner.imageDetails.table.headers.score',
+    value:       'score',
+    formatter:   'ScoreCell',
+    sort:        ['scoreNum:desc', 'severityNum:desc'],
+    defaultSort: true,
+    width:       '12%',
   },
   {
     name:     'package',
@@ -429,11 +441,12 @@ export const WORKLOAD_VULNERABILITY_DETAILS_TABLE = [
     sort:      'cveId',
   },
   {
-    name:      'score',
-    labelKey:  'imageScanner.imageDetails.table.headers.score',
-    value:     'score',
-    formatter: 'ScoreCell',
-    sort:      ['scoreNum', 'severityNum'],
+    name:        'score',
+    labelKey:    'imageScanner.imageDetails.table.headers.score',
+    value:       'score',
+    formatter:   'ScoreCell',
+    sort:        ['scoreNum:desc', 'severityNum:desc'],
+    defaultSort: true,
   },
   {
     name:     'package',
@@ -464,7 +477,7 @@ export const WORKLOAD_VULNERABILITY_DETAILS_TABLE = [
   {
     name:     'images',
     labelKey: 'imageScanner.imageDetails.table.headers.images',
-    value:    (row: any) => row.images ? row.images.length : 0,
+    value:    'occurrences',
     sort:     'images',
   },
 ];
@@ -612,4 +625,49 @@ export const LAYER_BASED_TABLE = [
   //   sort:     'size',
   //   width:    120,
   // },
+];
+
+export const WORKLOADS_TABLE = [
+  {
+    name:      'workloadName',
+    labelKey:  'imageScanner.workloads.table.headers.workloadName',
+    value:     'name',
+    formatter: 'WorkloadNameCell',
+    sort:      'workloadName',
+    width:     200,
+  },
+  {
+    name:     'type',
+    labelKey: 'imageScanner.workloads.table.headers.type',
+    value:    'type',
+    sort:     'type',
+  },
+  {
+    name:     'namespace',
+    labelKey: 'imageScanner.workloads.table.headers.namespace',
+    value:    'namespace',
+    sort:     'namespace',
+  },
+  {
+    name:      'imagesUsed',
+    labelKey:  'imageScanner.workloads.table.headers.imagesUsed',
+    value:     'imagesUsed',
+    formatter: 'ImagesUsedCell',
+    sort:      'imagesUsed',
+  },
+  {
+    name:      'affectingCVEs',
+    labelKey:  'imageScanner.workloads.table.headers.affectingCVEs',
+    value:     'affectingCVEs',
+    formatter: 'AffectingCVEsCell',
+    sort:      'affectingCVEs',
+  },
+  {
+    name:      'severity',
+    labelKey:  'imageScanner.workloads.table.headers.severity',
+    value:     'summary',
+    formatter: 'IdentifiedCVEsCell',
+    sort:      ['summary.critical','summary.high','summary.medium','summary.low','summary.unknown'],
+    width:     300,
+  },
 ];

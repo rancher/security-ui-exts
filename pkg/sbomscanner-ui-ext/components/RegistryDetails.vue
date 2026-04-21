@@ -1,5 +1,5 @@
 <template>
-  <Loading v-if="$fetchState.pending" />
+  <Loading v-if="$fetchState.pending || !registry" />
   <div v-else class="registry-details">
     <div class="about">
       <div class="header">
@@ -22,8 +22,10 @@
               :status="registry?.scanRec.currStatus"
             />
           </h1>
-          <span class="resource-header-description">
-            {{ t('imageScanner.registries.detail.description') }}
+          <span
+              v-if="registry?.description"
+              class="resource-header-description">
+            {{  registry.description }}
           </span>
         </div>
         <div class="resource-header-actions">
@@ -41,7 +43,11 @@
           />
         </div>
       </div>
-      <RegistryDetailsMeta :properties="registryMetadata" />
+      <RegistryDetailsMeta
+        v-if="registryMetadata"
+        :properties="registryMetadata"
+        @show-configuration="onShowConfiguration"
+      />
     </div>
     <RegistryDetailScanTable :scan-history="scanHistory" />
   </div>
@@ -74,7 +80,7 @@ export default {
       RESOURCE,
       PAGE,
       registry:         null,
-      registryMetadata: [],
+      registryMetadata: null,
       scanHistory:      [],
       canEdit:          getPermissions(this.$store.getters).canEdit,
     };
@@ -88,6 +94,9 @@ export default {
     }
   },
   methods: {
+    onShowConfiguration(returnFocusSelector, defaultTab) {
+      this.registry?.showConfiguration?.(returnFocusSelector, defaultTab);
+    },
     async loadData() {
       this.registry = await this.$store.dispatch('cluster/find', { type: RESOURCE.REGISTRY, id: `${ this.$route.params.namespace }/${ this.$route.params.id }` });
       this.scanHistory = (await this.$store.dispatch('cluster/findAll', { type: RESOURCE.SCAN_JOB })).filter((rec) => {
@@ -112,7 +121,7 @@ export default {
         },
         schedule: {
           label: this.t('imageScanner.registries.configuration.meta.schedule'),
-          value: this.registry.spec.scanInterval ? this.t('imageScanner.general.schedule', { i: this.scanInterval }) : '',
+          value: this.registry.spec.scanInterval ? this.t('imageScanner.general.schedule', { i: this.scanInterval }) : this.t('imageScanner.registries.configuration.cru.scan.schedule.manualScan'),
         },
         repositories: {
           label: this.t('imageScanner.registries.configuration.meta.repositories'),
