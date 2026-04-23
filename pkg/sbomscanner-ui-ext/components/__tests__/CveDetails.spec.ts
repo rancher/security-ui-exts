@@ -2,6 +2,7 @@ import { jest } from '@jest/globals';
 import { shallowMount, flushPromises } from '@vue/test-utils';
 import CveDetails from '../CveDetails.vue';
 import { BadgeState } from '@components/BadgeState';
+import ExpandableDescription from '../common/ExpandableDescription.vue';
 import { RESOURCE } from '@sbomscanner-ui-ext/types';
 import { NVD_BASE_URL, CVSS_VECTOR_BASE_URL } from '@sbomscanner-ui-ext/constants';
 
@@ -24,16 +25,16 @@ const mockVulReports = [
         {
           vulnerabilities: [
             {
-              cve:        'CVE-2023-9999',
-              severity:   'Low',
-              title:      'Another vulnerability',
-              references: [],
-              cvss:       {}
+              cve:         'CVE-2023-9999',
+              severity:    'Low',
+              description: 'Another vulnerability description',
+              references:  [],
+              cvss:        {}
             },
             {
-              cve:        mockCveId,
-              severity:   'Critical',
-              title:      'A very bad vulnerability',
+              cve:         mockCveId,
+              severity:    'Critical',
+              description: 'A very bad vulnerability description',
               references: [
                 'https://suse.com/security/cve/CVE-2023-1234',
                 'https://www.redhat.com/en/blog/press-release',
@@ -62,9 +63,9 @@ const mockVulReports = [
         {
           vulnerabilities: [
             {
-              cve:      mockCveId,
-              severity: 'Critical',
-              title:    'A very bad vulnerability',
+              cve:         mockCveId,
+              severity:    'Critical',
+              description: 'A very bad vulnerability description',
             }
           ]
         }
@@ -85,14 +86,14 @@ describe('CveDetails.vue', () => {
   const createWrapper = (store = mockStore, route = mockRoute) => {
     return shallowMount(CveDetails, {
       global: {
-        components: { BadgeState },
+        components: { BadgeState, ExpandableDescription },
         mocks:      {
           $store: store,
           $route: route,
           t:      mockT,
         }
       },
-      stubs: { BadgeState: true }
+      stubs: { BadgeState: true, ExpandableDescription: true }
     });
   };
 
@@ -165,7 +166,9 @@ describe('CveDetails.vue', () => {
       expect(totalScanned).toBe(2);
       expect(cveMetaData.score).toBe('9.8 (v3)');
       expect(cveMetaData.severity).toBe('Critical');
-      expect(cveMetaData.title).toBe('A very bad vulnerability');
+
+      expect(cveMetaData.description).toBe('A very bad vulnerability description');
+
       expect(cveMetaData.sources).toEqual([
         { name: 'NVD', link: `${ NVD_BASE_URL }${ mockCveId }` },
         { name: 'REDHAT', link: '' },
@@ -209,26 +212,23 @@ describe('CveDetails.vue', () => {
       await flushPromises();
 
       const title = wrapper.find('.resource-header-name');
-
       expect(title.text()).toContain(`imageScanner.vulnerabilities.title: ${ mockCveId }`);
 
-      const description = wrapper.find('.description');
-
-      expect(description.text()).toBe('A very bad vulnerability');
+      const description = wrapper.findComponent(ExpandableDescription);
+      expect(description.exists()).toBe(true);
+      expect(description.props('text')).toBe('A very bad vulnerability description');
+      expect(description.props('lines')).toBe(3);
 
       const statItems = wrapper.findAll('.stat-item');
-
       expect(statItems[0].text()).toContain('imageScanner.vulnerabilities.details.score9.8 (v3)');
       expect(statItems[1].text()).toContain('imageScanner.vulnerabilities.details.imageIdentifiedIn2');
 
       const sourceLinks = wrapper.findAll('.source-link');
-
       expect(sourceLinks.length).toBe(1);
       expect(sourceLinks[0].attributes('href')).toBe(`${ NVD_BASE_URL }${ mockCveId }`);
       expect(sourceLinks[0].text()).toContain('NVD');
 
       const cvssLinks = wrapper.findAll('.cvss-link');
-
       expect(cvssLinks.length).toBe(3);
       expect(cvssLinks[0].text()).toContain('Nvd v3score 9.8');
       expect(cvssLinks[0].attributes('href')).toContain('CVSS:3.1');
@@ -240,16 +240,14 @@ describe('CveDetails.vue', () => {
       wrapper = createWrapper(mockStore, route);
       await flushPromises();
 
-      expect(wrapper.vm.cveDetail.title).toBeUndefined();
+      expect(wrapper.vm.cveDetail.description).toBeUndefined();
       expect(wrapper.vm.cveDetail.score).toBeUndefined();
       expect(wrapper.vm.cveDetail.totalImages).toBe(2);
 
-      const description = wrapper.find('.description');
-
-      expect(description.text()).toBe('imageScanner.general.unknown');
+      const description = wrapper.findComponent(ExpandableDescription);
+      expect(description.props('text')).toBe('imageScanner.general.unknown');
 
       const statItems = wrapper.findAll('.stat-item');
-
       expect(statItems[0].text()).toContain('imageScanner.vulnerabilities.details.scoreimageScanner.general.unknown');
     });
   });

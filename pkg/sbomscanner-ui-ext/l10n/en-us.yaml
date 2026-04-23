@@ -447,6 +447,7 @@ imageScanner:
     unknown: Unknown
     noActions: No actions
     learnMore: Learn more
+    readMore: ... read more
     saved: Saved
     active: Active
     inactive: Inactive

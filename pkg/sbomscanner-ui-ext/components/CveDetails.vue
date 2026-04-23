@@ -4,10 +4,11 @@ import { BadgeState } from '@components/BadgeState';
 import { PRODUCT_NAME, RESOURCE, PAGE } from '@sbomscanner-ui-ext/types';
 import { NVD_BASE_URL, CVSS_VECTOR_BASE_URL } from '@sbomscanner-ui-ext/constants';
 import { getHighestScore } from '@sbomscanner-ui-ext/utils/report';
+import ExpandableDescription from "@sbomscanner-ui-ext/components/common/ExpandableDescription.vue";
 
 export default {
   name:       'CveDetails',
-  components: { BadgeState },
+  components: { BadgeState, ExpandableDescription },
   data() {
     return {
       PRODUCT_NAME,
@@ -52,7 +53,7 @@ export default {
                   sources:         hasCvss ? this.convertCvssToSources(vuln.cvss, cveId) : [],
                   severity:        vuln.severity,
                   cvssScores:      hasCvss ? this.convertCvss(vuln.cvss) : [],
-                  title:           vuln.title,
+                  description:     vuln.description,
                   advisoryVendors: this.groupReferencesByDomain(vuln.references),
                 };
               }
@@ -176,7 +177,10 @@ export default {
         </div>
       </div>
       <!--    description -->
-      <span class="description">{{ cveDetail?.title || t('imageScanner.general.unknown') }}</span>
+      <ExpandableDescription
+          :text="cveDetail?.description || t('imageScanner.general.unknown')"
+          :lines="3" />
+
       <!--  meta data  -->
       <div class="stats">
         <div class="column column-1">
@@ -333,15 +337,6 @@ export default {
     width: 225px;
     height: 40px;
   }
-}
-
-.description {
-  display: block;
-  color: var(--disabled-text);
-  font-family: Lato;
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 21px;
 }
 
 .stats {
