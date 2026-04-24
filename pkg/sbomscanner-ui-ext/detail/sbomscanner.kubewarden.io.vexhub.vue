@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import DetailPage from '@shell/components/Resource/Detail/Page.vue';
-import Masthead from '@shell/components/Resource/Detail/Masthead/index.vue';
+import TitleBar from '@shell/components/Resource/Detail/TitleBar/index.vue';
+import Metadata from '@shell/components/Resource/Detail/Metadata/index.vue';
 import Date from '@shell/components/formatter/Date.vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import UriExternalLink from '@sbomscanner-ui-ext/formatters/UriExternalLink.vue';
+import ExpandableDescription from '@sbomscanner-ui-ext/components/common/ExpandableDescription.vue';
 import { computed } from 'vue';
 
 const store = useStore();
@@ -22,7 +24,6 @@ const defaultMastheadProps = computed(() => {
       resourceName:      vexhub?.metadata?.name ?? '',
       resourceTypeLabel: t('imageScanner.vexManagement.title'),
       resourceTo:        vexhub?.listLocation,
-      description:       vexhub?.description ?? '',
       badge:             {
         color: vexhub?.spec?.enabled ? ('bg-success' as 'bg-success') : ('bg-error' as 'bg-error'),
         label: t(`imageScanner.enum.status.${vexhub?.spec?.enabled ? 'enabled' : 'disabled'}`)
@@ -68,7 +69,8 @@ const defaultMastheadProps = computed(() => {
 <template>
   <DetailPage>
     <template #top-area>
-      <Masthead class="masthead" v-bind="defaultMastheadProps">
+
+      <TitleBar v-bind="defaultMastheadProps.titleBarProps">
         <template #additional-actions>
           <button
               v-if="value?.toggle"
@@ -81,7 +83,22 @@ const defaultMastheadProps = computed(() => {
             {{ value.toggle.label }}
           </button>
         </template>
-      </Masthead>
+      </TitleBar>
+
+      <ExpandableDescription
+          v-if="vexhub?.description"
+          :text="vexhub.description"
+          :lines="3"
+          class="vex-description"
+      />
+
+      <div class="metadata-wrapper">
+        <Metadata
+            class="masthead"
+            v-bind="defaultMastheadProps.metadataProps"
+        />
+      </div>
+
     </template>
   </DetailPage>
 </template>
@@ -89,6 +106,17 @@ const defaultMastheadProps = computed(() => {
 <style lang="scss" scoped>
 .btn.actions {
   gap: 12px;
+}
+
+.vex-description {
+  max-width: calc(100% - 350px);
+  margin-top: 4px;
+  margin-bottom: 24px;
+}
+
+.metadata-wrapper {
+  margin-top: 16px;
+  margin-bottom: 24px;
 }
 
 /* Hide empty labels and annotations section */

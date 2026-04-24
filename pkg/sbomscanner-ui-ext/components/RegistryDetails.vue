@@ -22,11 +22,11 @@
               :status="registry?.scanRec.currStatus"
             />
           </h1>
-          <span
+          <ExpandableDescription
               v-if="registry?.description"
-              class="resource-header-description">
-            {{  registry.description }}
-          </span>
+              :text="registry.description"
+              :lines="3"
+          />
         </div>
         <div class="resource-header-actions">
           <ScanButton
@@ -63,6 +63,7 @@ import RegistryDetailScanTable from './RegistryDetailScanTable.vue';
 import ScanButton from './common/ScanButton.vue';
 import { getPermissions } from '@sbomscanner-ui-ext/utils/permissions';
 import { trimIntervalSuffix } from '@sbomscanner-ui-ext/utils/app';
+import ExpandableDescription from './common/ExpandableDescription.vue';
 
 export default {
   name:       'RegistryDetails',
@@ -73,6 +74,7 @@ export default {
     ScanButton,
     ActionMenu,
     Loading,
+    ExpandableDescription,
   },
   data() {
     return {

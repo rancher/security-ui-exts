@@ -4,6 +4,7 @@ import ActionMenu from '@shell/components/ActionMenuShell.vue';
 import StatusBadge from '../common/StatusBadge.vue';
 import RegistryDetailScanTable from '../RegistryDetailScanTable.vue';
 import ScanButton from '../common/ScanButton.vue';
+import ExpandableDescription from '../common/ExpandableDescription.vue';
 import { trimIntervalSuffix } from '@sbomscanner-ui-ext/utils/app';
 
 jest.mock('../common/RegistryDetailsMeta.vue', () => ({
@@ -32,8 +33,9 @@ describe('RegistryDetails.vue', () => {
   const mockRouter = { push: jest.fn() };
 
   const registryMock = {
-    metadata: { name: 'my-reg', namespace: 'ns1' },
-    spec:     {
+    metadata:    { name: 'my-reg', namespace: 'ns1' },
+    description: 'A test description for the registry', // <-- Added description to mock
+    spec:        {
       uri:          'http://test.registry',
       repositories: [{ name: 'repo1' }, { name: 'repo2' }],
       scanInterval: '5m',
@@ -92,7 +94,7 @@ describe('RegistryDetails.vue', () => {
           $fetchState: { pending: false },
           $route:      {
             params: {
-              cluster: 'local', id: 'my-reg', ns: 'ns1'
+              cluster: 'local', id: 'my-reg', namespace: 'ns1'
             }
           },
           $router: mockRouter,
@@ -105,6 +107,7 @@ describe('RegistryDetails.vue', () => {
           RegistryDetailScanTable: true,
           RegistryDetailsMeta:     true,
           ScanButton:              true,
+          ExpandableDescription:   true, // <-- Stubbed the new component
         },
       },
       ...options,
@@ -166,7 +169,7 @@ describe('RegistryDetails.vue', () => {
     expect(wrapper.findComponent(ActionMenu).exists()).toBe(true);
   });
 
-  it('renders child components', async() => {
+  it('renders child components including ExpandableDescription', async() => {
     const wrapper = factory({ reg: registryMock, scanjob: scanJobsMock });
 
     await wrapper.vm.loadData();
@@ -174,6 +177,19 @@ describe('RegistryDetails.vue', () => {
     expect(wrapper.findComponent(StatusBadge).exists()).toBe(true);
     expect(wrapper.findComponent(RegistryDetailScanTable).exists()).toBe(true);
     expect(wrapper.findComponent(ScanButton).exists()).toBe(true);
+
+    const expandableDesc = wrapper.findComponent(ExpandableDescription);
+    expect(expandableDesc.exists()).toBe(true);
+    expect(expandableDesc.props('text')).toBe('A test description for the registry');
+    expect(expandableDesc.props('lines')).toBe(3);
+  });
+
+  it('does not render ExpandableDescription when registry has no description', async() => {
+    const wrapper = factory({ reg: registryMockNoImages, scanjob: scanJobsMock });
+
+    await wrapper.vm.loadData();
+
+    expect(wrapper.findComponent(ExpandableDescription).exists()).toBe(false);
   });
 
   it('handles empty repositories & scanInterval gracefully', async() => {

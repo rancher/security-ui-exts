@@ -81,7 +81,6 @@ export default {
   row-gap: 4px;
   column-gap: 24px;
   align-self: stretch;
-  margin-top: 16px;
 }
 
 .stat-item {
