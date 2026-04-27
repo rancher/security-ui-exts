@@ -11,12 +11,12 @@ module.exports = () => {
     vendorConfig.chainWebpack = (webpackConfig) => {
       // Call the original chainWebpack configuration first
       originalChainWebpack(webpackConfig);
-      // Add the @sbomscanner-ui-ext alias pointing to the pkg/sbomscanner-ui-ext folder
-      webpackConfig.resolve.alias.set('@sbomscanner-ui-ext', path.resolve(__dirname, 'pkg/sbomscanner-ui-ext'));
+      // Add the @vulnerability-scanner alias pointing to the pkg/vulnerability-scanner folder
+      webpackConfig.resolve.alias.set('@vulnerability-scanner', path.resolve(__dirname, 'pkg/vulnerability-scanner'));
     };
   } else {
     vendorConfig.chainWebpack = (webpackConfig) => {
-      webpackConfig.resolve.alias.set('@sbomscanner-ui-ext', path.resolve(__dirname, 'pkg/sbomscanner-ui-ext'));
+      webpackConfig.resolve.alias.set('@vulnerability-scanner', path.resolve(__dirname, 'pkg/vulnerability-scanner'));
     };
   }
 

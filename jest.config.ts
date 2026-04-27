@@ -13,7 +13,7 @@ const config: Config.InitialOptions = {
     '@shell/(.*)': '<rootDir>/node_modules/@rancher/shell/$1',
     '@components/(.*)':
       '<rootDir>/node_modules/@rancher/components/dist/@rancher/components.common.js',
-    '@sbomscanner-ui-ext/(.*)':      '<rootDir>/pkg/sbomscanner-ui-ext/$1',
+    '@vulnerability-scanner/(.*)':      '<rootDir>/pkg/vulnerability-scanner/$1',
     '@network/(.*)':                 '<rootDir>/pkg/network/$1',
     '@runtime-process-profile/(.*)': '<rootDir>/pkg/runtime-process-profile/$1',
     '@tests/(.*)':                   '<rootDir>/tests/$1',
@@ -35,7 +35,7 @@ const config: Config.InitialOptions = {
   coverageDirectory:   '<rootDir>/coverage/unit',
   collectCoverage:     true,
   collectCoverageFrom: [
-    'pkg/sbomscanner-ui-ext/**/*.{js,vue}',
+    'pkg/vulnerability-scanner/**/*.{js,vue}',
     '!**/node_modules/**',
     '!**/__tests__/**'
   ],
