@@ -10,6 +10,8 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 10
     ignore:                           # Ignore everything that is not a security update
       - dependency-name: "*"
