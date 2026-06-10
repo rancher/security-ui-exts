@@ -1,10 +1,50 @@
 import { defineConfig, devices } from '@playwright/test';
-globalSetup: require.resolve('./global-setup');
 import dotenv from 'dotenv';
 import path from "path";
+import fs from 'fs';
 export const STORAGE_STATE = path.join(__dirname, '/.auth/login-data.json');
 
-dotenv.config();
+// Load environment-specific .env file or default to .env
+// Usage: ENV=dev npx playwright test (loads .env.dev)
+//        ENV=staging npx playwright test (loads .env.staging)
+//        npx playwright test (loads .env)
+const envFile = process.env.ENV ? `.env.${process.env.ENV}` : '.env';
+dotenv.config({ path: path.resolve(__dirname, '..', envFile) });
+
+// Function to get UI version from uiversion.json
+function getUIVersion(): string {
+  const versionFilePath = path.join(__dirname, 'uiversion.json');
+  try {
+    if (fs.existsSync(versionFilePath)) {
+      const content = fs.readFileSync(versionFilePath, 'utf-8').trim();
+      if (!content) {
+        return 'unknown';
+      }
+      const versionData = JSON.parse(content);
+
+      // Try multiple possible paths in the JSON structure
+      const version =
+        versionData?.entries?.[0]?.version ||
+        versionData?.entries?.['security-ui-exts']?.version ||
+        versionData?.version ||
+        versionData?.data?.[0]?.version ||
+        'unknown';
+
+      return version;
+    }
+  } catch (error) {
+    console.log('Could not read UI version:', error);
+  }
+  return 'unknown';
+}
+
+// Get current date for run title
+function getRunTitle(): string {
+  const uiVersion = getUIVersion();
+  const date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const time = new Date().toTimeString().split(' ')[0]; // HH:MM:SS
+  return `SBOM Scanner UI Test - v${uiVersion} - ${date} ${time}`;
+}
 
 export default defineConfig({
  //globalSetup: require.resolve('./global-setup'),
@@ -31,10 +71,10 @@ export default defineConfig({
     
   ],
 
-   testMatch: [ 
-                //"tests/myfunctions.test.ts", 
-                
-                "tests/sbomscanner.test.ts",
+   testMatch: [
+                //"tests/myfunctions.test.ts",
+
+                "tests/sbomscanner_dashboard.test.ts",
                 "tests/sbomscanner_images.test.ts",
                 "tests/sbomscanner_registries.test.ts",
                 "tests/sbomscanner_vex_management.test.ts",
@@ -42,7 +82,7 @@ export default defineConfig({
               ],
 
   use: {
-        baseURL: "https://RANCHERURL",
+        baseURL: process.env.RANCHER_URL || "https://RANCHERURL",
         
         headless: false,
     	  ignoreHTTPSErrors: true,
@@ -56,13 +96,26 @@ export default defineConfig({
     },
 
     //timeout: 60 * 1000 * 5,
-    timeout: 30000,
-    
-    retries: 3,
-    reporter: [["dot"], ["json", {
-        outputFile: "jsonReports/jsonReport.json"
-    }], ["html", {
-        open: "never"
-    }]]
+    timeout: 90000,
+
+    // Configurable retries via TEST_RETRIES environment variable (default: 3)
+    retries: process.env.TEST_RETRIES ? parseInt(process.env.TEST_RETRIES) : 3,
+    reporter: [
+        ["dot"],
+        ["json", {
+            outputFile: "jsonReports/jsonReport.json"
+        }],
+        ["html", {
+            open: "never"
+        }],
+        ["playwright-qase-reporter", {
+            mode: process.env.QASE_MODE || 'off',
+            projectCode: process.env.QASE_TESTOPS_PROJECT,
+            apiToken: process.env.QASE_TESTOPS_API_TOKEN,
+            runId: process.env.QASE_RUN_ID,
+            runTitle: process.env.QASE_RUN_TITLE || getRunTitle(),
+            uploadAttachments: true,
+        }]
+    ]
 
 });
