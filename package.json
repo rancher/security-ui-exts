@@ -1,6 +1,6 @@
 {
   "name": "security-ui-exts",
-  "version": "0.8.2-rc.1",
+  "version": "0.8.2-rc.4",
   "private": false,
   "engines": {
     "node": ">=24"
