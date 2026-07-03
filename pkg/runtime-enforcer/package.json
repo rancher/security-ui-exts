@@ -1,6 +1,6 @@
 {
-  "name": "runtime-process-profile",
-  "description": "runtime-process-profile plugin",
+  "name": "runtime-enforcer",
+  "description": "runtime-enforcer plugin",
   "version": "0.1.0",
   "private": false,
   "rancher": {

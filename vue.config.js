@@ -13,10 +13,13 @@ module.exports = () => {
       originalChainWebpack(webpackConfig);
       // Add the @vulnerability-scanner alias pointing to the pkg/vulnerability-scanner folder
       webpackConfig.resolve.alias.set('@vulnerability-scanner', path.resolve(__dirname, 'pkg/vulnerability-scanner'));
+      // Add the @runtime-enforcer alias pointing to the pkg/runtime-enforcer folder
+      webpackConfig.resolve.alias.set('@runtime-enforcer', path.resolve(__dirname, 'pkg/runtime-enforcer'));
     };
   } else {
     vendorConfig.chainWebpack = (webpackConfig) => {
       webpackConfig.resolve.alias.set('@vulnerability-scanner', path.resolve(__dirname, 'pkg/vulnerability-scanner'));
+      webpackConfig.resolve.alias.set('@runtime-enforcer', path.resolve(__dirname, 'pkg/runtime-enforcer'));
     };
   }
 

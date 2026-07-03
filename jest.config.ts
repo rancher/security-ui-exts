@@ -15,7 +15,7 @@ const config: Config.InitialOptions = {
       '<rootDir>/node_modules/@rancher/components/dist/@rancher/components.common.js',
     '@vulnerability-scanner/(.*)':      '<rootDir>/pkg/vulnerability-scanner/$1',
     '@network/(.*)':                 '<rootDir>/pkg/network/$1',
-    '@runtime-process-profile/(.*)': '<rootDir>/pkg/runtime-process-profile/$1',
+    '@runtime-enforcer/(.*)': '<rootDir>/pkg/runtime-enforcer/$1',
     '@tests/(.*)':                   '<rootDir>/tests/$1',
   },
   transform: {

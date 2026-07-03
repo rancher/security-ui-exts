@@ -1,6 +1,6 @@
 import { importTypes } from '@rancher/auto-import';
 import { IPlugin } from '@shell/core/types';
-import runtimeProcessProfile from './routes/runtime-process-profile';
+import runtimeEnforcer from './routes/runtime-enforcer';
 
 // Init the package
 export default function(plugin: IPlugin): void {
@@ -11,8 +11,8 @@ export default function(plugin: IPlugin): void {
   plugin.metadata = require('./package.json');
 
   // Load a product
-  plugin.addProduct(require('./product'));
+  plugin.addProduct(require('./config/runtime-enforcer'));
 
   // Add Vue Routes
-  plugin.addRoutes(runtimeProcessProfile);
+  plugin.addRoutes(runtimeEnforcer);
 }

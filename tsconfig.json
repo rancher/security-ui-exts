@@ -32,6 +32,7 @@
         "./tests/*"
       ],
       "@vulnerability-scanner/*": ["./pkg/vulnerability-scanner/*"],
+      "@runtime-enforcer/*": ["./pkg/runtime-enforcer/*"],
     },
     "typeRoots": [
       "./node_modules",
@@ -58,9 +59,9 @@
     "./pkg/network/**/*.tsx",
     "./pkg/network/**/*.vue",
 
-    "./pkg/runtime-process-profile/**/*.ts",
-    "./pkg/runtime-process-profile/**/*.tsx",
-    "./pkg/runtime-process-profile/**/*.vue"
+    "./pkg/runtime-enforcer/**/*.ts",
+    "./pkg/runtime-enforcer/**/*.tsx",
+    "./pkg/runtime-enforcer/**/*.vue"
   ],
   "exclude": [
     "node_modules",

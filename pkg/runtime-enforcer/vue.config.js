@@ -12,8 +12,8 @@ module.exports = () => {
     if (typeof vendorConfigureWebpack === 'function') {
       vendorConfigureWebpack(config);
     }
-    // Add the @runtime-process-profile alias to point to the pkg/runtime-process-profile directory.
-    config.resolve.alias['@runtime-process-profile'] = path.resolve(__dirname);
+    // Add the @runtime-enforcer alias to point to the pkg/runtime-enforcer directory.
+    config.resolve.alias['@runtime-enforcer'] = path.resolve(__dirname);
   };
 
   // Create an override for __tests__ directories.

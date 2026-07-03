@@ -1,11 +1,10 @@
 <template>
   <div class="page">
-    <h2>Runtime Overview</h2>
+    <h2>Policy Proposals</h2>
   </div>
 </template>
 
-<script lang="ts">
-export default { name: 'RuntimeOverview' };
+<script setup lang="ts">
 </script>
 
 <style scoped>
