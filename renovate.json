@@ -1,0 +1,15 @@
+{
+  "extends": [
+    "config:base",
+    ":disableDependencyDashboard",
+    "helpers:pinGitHubActionDigests",
+    "schedule:earlyMondays"
+  ],
+  "minimumReleaseAge": "7 days",
+  "vulnerabilityAlerts": {
+    "minimumReleaseAge": "0 days"
+  },
+  "ignoreDeps": [
+    "@rancher/shell"
+  ]
+}
