@@ -1,2 +1,45 @@
 product:
   runtimeEnforcer: Runtime Enforcer
+
+runtimeEnforcer:
+  installationWizard:
+    entry:
+      title: Runtime Enforcer Installation
+      description: Configure global repository authentication, add required OCI repositories, and install SUSE Security Runtime Enforcer dependencies.
+    globalRepoAuth:
+      step: Global Repository Authentication
+      title: Global Repository Authentication
+      description: Provide a global OCI authentication secret and optional TLS settings for chart repositories.
+      caBundle: CA Bundle
+      caBundlePlaceholder: Paste custom CA certificate content if required
+      readFromFile: Read from File
+      skipTlsVerification: Skip TLS verification
+      allowPlainHttp: Allow plain HTTP
+      secretNamespaces: Image Pull Secret Namespaces
+      secretNamespacesDescription: Specify namespaces where image pull secrets and charts will be applied.
+    namespaces:
+      certManager: Cert-Manager Namespace
+      csiDriver: Cert-Manager CSI Driver Namespace
+      runtimeEnforcer: Runtime Enforcer Namespace
+    placeholders:
+      certManagerNamespace: cert-manager
+      runtimeEnforcerNamespace: cattle-runtime-enforcer-system
+    repositories:
+      step: Add Required Repositories
+      title: Add Required Repositories
+      description: Add Cert-Manager, Cert-Manager CSI Driver, and SUSE Security Runtime Enforcer repositories.
+    install:
+      step: Install Charts
+      certManager: Install Cert-Manager
+      csiDriver: Install Cert-Manager CSI Driver
+      runtimeEnforcer: Install SUSE Security Runtime Enforcer
+      runtimeEnforcerButton: Install Runtime Enforcer
+      certManagerDescription:
+        Install and configure Cert-Manager through Rancher manager to satisfy the certificate requirements for SUSE Security Runtime Enforcer.
+      csiDriverDescription:
+        The cert-manager-csi-driver is used to automatically provision and mount TLS certificates directly inside SUSE Security Runtime Enforcer pods (agent and OTEL collector) without creating intermediate Secret resources.
+      runtimeEnforcerDescription:
+        The Runtime-Enforcer ships with a standalone OTEL collector Deployment that handles violation metrics and events forwarding. No external OpenTelemetry Collector is needed for a basic setup.
+    button:
+      start: Start Installation
+      continue: Continue
