@@ -160,7 +160,7 @@ defineExpose({ goToStep });
     </div>
 
     <slot
-      name="stepContainer mt-20"
+      name="stepContainer"
       :active-step="activeStep"
     >
       <template v-for="step in steps">
