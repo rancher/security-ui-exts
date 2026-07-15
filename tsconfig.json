@@ -33,6 +33,7 @@
       ],
       "@vulnerability-scanner/*": ["./pkg/vulnerability-scanner/*"],
       "@runtime-enforcer/*": ["./pkg/runtime-enforcer/*"],
+      "@common/*": ["./pkg/common/*"],
     },
     "typeRoots": [
       "./node_modules",
@@ -61,7 +62,11 @@
 
     "./pkg/runtime-enforcer/**/*.ts",
     "./pkg/runtime-enforcer/**/*.tsx",
-    "./pkg/runtime-enforcer/**/*.vue"
+    "./pkg/runtime-enforcer/**/*.vue",
+
+    "./pkg/common/**/*.ts",
+    "./pkg/common/**/*.tsx",
+    "./pkg/common/**/*.vue"
   ],
   "exclude": [
     "node_modules",

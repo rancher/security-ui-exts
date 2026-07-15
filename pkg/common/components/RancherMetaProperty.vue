@@ -38,7 +38,7 @@
 </template>
 
 <script lang="ts">
-import { MetadataProperty } from '@vulnerability-scanner/types';
+import { MetadataProperty } from '@common/types';
 import { PropType } from 'vue';
 
 export default {

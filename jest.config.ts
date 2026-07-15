@@ -16,6 +16,7 @@ const config: Config.InitialOptions = {
     '@vulnerability-scanner/(.*)':      '<rootDir>/pkg/vulnerability-scanner/$1',
     '@network/(.*)':                 '<rootDir>/pkg/network/$1',
     '@runtime-enforcer/(.*)': '<rootDir>/pkg/runtime-enforcer/$1',
+    '@common/(.*)':                   '<rootDir>/pkg/common/$1',
     '@tests/(.*)':                   '<rootDir>/tests/$1',
   },
   transform: {
@@ -36,6 +37,7 @@ const config: Config.InitialOptions = {
   collectCoverage:     true,
   collectCoverageFrom: [
     'pkg/vulnerability-scanner/**/*.{js,vue}',
+    'pkg/common/**/*.{js,vue}',
     '!**/node_modules/**',
     '!**/__tests__/**'
   ],
