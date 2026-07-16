@@ -27,6 +27,14 @@
         {{ property.value }}
       </RouterLink>
     </div>
+    <div v-if="property.type === 'date'" class="text">
+      <div v-if="property.label" class="label">
+        {{ property.label }}
+      </div>
+      <div v-if="property.value !== null" class="value">
+        <LiveDate :value="property.value" />
+      </div>
+    </div>
     <div v-else-if="property.type === 'tags'" class="tags">
       <div class="tags">
         <div v-for="tag in property.tags" :key="tag" class="tag">
@@ -93,15 +101,9 @@ export default {
     }
 
     .link {
-      color: var(--link);
-      text-decoration: none;
       display: flex;
-      cursor: pointer;
       gap: 4px;
       flex: 1 0 0;
-      :hover {
-        text-decoration: underline;
-      }
     }
   }
 
@@ -124,7 +126,7 @@ export default {
       gap: 8px;
       /* style */
       border-radius: 4px;
-      background: #EDEFF3;
+      background: var(--tag-bg);
 
       .tag-text {
         display: -webkit-box;
@@ -133,7 +135,7 @@ export default {
         line-clamp: 1;
         /* typography */
         overflow: hidden;
-        color: #141419;
+        color: var(--tag-primary);
         text-overflow: ellipsis;
         font-family: Lato;
         font-size: 13px;

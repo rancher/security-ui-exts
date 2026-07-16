@@ -43,3 +43,23 @@ runtimeEnforcer:
     button:
       start: Start Installation
       continue: Continue
+  policyProposal:
+    label: Policy Proposal
+    action:
+      editPolicy: Edit Policy
+      export: Export
+      delete: Delete
+      promote: Promote
+    masthead:
+      namespace: Namespace
+      workload: Workload
+      workloadType: Workload Type
+      containers: Containers
+      executables: Executables
+      age: Age
+    containers:
+      title: Containers
+      table:
+        container: Container
+        image: Image
+        executables: Executables

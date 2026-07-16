@@ -34,6 +34,8 @@ export default {
     column-count: 3;
     column-gap: 24px;
     align-self: stretch;
+    margin-top: 16px;
+    margin-bottom: 24px;
     > * {
       display: inline-block;
       width: 100%;
