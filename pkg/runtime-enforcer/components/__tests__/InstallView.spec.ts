@@ -29,14 +29,6 @@ jest.mock('../../utils/chart', () => ({
   refreshCharts:    jest.fn(),
   getLatestVersion: jest.fn(() => '1.2.3'),
 }));
-jest.mock('@shell/config/types', () => ({
-  CATALOG: {
-    APP:          'catalog.cattle.io.app',
-    CLUSTER_REPO: 'catalog.cattle.io.clusterrepo',
-  },
-  SECRET:    'secret',
-  NAMESPACE: 'namespace',
-}));
 
 const InstallWizardStub = {
   name:     'InstallWizard',
