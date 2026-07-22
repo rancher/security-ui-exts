@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, h, onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useStore } from 'vuex';
 import DetailPage from '@shell/components/Resource/Detail/Page.vue';
@@ -24,26 +24,12 @@ const i18n = useI18n(store);
 
 const defaultTitleBarProps = useDefaultTitleBarProps(proposal);
 
-// TitleBar additionalActions (label/variant/size/onClick) has no icon support
-// so the Promote button needs to be rebuilt from the same action data.
-const additionalActionsBar = () => h(
-  'div',
-  { class: 'additional-actions' },
-  (proposal.detailPageAdditionalActions || []).map((action: any, index: number) => h(RcButton, {
-    key:      `additional-action-${ index }`,
-    variant:  action.variant,
-    size:     action.size,
-    leftIcon: action.icon,
-    onClick:  action.onClick,
-  }, () => action.label))
-);
-
 // UX design has no status badge - useDefaultTitleBarProps() always constructs one (there's
 // no upstream getter to suppress it), so strip it back out here.
 const titleBarProps = computed(() => {
-  const { badge, additionalActions, ...rest } = defaultTitleBarProps.value;
+  const { badge, ...rest } = defaultTitleBarProps.value;
 
-  return { ...rest, additionalActions: additionalActionsBar };
+  return rest;
 });
 
 const ownerWorkload = ref<any>(null);
@@ -167,7 +153,18 @@ const containerHeaders = computed(() => [
 <template>
   <DetailPage>
     <template #top-area>
-      <TitleBar v-bind="titleBarProps" />
+      <TitleBar v-bind="titleBarProps">
+        <template #additional-actions>
+          <RcButton
+            variant="primary"
+            size="large"
+            left-icon="upgrade-alt"
+            @click="proposal.promote()"
+          >
+            {{ i18n.t('runtimeEnforcer.policyProposal.action.promote') }}
+          </RcButton>
+        </template>
+      </TitleBar>
       <RancherMeta :properties="metaProperties" />
     </template>
     <template #bottom-area>

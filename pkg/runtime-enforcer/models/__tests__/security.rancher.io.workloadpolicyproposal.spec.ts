@@ -209,25 +209,6 @@ describe('WorkloadPolicyProposal model', () => {
     });
   });
 
-  describe('detailPageAdditionalActions', () => {
-    it('returns a single Promote action wired to promote()', () => {
-      const actions = proposal.detailPageAdditionalActions;
-
-      expect(actions).toHaveLength(1);
-      expect(actions[0]).toMatchObject({
-        label:   'runtimeEnforcer.policyProposal.action.promote',
-        icon:    'upgrade-alt',
-        variant: 'primary',
-        size:    'large',
-      });
-
-      const promoteSpy = jest.spyOn(proposal, 'promote').mockImplementation(() => {});
-
-      actions[0].onClick();
-      expect(promoteSpy).toHaveBeenCalledTimes(1);
-    });
-  });
-
   describe('editPolicy / exportPolicy / promote', () => {
     it('editPolicy() does not throw', () => {
       expect(() => proposal.editPolicy()).not.toThrow();
