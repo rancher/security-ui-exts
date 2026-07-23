@@ -124,3 +124,17 @@ runtimeEnforcer:
         protect: Protect mode
       cancel: Cancel
       export: Export
+    deleteDialog:
+      title:
+        single: Delete policy proposal
+        bulk: Delete policy proposals
+      banner:
+        single: Deleting the policy proposal without restarting the workload would result in a new empty proposal being created by the Runtime Enforcer for this workload - if this is your intention, you can edit the policy and manually remove all the executables. Otherwise, to allow the Runtime Enforcer to re-learn everything again, you must restart the workload as well.
+        bulk: Deleting the policy proposal without restarting the workload would result in a new empty proposal being created by the Runtime Enforcer for this workload - if this is your intention, you can edit the policy and manually remove all the executables. Otherwise, to allow the Runtime Enforcer to re-learn everything again, you must restart the workloads as well.
+      confirm:
+        single: Are you sure you want to delete the <b>{name}</b> policy proposal and restart <b>{workload}</b> workload?
+        bulk: Are you sure you want to delete the <b>selected policy proposals ({count})</b> and restart their corresponding workloads?
+      cancel: Cancel
+      delete:
+        single: Delete Proposal and Restart Workload
+        bulk: Delete Proposals and Restart Workloads

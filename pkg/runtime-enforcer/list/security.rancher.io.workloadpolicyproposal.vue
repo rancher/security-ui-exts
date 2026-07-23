@@ -38,6 +38,7 @@ const filters = ref({
 const debouncedFilters = ref({ ...filters.value });
 
 const selectedRows = ref<WorkloadPolicyProposal[]>([]);
+const proposalTable = ref<any>(null);
 const useQueryParamsForSimpleFiltering = false;
 
 watch(
@@ -151,18 +152,26 @@ function exportSelected() {
   if (!selectedRows.value.length) {
     return;
   }
+  store.dispatch('cluster/promptModal', {
+    component:  'ExportPolicyDialog',
+    resources:  Array.isArray(selectedRows.value) ? selectedRows.value : [selectedRows.value],
+    modalWidth: '640',
+  });
+}
 
-  const content = JSON.stringify(selectedRows.value, null, 2);
-  const blob = new Blob([content], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
+function deleteSelected() {
+  if (!selectedRows.value.length) {
+    return;
+  }
 
-  anchor.href = url;
-  anchor.download = 'workload-policy-proposals.json';
-  document.body.appendChild(anchor);
-  anchor.click();
-  document.body.removeChild(anchor);
-  URL.revokeObjectURL(url);
+  const table = proposalTable.value?.$refs?.table?.$refs?.table || proposalTable.value?.$refs?.table || proposalTable.value;
+
+  store.dispatch('cluster/promptModal', {
+    component:  'DeletePolicyProposalsDialog',
+    resources:  Array.isArray(selectedRows.value) ? selectedRows.value : [selectedRows.value],
+    table,
+    modalWidth: '640',
+  });
 }
 </script>
 
@@ -261,6 +270,7 @@ function exportSelected() {
             variant="primary"
             size="medium"
             :disabled="!selectedRows.length"
+            @click="deleteSelected"
           >
             <i class="icon icon-delete"></i>
             {{ t('runtimeEnforcer.policyProposals.actions.delete') }}

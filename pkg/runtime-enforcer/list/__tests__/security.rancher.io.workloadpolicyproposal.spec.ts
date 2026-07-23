@@ -4,6 +4,7 @@ import { nextTick } from 'vue';
 
 const mockGetPolicyProposalHeaders = jest.fn(() => []);
 const mockGetContainerTableHeaders = jest.fn(() => []);
+const mockStoreDispatch = jest.fn(() => Promise.resolve());
 
 jest.mock('@runtime-enforcer/config/policy-proposals-table', () => ({
   getPolicyProposalHeaders: (input: unknown) => mockGetPolicyProposalHeaders(input),
@@ -88,6 +89,8 @@ function makeWrapper(options: MakeWrapperOptions = {}) {
       'cluster/schemaFor': () => () => ({ canCreate }),
     },
   });
+
+  (store as any).dispatch = mockStoreDispatch;
 
   return shallowMount(PolicyProposalList, {
     global: {
@@ -257,62 +260,26 @@ describe('security.rancher.io.workloadpolicyproposal list', () => {
     expect(wrapper.vm.selectedRows).toEqual([]);
   });
 
-  it('does not export when no selected rows', () => {
+  it('does not open export modal when no selected rows', () => {
     const wrapper = makeWrapper({ canCreate: false });
-    const createObjectURLMock = jest.fn();
 
-    Object.defineProperty(URL, 'createObjectURL', {
-      value:        createObjectURLMock,
-      writable:     true,
-      configurable: true,
-    });
+    (wrapper.vm as any).selectedRows = [];
+    (wrapper.vm as any).exportSelected();
 
-    wrapper.vm.selectedRows = [];
-    wrapper.vm.exportSelected();
-
-    expect(createObjectURLMock).not.toHaveBeenCalled();
+    expect(mockStoreDispatch).not.toHaveBeenCalled();
   });
 
-  it('exports selected rows as json download', () => {
+  it('opens export modal with selected rows', () => {
     const wrapper = makeWrapper({ canCreate: false });
-    const anchor = document.createElement('a');
-    const clickSpy = jest.spyOn(anchor, 'click').mockImplementation(() => {});
-    const appendSpy = jest.spyOn(document.body, 'appendChild');
-    const removeSpy = jest.spyOn(document.body, 'removeChild');
-    const originalCreateElement = document.createElement.bind(document);
-    const createElementSpy = jest.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
-      if (tagName.toLowerCase() === 'a') {
-        return anchor;
-      }
+    const selected = [{ metadata: { name: 'policy-a' } }];
 
-      return originalCreateElement(tagName);
+    (wrapper.vm as any).selectedRows = selected;
+    (wrapper.vm as any).exportSelected();
+
+    expect(mockStoreDispatch).toHaveBeenCalledWith('cluster/promptModal', {
+      component:  'ExportPolicyDialog',
+      resources:  selected,
+      modalWidth: '640',
     });
-    const createObjectURLMock = jest.fn(() => 'blob:mock-url');
-    const revokeObjectURLMock = jest.fn();
-
-    Object.defineProperty(URL, 'createObjectURL', {
-      value:        createObjectURLMock,
-      writable:     true,
-      configurable: true,
-    });
-    Object.defineProperty(URL, 'revokeObjectURL', {
-      value:        revokeObjectURLMock,
-      writable:     true,
-      configurable: true,
-    });
-
-    wrapper.vm.selectedRows = [{ metadata: { name: 'policy-a' } }];
-    wrapper.vm.exportSelected();
-
-    expect(createObjectURLMock).toHaveBeenCalled();
-    expect(clickSpy).toHaveBeenCalled();
-    expect(appendSpy).toHaveBeenCalled();
-    expect(removeSpy).toHaveBeenCalled();
-    expect(revokeObjectURLMock).toHaveBeenCalledWith('blob:mock-url');
-
-    createElementSpy.mockRestore();
-    clickSpy.mockRestore();
-    appendSpy.mockRestore();
-    removeSpy.mockRestore();
   });
 });

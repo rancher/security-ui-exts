@@ -23,7 +23,14 @@ export default class WorkloadPolicyProposal extends SteveModel {
         }
 
         if (action.action === 'promptRemove') {
-          return { ...action, label: this.t('runtimeEnforcer.policyProposal.action.delete') };
+          return {
+            action:     'removeProposal',
+            label:      this.t('runtimeEnforcer.policyProposal.action.delete'),
+            icon:       'icon icon-trash',
+            bulkable:   true,
+            bulkAction: 'removeProposal',
+            enabled:    true,
+          };
         }
 
         return action;
@@ -36,7 +43,7 @@ export default class WorkloadPolicyProposal extends SteveModel {
       enabled: true,
     });
 
-    const deleteIndex = out.findIndex((action) => action.action === 'promptRemove');
+    const deleteIndex = out.findIndex((action) => action.action === 'removeProposal');
 
     if (deleteIndex > -1) {
       out.splice(deleteIndex, 0, { divider: true });
@@ -151,6 +158,14 @@ export default class WorkloadPolicyProposal extends SteveModel {
   exportPolicy(resources = this) {
     this.$dispatch('promptModal', {
       component:  'ExportPolicyDialog',
+      resources:  Array.isArray(resources) ? resources : [resources],
+      modalWidth: '640',
+    });
+  }
+
+  removeProposal(resources = this) {
+    this.$dispatch('promptModal', {
+      component:  'DeletePolicyProposalsDialog',
       resources:  Array.isArray(resources) ? resources : [resources],
       modalWidth: '640',
     });
