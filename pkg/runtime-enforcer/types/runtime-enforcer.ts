@@ -5,6 +5,13 @@ export const DOCKER_CONFIG_JSON_TYPE = '.dockerconfigjson';
 
 export const RESOURCE = { POLICY_PROPOSALS: 'security.rancher.io.workloadpolicyproposal' };
 
+export const WORKLOAD_POLICY_KIND = 'WorkloadPolicy';
+
+export const POLICY_MODE = {
+  MONITOR: 'monitor',
+  PROTECT: 'protect',
+};
+
 export const RUNTIME_ENFORCER = {
   CONTROLLER: 'suse-security-runtime-enforcer',
   CHART_NAME: 'suse-security-runtime-enforcer',

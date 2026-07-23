@@ -9,6 +9,7 @@ jest.mock('@shell/plugins/steve/steve-class', () => {
       this.metadata = {};
       this.t = jest.fn((key) => key);
       this.$rootGetters = { clusterId: 'local' };
+      this.$dispatch = jest.fn();
     }
 
     get _availableActions() {
@@ -84,13 +85,15 @@ describe('WorkloadPolicyProposal model', () => {
       });
     });
 
-    it('replaces "download" with an "exportPolicy" action', () => {
+    it('replaces "download" with a bulkable "exportPolicy" action', () => {
       const actions = proposal._availableActions;
       const exportAction = actions.find((a: any) => a.action === 'exportPolicy');
 
       expect(exportAction).toMatchObject({
-        label:   'runtimeEnforcer.policyProposal.action.export',
-        enabled: true,
+        label:      'runtimeEnforcer.policyProposal.action.export',
+        bulkable:   true,
+        bulkAction: 'exportPolicy',
+        enabled:    true,
       });
       expect(actions.some((a: any) => a.action === 'download')).toBe(false);
     });
@@ -214,12 +217,66 @@ describe('WorkloadPolicyProposal model', () => {
       expect(() => proposal.editPolicy()).not.toThrow();
     });
 
-    it('exportPolicy() does not throw', () => {
-      expect(() => proposal.exportPolicy()).not.toThrow();
+    it('exportPolicy() dispatches promptModal with itself as the sole resource by default', () => {
+      proposal.exportPolicy();
+
+      expect(proposal.$dispatch).toHaveBeenCalledWith('promptModal', {
+        component:  'ExportPolicyDialog',
+        resources:  [proposal],
+        modalWidth: '640',
+      });
+    });
+
+    it('exportPolicy() dispatches promptModal with the given array of resources when called in bulk', () => {
+      const other = new WorkloadPolicyProposal();
+
+      proposal.exportPolicy([proposal, other]);
+
+      expect(proposal.$dispatch).toHaveBeenCalledWith('promptModal', {
+        component:  'ExportPolicyDialog',
+        resources:  [proposal, other],
+        modalWidth: '640',
+      });
     });
 
     it('promote() does not throw', () => {
       expect(() => proposal.promote()).not.toThrow();
+    });
+  });
+
+  describe('toActivePolicyResource', () => {
+    it('converts the proposal into a WorkloadPolicy shape with the given mode', () => {
+      proposal.apiVersion = 'security.rancher.io/v1alpha1';
+      proposal.metadata = { name: 'deploy-nginx-ingress', namespace: 'ingress' };
+      proposal.spec = { rulesByContainer: { nginx: { executables: { allowed: ['/usr/bin/nginx'] } } } };
+
+      expect(proposal.toActivePolicyResource('protect')).toEqual({
+        apiVersion: 'security.rancher.io/v1alpha1',
+        kind:       'WorkloadPolicy',
+        metadata:   { name: 'deploy-nginx-ingress', namespace: 'ingress' },
+        spec:       {
+          mode:             'protect',
+          rulesByContainer: { nginx: { executables: { allowed: ['/usr/bin/nginx'] } } },
+        },
+      });
+    });
+
+    it('omits ownerReferences/resourceVersion/uid/creationTimestamp/status from the exported metadata', () => {
+      proposal.metadata = {
+        name:            'deploy-nginx-ingress',
+        namespace:       'ingress',
+        ownerReferences: [{
+          kind: 'Deployment', name: 'nginx-ingress', uid: 'abc-123'
+        }],
+        resourceVersion:   '12345',
+        uid:               'proposal-uid',
+        creationTimestamp: '2026-01-01T00:00:00Z',
+      };
+
+      const result = proposal.toActivePolicyResource('monitor');
+
+      expect(result.metadata).toEqual({ name: 'deploy-nginx-ingress', namespace: 'ingress' });
+      expect(result.status).toBeUndefined();
     });
   });
 });

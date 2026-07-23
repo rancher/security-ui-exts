@@ -1,6 +1,6 @@
 import SteveModel from '@shell/plugins/steve/steve-class';
 import { WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
-import { PRODUCT_NAME } from '../types/runtime-enforcer';
+import { PRODUCT_NAME, WORKLOAD_POLICY_KIND } from '../types/runtime-enforcer';
 
 export default class WorkloadPolicyProposal extends SteveModel {
   get _availableActions() {
@@ -11,15 +11,14 @@ export default class WorkloadPolicyProposal extends SteveModel {
     const out = super._availableActions
       .filter((action) => !action.divider && (!action?.action || !removed.has(action.action)))
       .map((action) => {
-        // The base "download" action just dumps the resource's raw YAML. The real Export flow
-        // needs its own modal (to convert the proposal to an active policy first), so swap in a
-        // placeholder action here instead of relabeling the base one.
         if (action.action === 'download') {
           return {
-            action:  'exportPolicy',
-            label:   this.t('runtimeEnforcer.policyProposal.action.export'),
-            icon:    'icon icon-download',
-            enabled: true,
+            action:     'exportPolicy',
+            label:      this.t('runtimeEnforcer.policyProposal.action.export'),
+            icon:       'icon icon-download',
+            bulkable:   true,
+            bulkAction: 'exportPolicy',
+            enabled:    true,
           };
         }
 
@@ -99,14 +98,39 @@ export default class WorkloadPolicyProposal extends SteveModel {
     }, 0);
   }
 
+  /**
+   * Builds the WorkloadPolicy representation of this proposal for
+   * export, given a target mode.
+   *
+   * `resourceVersion`/`ownerReferences`/`uid`/`creationTimestamp`/`status` are intentionally
+   * omitted from the output.
+   */
+  toActivePolicyResource(mode) {
+    return {
+      apiVersion: this.apiVersion,
+      kind:       WORKLOAD_POLICY_KIND,
+      metadata:   {
+        name:      this.metadata?.name,
+        namespace: this.metadata?.namespace,
+      },
+      spec: {
+        mode,
+        rulesByContainer: this.rulesByContainer,
+      },
+    };
+  }
+
   editPolicy() {
     // eslint-disable-next-line no-console
     console.warn('WorkloadPolicyProposal.editPolicy() is not yet implemented.');
   }
 
-  exportPolicy() {
-    // eslint-disable-next-line no-console
-    console.warn('WorkloadPolicyProposal.exportPolicy() is not yet implemented.');
+  exportPolicy(resources = this) {
+    this.$dispatch('promptModal', {
+      component:  'ExportPolicyDialog',
+      resources:  Array.isArray(resources) ? resources : [resources],
+      modalWidth: '640',
+    });
   }
 
   promote() {

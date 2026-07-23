@@ -63,3 +63,18 @@ runtimeEnforcer:
         container: Container
         image: Image
         executables: Executables
+    exportDialog:
+      title:
+        single: Export as active policy
+        bulk: Export as active policies
+      banner:
+        single: Before exporting, we will automatically convert the policy proposal to an active policy. This way you will be able to easily import it later into another environment.
+        bulk: Before exporting, we will automatically convert each policy proposal to an active policy. This way you will be able to easily import it later into another environment.
+      confirm:
+        single: 'Are you sure you want to export the <b>{name}</b> policy proposal as an active policy? If so, please select the target mode below.'
+        bulk: 'Are you sure you want to export the <b>selected policy proposals ({count})</b> as active policies? If so, please select the target mode below.'
+      mode:
+        monitor: Monitor mode
+        protect: Protect mode
+      cancel: Cancel
+      export: Export
