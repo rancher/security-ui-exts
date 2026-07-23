@@ -2,6 +2,7 @@ import { PRODUCT_NAME } from '../types/runtime-enforcer';
 import { RESOURCE } from '../types/runtime-enforcer';
 
 export function init($plugin: any, store: any) {
+  const { configureType } = $plugin.DSL(store, PRODUCT_NAME);
 
   const {
     product,
@@ -29,20 +30,12 @@ export function init($plugin: any, store: any) {
     overview: true
   });
 
-  virtualType({
-    label:      'Policy proposals',
-    name:       'policy-proposals',
-    ifHaveType: RESOURCE.POLICY_PROPOSALS,
-    namespaced: false,
-    route:      {
-      name:   `c-cluster-${ PRODUCT_NAME }-policy-proposals`,
-      params: { product: PRODUCT_NAME },
-      meta:   { pkg: PRODUCT_NAME, product: PRODUCT_NAME }
-    },
+  configureType(RESOURCE.POLICY_PROPOSALS, {
+    isCreatable: false,
   });
 
   basicType([
     'entry',
-    'policy-proposals'
+    RESOURCE.POLICY_PROPOSALS,
   ]);
 }

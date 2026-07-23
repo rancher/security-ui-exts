@@ -12,6 +12,45 @@ export const POLICY_MODE = {
   PROTECT: 'protect',
 };
 
+export interface WorkloadPolicyProposalOwnerReference {
+  apiVersion?: string;
+  blockOwnerDeletion?: boolean;
+  controller?: boolean;
+  kind?: string;
+  name?: string;
+  uid?: string;
+}
+
+export interface WorkloadPolicyProposalMetadata {
+  creationTimestamp?: string;
+  generation?: number;
+  name?: string;
+  namespace?: string;
+  ownerReferences?: WorkloadPolicyProposalOwnerReference[];
+  resourceVersion?: string;
+  uid?: string;
+}
+
+export interface WorkloadPolicyProposalExecutableRules {
+  allowed?: string[];
+}
+
+export interface WorkloadPolicyProposalContainerRules {
+  executables?: WorkloadPolicyProposalExecutableRules;
+}
+
+export interface WorkloadPolicyProposalSpec {
+  rulesByContainer?: Record<string, WorkloadPolicyProposalContainerRules>;
+}
+
+export interface WorkloadPolicyProposal {
+  id?: string;
+  apiVersion?: string;
+  kind?: string;
+  metadata?: WorkloadPolicyProposalMetadata;
+  spec?: WorkloadPolicyProposalSpec;
+}
+
 export const RUNTIME_ENFORCER = {
   CONTROLLER: 'suse-security-runtime-enforcer',
   CHART_NAME: 'suse-security-runtime-enforcer',

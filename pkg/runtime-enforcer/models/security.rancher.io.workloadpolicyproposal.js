@@ -120,6 +120,29 @@ export default class WorkloadPolicyProposal extends SteveModel {
     };
   }
 
+  get childrenRec() {
+    return Object.entries(this.rulesByContainer).map(([containerName, containerRules]) => {
+      return {
+        container:   containerName,
+        image:       containerRules?.image || '',
+        executableCount: containerRules?.executables?.allowed?.length || 0,
+        executables: containerRules?.executables?.allowed || [],
+      };
+    });
+  }
+
+  get detailPageAdditionalActions() {
+    return [
+      {
+        label:   this.t('runtimeEnforcer.policyProposal.action.promote'),
+        icon:    'upgrade-alt',
+        variant: 'primary',
+        size:    'large',
+        onClick: () => this.promote(),
+      },
+    ];
+  }
+
   editPolicy() {
     // eslint-disable-next-line no-console
     console.warn('WorkloadPolicyProposal.editPolicy() is not yet implemented.');
@@ -137,4 +160,5 @@ export default class WorkloadPolicyProposal extends SteveModel {
     // eslint-disable-next-line no-console
     console.warn('WorkloadPolicyProposal.promote() is not yet implemented.');
   }
+
 }
