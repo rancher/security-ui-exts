@@ -3,7 +3,10 @@ export const PRODUCT_NAME = 'runtimeEnforcer';
 export const CHART_REGISTRY_URL = 'oci://dp.apps.rancher.io/charts';
 export const DOCKER_CONFIG_JSON_TYPE = '.dockerconfigjson';
 
-export const RESOURCE = { POLICY_PROPOSALS: 'security.rancher.io.workloadpolicyproposal' };
+export const RESOURCE = { 
+  POLICY_PROPOSALS: 'security.rancher.io.workloadpolicyproposal',
+  ACTIVE_POLICIES:  'security.rancher.io.workloadpolicy',
+};
 
 export const WORKLOAD_POLICY_KIND = 'WorkloadPolicy';
 
@@ -11,6 +14,45 @@ export const POLICY_MODE = {
   MONITOR: 'monitor',
   PROTECT: 'protect',
 };
+
+export interface WorkloadPolicyProposalOwnerReference {
+  apiVersion?: string;
+  blockOwnerDeletion?: boolean;
+  controller?: boolean;
+  kind?: string;
+  name?: string;
+  uid?: string;
+}
+
+export interface WorkloadPolicyProposalMetadata {
+  creationTimestamp?: string;
+  generation?: number;
+  name?: string;
+  namespace?: string;
+  ownerReferences?: WorkloadPolicyProposalOwnerReference[];
+  resourceVersion?: string;
+  uid?: string;
+}
+
+export interface WorkloadPolicyProposalExecutableRules {
+  allowed?: string[];
+}
+
+export interface WorkloadPolicyProposalContainerRules {
+  executables?: WorkloadPolicyProposalExecutableRules;
+}
+
+export interface WorkloadPolicyProposalSpec {
+  rulesByContainer?: Record<string, WorkloadPolicyProposalContainerRules>;
+}
+
+export interface WorkloadPolicyProposal {
+  id?: string;
+  apiVersion?: string;
+  kind?: string;
+  metadata?: WorkloadPolicyProposalMetadata;
+  spec?: WorkloadPolicyProposalSpec;
+}
 
 export const RUNTIME_ENFORCER = {
   CONTROLLER: 'suse-security-runtime-enforcer',

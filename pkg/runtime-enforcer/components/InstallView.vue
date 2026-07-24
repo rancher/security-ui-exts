@@ -896,12 +896,18 @@ onMounted(async() => {
           style="width: 100%;"
         >
           <template #globalRepoAuth>
-            <h2
+            <div class="logo mt-20 mb-10">
+                <img
+                src="../assets/img/runtime-enforcer-logo.svg"
+                height="64"
+                />
+            </div>
+            <h1
               class="mt-20 mb-10"
               data-testid="re-repo-title"
             >
               {{ t('runtimeEnforcer.installationWizard.globalRepoAuth.title') }}
-            </h2>
+            </h1>
             <p class="mb-20">
               {{ t('runtimeEnforcer.installationWizard.globalRepoAuth.description') }}
             </p>

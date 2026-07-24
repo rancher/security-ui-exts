@@ -98,16 +98,16 @@ describe('WorkloadPolicyProposal model', () => {
       expect(actions.some((a: any) => a.action === 'download')).toBe(false);
     });
 
-    it('relabels "promptRemove" to Delete', () => {
+    it('relabels "promptRemove" to the custom "removeProposal" action', () => {
       const actions = proposal._availableActions;
-      const removeAction = actions.find((a: any) => a.action === 'promptRemove');
+      const removeAction = actions.find((a: any) => a.action === 'removeProposal');
 
       expect(removeAction.label).toBe('runtimeEnforcer.policyProposal.action.delete');
     });
 
-    it('places exactly one divider immediately before "promptRemove"', () => {
+    it('places exactly one divider immediately before "removeProposal"', () => {
       const actions = proposal._availableActions;
-      const removeIndex = actions.findIndex((a: any) => a.action === 'promptRemove');
+      const removeIndex = actions.findIndex((a: any) => a.action === 'removeProposal');
 
       expect(actions[removeIndex - 1]).toEqual({ divider: true });
       expect(actions.filter((a: any) => a.divider).length).toBe(1);
@@ -116,7 +116,7 @@ describe('WorkloadPolicyProposal model', () => {
     it('produces the expected final ordering', () => {
       const actionNames = proposal._availableActions.map((a: any) => a.action ?? 'divider');
 
-      expect(actionNames).toEqual(['editPolicy', 'exportPolicy', 'divider', 'promptRemove']);
+      expect(actionNames).toEqual(['editPolicy', 'exportPolicy', 'divider', 'removeProposal']);
     });
   });
 
