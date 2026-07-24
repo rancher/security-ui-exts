@@ -138,18 +138,6 @@ export default class WorkloadPolicyProposal extends SteveModel {
     });
   }
 
-  get detailPageAdditionalActions() {
-    return [
-      {
-        label:   this.t('runtimeEnforcer.policyProposal.action.promote'),
-        icon:    'upgrade-alt',
-        variant: 'primary',
-        size:    'large',
-        onClick: () => this.promote(),
-      },
-    ];
-  }
-
   editPolicy() {
     // eslint-disable-next-line no-console
     console.warn('WorkloadPolicyProposal.editPolicy() is not yet implemented.');

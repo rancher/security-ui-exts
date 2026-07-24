@@ -21,10 +21,6 @@ export default {
       type:    Array,
       default: () => [],
     },
-    table: {
-      type:    Object,
-      default: null,
-    },
   },
 
   data() {
@@ -64,11 +60,6 @@ export default {
       this.$emit('close');
     },
 
-    resolveTable() {
-      // Callers may pass either the inner SortableTable instance or a wrapper.
-      return this.table?.$refs?.table?.$refs?.table || this.table?.$refs?.table || this.table;
-    },
-
     async redeployWorkload(resource) {
       try {
         const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
@@ -94,21 +85,10 @@ export default {
 
     async deletePolicies() {
       this.deleteInProgress = true;
-      const table = this.resolveTable();
-      const act = findBy(table?.availableActions || [], 'action', 'promptRemove');
-
-      if (act && typeof table?.setBulkActionOfInterest === 'function' && typeof table?.applyTableAction === 'function') {
-        table.setBulkActionOfInterest(act);
-        table.applyTableAction(act);
-      } else {
-        await Promise.all((this.resources || []).map((resource) => resource?.remove?.()));
-      }
-
-      for (const resource of this.resources) {
-        if (resource?.metadata?.ownerReferences?.[0]?.name) {
-          await this.redeployWorkload(resource);
-        }
-      }
+      await Promise.all((this.resources || []).map(async (resource) => {
+        await resource?.remove?.();
+        await this.redeployWorkload(resource);
+      }));
 
       this.deleteInProgress = false;
 

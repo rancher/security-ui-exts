@@ -50,8 +50,9 @@ watch(
 );
 
 const schema = computed(() => store.getters['cluster/schemaFor'](RESOURCE.POLICY_PROPOSALS));
+const schema4ActivePolicies = computed(() => store.getters['cluster/schemaFor'](RESOURCE.ACTIVE_POLICIES));
 
-const canPromote = computed(() => !!schema.value?.canCreate);
+const canPromote = computed(() => !!schema4ActivePolicies.value?.canCreate);
 
 const headers = computed(() => getPolicyProposalHeaders({ canPromote: canPromote.value }));
 
@@ -164,12 +165,9 @@ function deleteSelected() {
     return;
   }
 
-  const table = proposalTable.value?.$refs?.table?.$refs?.table || proposalTable.value?.$refs?.table || proposalTable.value;
-
   store.dispatch('cluster/promptModal', {
     component:  'DeletePolicyProposalsDialog',
     resources:  Array.isArray(selectedRows.value) ? selectedRows.value : [selectedRows.value],
-    table,
     modalWidth: '640',
   });
 }

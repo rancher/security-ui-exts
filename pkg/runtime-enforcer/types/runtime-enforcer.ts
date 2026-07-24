@@ -3,7 +3,10 @@ export const PRODUCT_NAME = 'runtimeEnforcer';
 export const CHART_REGISTRY_URL = 'oci://dp.apps.rancher.io/charts';
 export const DOCKER_CONFIG_JSON_TYPE = '.dockerconfigjson';
 
-export const RESOURCE = { POLICY_PROPOSALS: 'security.rancher.io.workloadpolicyproposal' };
+export const RESOURCE = { 
+  POLICY_PROPOSALS: 'security.rancher.io.workloadpolicyproposal',
+  ACTIVE_POLICIES:  'security.rancher.io.workloadpolicy',
+};
 
 export const WORKLOAD_POLICY_KIND = 'WorkloadPolicy';
 

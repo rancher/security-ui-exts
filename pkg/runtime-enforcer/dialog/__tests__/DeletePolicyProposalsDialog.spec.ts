@@ -82,31 +82,6 @@ describe('DeletePolicyProposalsDialog', () => {
     });
   });
 
-  describe('resolveTable', () => {
-    it('returns deepest inner table when nested refs are present', () => {
-      const inner = { availableActions: [] };
-      const table = { $refs: { table: { $refs: { table: inner } } } };
-      const wrapper = mountDialog({ table });
-
-      expect((wrapper.vm as any).resolveTable()).toEqual(inner);
-    });
-
-    it('returns first table ref when only one level is present', () => {
-      const mid = { availableActions: [] };
-      const table = { $refs: { table: mid } };
-      const wrapper = mountDialog({ table });
-
-      expect((wrapper.vm as any).resolveTable()).toEqual(mid);
-    });
-
-    it('returns raw table when no refs exist', () => {
-      const table = { availableActions: [] };
-      const wrapper = mountDialog({ table });
-
-      expect((wrapper.vm as any).resolveTable()).toEqual(table);
-    });
-  });
-
   describe('redeployWorkload', () => {
     it('patches workload annotation timestamp, saves workload and closes on success', async() => {
       const save = jest.fn().mockResolvedValue(undefined);
@@ -146,64 +121,59 @@ describe('DeletePolicyProposalsDialog', () => {
   });
 
   describe('deletePolicies', () => {
-    it('uses table bulk action when promptRemove action is available', async() => {
-      const act = { action: 'promptRemove' };
-      const table = {
-        availableActions:        [act],
-        setBulkActionOfInterest: jest.fn(),
-        applyTableAction:        jest.fn(),
-      };
+    it('removes all selected resources and triggers redeploy for each', async() => {
       const push = jest.fn();
-      const resources = [createResource('policy-a', 'deploy-a')];
-      const wrapper = mountDialog({ resources, table, push });
+      const resources = [createResource('policy-a', 'wk-a'), createResource('policy-b', 'wk-b')];
+      const wrapper = mountDialog({ resources, push });
       const redeploySpy = jest.spyOn(wrapper.vm as any, 'redeployWorkload').mockResolvedValue(undefined);
 
       await (wrapper.vm as any).deletePolicies();
 
-      expect(table.setBulkActionOfInterest).toHaveBeenCalledWith(act);
-      expect(table.applyTableAction).toHaveBeenCalledWith(act);
-      expect(resources[0].remove).not.toHaveBeenCalled();
-      expect(redeploySpy).toHaveBeenCalledWith(resources[0]);
-      expect((wrapper.vm as any).deleteInProgress).toBe(false);
-      expect(push).toHaveBeenCalledWith({
-        name:   `c-cluster-${ PRODUCT_NAME }-resource`,
-        params: { cluster: 'local', product: PRODUCT_NAME },
-      });
-      expect(wrapper.emitted('close')).toBeTruthy();
-    });
-
-    it('falls back to direct resource removal when table action API is unavailable', async() => {
-      const push = jest.fn();
-      const resources = [createResource('policy-a'), createResource('policy-b')];
-      const wrapper = mountDialog({ resources, table: null, push });
-      const redeploySpy = jest.spyOn(wrapper.vm as any, 'redeployWorkload').mockResolvedValue(undefined);
-
-      await (wrapper.vm as any).deletePolicies();
-
-      resources.forEach((resource) => expect(resource.remove).toHaveBeenCalled());
-      expect(redeploySpy).not.toHaveBeenCalled();
-      expect((wrapper.vm as any).deleteInProgress).toBe(false);
-      expect(push).toHaveBeenCalledWith({
-        name:   `c-cluster-${ PRODUCT_NAME }-resource`,
-        params: { cluster: 'local', product: PRODUCT_NAME },
-      });
-      expect(wrapper.emitted('close')).toBeTruthy();
-    });
-
-    it('redeploys only resources that have an ownerReference name', async() => {
-      const resources = [
-        createResource('a', 'wk-a'),
-        createResource('b'),
-        createResource('c', 'wk-c'),
-      ];
-      const wrapper = mountDialog({ resources, table: null });
-      const redeploySpy = jest.spyOn(wrapper.vm as any, 'redeployWorkload').mockResolvedValue(undefined);
-
-      await (wrapper.vm as any).deletePolicies();
-
+      expect(resources[0].remove).toHaveBeenCalledTimes(1);
+      expect(resources[1].remove).toHaveBeenCalledTimes(1);
       expect(redeploySpy).toHaveBeenCalledTimes(2);
       expect(redeploySpy).toHaveBeenNthCalledWith(1, resources[0]);
-      expect(redeploySpy).toHaveBeenNthCalledWith(2, resources[2]);
+      expect(redeploySpy).toHaveBeenNthCalledWith(2, resources[1]);
+      expect((wrapper.vm as any).deleteInProgress).toBe(false);
+      expect(push).toHaveBeenCalledWith({
+        name:   `c-cluster-${ PRODUCT_NAME }-resource`,
+        params: { cluster: 'local', product: PRODUCT_NAME },
+      });
+      expect(wrapper.emitted('close')).toBeTruthy();
+    });
+
+    it('continues when a resource does not expose remove', async() => {
+      const resourceWithRemove = createResource('policy-a', 'wk-a');
+      const resourceWithoutRemove = {
+        nameDisplay:            'policy-b',
+        metadata:               { namespace: 'runtime-enforcer', ownerReferences: [{ name: 'wk-b' }] },
+        ownerWorkloadSteveType: 'apps.deployment',
+      };
+      const resources = [resourceWithRemove, resourceWithoutRemove as any];
+      const wrapper = mountDialog({ resources });
+      const redeploySpy = jest.spyOn(wrapper.vm as any, 'redeployWorkload').mockResolvedValue(undefined);
+
+      await (wrapper.vm as any).deletePolicies();
+
+      expect(resourceWithRemove.remove).toHaveBeenCalledTimes(1);
+      expect(redeploySpy).toHaveBeenCalledTimes(2);
+      expect(redeploySpy).toHaveBeenNthCalledWith(1, resourceWithRemove);
+      expect(redeploySpy).toHaveBeenNthCalledWith(2, resourceWithoutRemove);
+      expect((wrapper.vm as any).deleteInProgress).toBe(false);
+    });
+
+    it('rejects when a remove call fails and keeps deleteInProgress true', async() => {
+      const failing = createResource('policy-a', 'wk-a');
+      const error = new Error('remove failed');
+
+      failing.remove.mockRejectedValueOnce(error);
+
+      const wrapper = mountDialog({ resources: [failing] });
+      const redeploySpy = jest.spyOn(wrapper.vm as any, 'redeployWorkload').mockResolvedValue(undefined);
+
+      await expect((wrapper.vm as any).deletePolicies()).rejects.toThrow('remove failed');
+      expect(redeploySpy).not.toHaveBeenCalled();
+      expect((wrapper.vm as any).deleteInProgress).toBe(true);
     });
   });
 });
