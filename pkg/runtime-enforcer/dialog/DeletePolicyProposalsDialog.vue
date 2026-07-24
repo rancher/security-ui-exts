@@ -143,7 +143,7 @@ export default {
         :disabled="deleteInProgress"
         @click="deletePolicies"
       >
-        {{ t(`runtimeEnforcer.policyProposal.deleteDialog.delete.${ this.isBulk ? 'bulk' : 'single' }`) }}
+        {{ deleteButtonText }}
       </RcButton>
     </template>
   </Card>
@@ -167,7 +167,7 @@ export default {
   }
 
   .bg-danger {
-    background-color: #C1222D !important;
+    background-color: var(--error) !important;
   }
   .bg-danger:disabled {
     background-color: var(--rc-active-disabled-background) !important;

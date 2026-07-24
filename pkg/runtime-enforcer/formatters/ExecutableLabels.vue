@@ -1,11 +1,12 @@
 <template>
-  <span
-    v-if="row.executables?.length"
-    v-for="executable in row.executables"
-    :key="executable"
-    class="executable-pill"
-  >
-    {{ executable }}
+  <span v-if="row.executables?.length">
+    <span
+      v-for="executable in row.executables"
+      :key="executable"
+      class="executable-pill"
+    >
+      {{ executable }}
+    </span>
   </span>
   <span
     v-else
