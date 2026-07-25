@@ -34,8 +34,14 @@ export function init($plugin: any, store: any) {
     isCreatable: false,
   });
 
+  configureType(RESOURCE.ACTIVE_POLICIES, {
+    isCreatable: true,
+    canYaml:     true,
+  });
+
   basicType([
     'entry',
     RESOURCE.POLICY_PROPOSALS,
+    RESOURCE.ACTIVE_POLICIES,
   ]);
 }

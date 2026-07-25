@@ -31,8 +31,8 @@ runtimeEnforcer:
       containerName: Container
     selectedCount: |-
       {count, plural,
-      =1 {policy proposal selected}
-      other {policy proposals selected}
+      =1 {selected}
+      other {selected}
       }
     age:
       days: '{count} day | {count} days'
@@ -153,4 +153,111 @@ runtimeEnforcer:
     errors:
       emptyPath: "Container {container}: Executable path at position {index} cannot be empty."
       invalidPath: "Container {container}: Executable path {path} must start with a leading slash /."
-      
+  activePolicies:
+    title: Active Policies
+    banner:
+      text: In “Protect” mode, an active policy will only allow white-listed executables to run, whilst in “Monitor” mode it observes the violations (if any) without taking action. Want to learn more? Read our
+      documentation: documentation
+    filters:
+      policy: Policy
+      workload: Workload
+      workloadType: Workload Type
+      mode: Mode
+      status: Status
+      searchByName: Search by name
+      any: Any
+    actions:
+      changeMode: Change Mode
+      export: Export
+      delete: Delete
+    columns:
+      policy: Policy
+      namespace: Namespace
+      workload: Workload
+      workloadType: Workload Type
+      mode: Mode
+      status: Status
+      violations: Violations
+      occurrences: Occurrences
+    selectedCount: |-
+      {count, plural,
+      =1 {selected}
+      other {selected}
+      }
+    fallback:
+      na: N/A
+      unnamedPolicy: Unnamed Policy
+      noDescription: No additional details available.
+      unknownAge: Unknown
+    errors:
+      loadFailed: Failed to load active policies.
+    empty: No active policies found for the current filters.
+    mode:
+      monitor: Monitor
+      protect: Protect
+    status:
+      transitioning: Transitioning
+      ready: Ready
+      failed: Failed
+      popup:
+        nodes: |-
+          {count, plural,
+          =1 {1 node}
+          other {{count} nodes in total}
+          }
+        transitioning: |-
+          {count, plural,
+          =1 {is transitioning to the new mode (Monitor)}
+          other {are transitioning to the new mode (Monitor)}
+          }
+        ready: |-
+          {count, plural,
+          =1 {is successfully enforcing this policy}
+          other {are successfully enforcing this policy}
+          }
+        failed: failed enforcing this policy
+    deleteDialog:
+      title:
+        single: Delete active policy
+        bulk: Delete active policies
+      banner:
+        single: By default, deleting the active policy will not remove the labels applied on the workload - if you wish do to so, please select the desired option below.
+        bulk: By default, deleting the active policies will not remove the labels applied on the workloads - if you wish do to so, please select the desired option below.
+      confirm:
+        single: Are you sure you want to delete the <b>{name}</b>? This action cannot be undone.
+        bulk: Are you sure you want to delete the <b>selected active policies  ({count})</b>? This action cannot be undone.
+      workloadRemovalOptions:
+        keep:
+          single: Do not remove the label of the active policy from the workload
+          bulk: Do not remove the labels of the active policies from the workloads
+        remove:
+          single: Automatically remove the label of the active policy and restart the workload
+          bulk: Automatically remove the labels of the active policies and restart the workloads
+        manual:
+          single: Manually remove the label of the active policy (recommended for GitOps)
+          bulk: Manually remove the labels of the active policies (recommended for GitOps)
+      manualRemoval:
+        single: To manually remove the label of the active policy from the workload, you need to remove the label below from the corresponding workload and redeploy it.
+        bulk: To manually remove the labels of the active policies from the workloads, you need to remove the labels below from the corresponding workloads and redeploy them.
+      learnMore: Learn more
+      cancel: Cancel
+      delete: Delete
+      deleteWithWorkloadRemoval:
+        single: Delete Policy and Restart Workload
+        bulk: Delete Policies and Restart Workloads
+    changeModeDialog:
+      title:
+        single: Change mode for active policy
+        bulk: Change mode for active policies
+      banner:
+        single: Switching to Monitor mode will disable active enforcement for this policy. Any executables that violate the policy will no longer be blocked. The Runtime Enforcer will only observe and log these violations.
+        bulk: Switching to Monitor mode will disable active enforcement for this policy. Any executables that violate the policy will no longer be blocked. The Runtime Enforcer will only observe and log these violations.
+      confirm:
+        single: Are you sure you want to change the current mode for the monitoring-policy active policy from
+        bulk: Are you sure you want to change the current mode for the selected policies (2)? If so, please select the new mode below.
+      cancel: Cancel
+      changeMode: Change Mode
+    exportDialog:
+      confirm:
+        single: 'Are you sure you want to export the <b>{name}</b> active policy? If so, please select the target mode below.'
+        bulk: 'Are you sure you want to export the <b>selected active policies ({count})</b>? If so, please select the target mode below.'

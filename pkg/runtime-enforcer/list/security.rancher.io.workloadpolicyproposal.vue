@@ -6,15 +6,13 @@ import PaginatedResourceTable from '@shell/components/PaginatedResourceTable';
 import LabeledSelect from '@shell/components/form/LabeledSelect';
 import RichTranslation from '@shell/components/RichTranslation.vue';
 import SubtleLink from '@shell/components/SubtleLink.vue';
-import { RESOURCE, type WorkloadPolicyProposal } from '@runtime-enforcer/types';
+import { DOCUMENTATION_URL, RESOURCE, type WorkloadPolicyProposal } from '@runtime-enforcer/types';
 import { getPolicyProposalHeaders, getContainerTableHeaders } from '@runtime-enforcer/config/policy-proposals-table';
 import RcButton from '@components/RcButton/RcButton.vue';
 import _ from 'lodash';
 import { PaginationFilterField, PaginationParamFilter } from '@shell/types/store/pagination.types';
 import { WORKLOAD_KINDS } from '@shell/config/types';
 import SortableTable from '@shell/components/SortableTable';
-
-const DOCUMENTATION_URL = 'https://documentation.suse.com/cloudnative/security/latest/en/runtime-enforcer/index.html';
 
 const store = useStore();
 

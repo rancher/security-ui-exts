@@ -66,6 +66,47 @@ export interface WorkloadPolicyProposal {
   spec?: WorkloadPolicyProposalSpec;
 }
 
+export interface WorkloadPolicyIssue {
+  code?: string;
+  message?: string;
+}
+
+export interface WorkloadPolicyViolation {
+  timestamp?: string;
+  action?: string;
+  nodeName?: string;
+  podName?: string;
+  containerName?: string;
+  executablePath?: string;
+}
+
+export interface WorkloadPolicyStatus {
+  observedGeneration?: number;
+  phase?: string;
+  totalNodes?: number;
+  successfulNodes?: number;
+  transitioningNodes?: number;
+  failedNodes?: number;
+  nodesTransitioning?: string[];
+  nodesWithIssues?: Record<string, WorkloadPolicyIssue>;
+  violationCount?: number;
+  violations?: WorkloadPolicyViolation[];
+}
+
+export interface WorkloadPolicySpec {
+  mode?: string;
+  rulesByContainer?: Record<string, WorkloadPolicyProposalContainerRules>;
+}
+
+export interface WorkloadPolicy {
+  id?: string;
+  apiVersion?: string;
+  kind?: string;
+  metadata?: WorkloadPolicyProposalMetadata;
+  spec?: WorkloadPolicySpec;
+  status?: WorkloadPolicyStatus;
+}
+
 export const RUNTIME_ENFORCER = {
   CONTROLLER: 'suse-security-runtime-enforcer',
   CHART_NAME: 'suse-security-runtime-enforcer',
@@ -101,3 +142,13 @@ export const CERT_MANAGER_REPOS = {
   CHARTS_REPO_NAME: 'cert-manager',
   NAMESPACE:        'cert-manager',
 };
+
+export const POLICY_STATUS = {
+  TRANSITIONING: 'transitioning',
+  READY:         'ready',
+  FAILED:        'failed',
+};
+
+export const DOCUMENTATION_URL = 'https://github.com/rancher-sandbox/runtime-enforcer/tree/main/docs';
+
+export const WORKLOAD_PREFIX = 'security.rancher.io/policy :';

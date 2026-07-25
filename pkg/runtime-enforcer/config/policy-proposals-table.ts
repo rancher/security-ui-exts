@@ -13,6 +13,10 @@ export const FIGMA_COLUMN_WIDTH = {
   container:    200,
   image:        200,
   executableCount: 120,
+  mode: 120,
+  status: 120,
+  violations: 100,
+  occurrences: 120,
 };
 
 type HeaderBuilderInput = {
@@ -135,3 +139,69 @@ export function getContainerTableHeaders() {
   ];
 }
 
+
+export function getActivePoliciesHeaders() {
+  return [
+    {
+      name:     'policy',
+      labelKey: 'runtimeEnforcer.activePolicies.columns.policy',
+      value:    'metadata.name',
+      sort:     'metadata.name',
+      formatter: 'ActivePoliciesRouteLink',
+      width:    FIGMA_COLUMN_WIDTH.policy,
+    },
+    {
+      name:      'namespace',
+      labelKey:  'runtimeEnforcer.activePolicies.columns.namespace',
+      value:     'metadata.namespace',
+      sort:      'metadata.namespace',
+      formatter: 'NamespaceRouteLink',
+      width:     FIGMA_COLUMN_WIDTH.namespace,
+    },
+    {
+      name:     'workload',
+      labelKey: 'runtimeEnforcer.activePolicies.columns.workload',
+      value:    'metadata.ownerReferences.0.name',
+      sort:     'metadata.ownerReferences.0.name',
+      formatter: 'WorkloadRouteLink',
+      width:    FIGMA_COLUMN_WIDTH.workload,
+    },
+    {
+      name:     'workloadType',
+      labelKey: 'runtimeEnforcer.activePolicies.columns.workloadType',
+      value:    'metadata.ownerReferences.0.kind',
+      sort:     'metadata.ownerReferences.0.kind',
+      width:    FIGMA_COLUMN_WIDTH.workloadType,
+    },
+    {
+      name:     'mode',
+      labelKey: 'runtimeEnforcer.activePolicies.columns.mode',
+      value:    'spec.mode',
+      sort:     'spec.mode',
+      formatter: 'ModeValue',
+      width:    FIGMA_COLUMN_WIDTH.mode,
+    },
+    {
+      name:     'status',
+      labelKey: 'runtimeEnforcer.activePolicies.columns.status',
+      value:    'status.phase',
+      sort:     'status.phase',
+      formatter: 'StatusBadge',
+      width:    FIGMA_COLUMN_WIDTH.status,
+    },
+    {
+      name:     'violations',
+      labelKey: 'runtimeEnforcer.activePolicies.columns.violations',
+      value:    'status.violationCount',
+      sort:     'status.violationCount',
+      width:    FIGMA_COLUMN_WIDTH.violations,
+    },
+    {
+      name:     'occurrences',
+      labelKey: 'runtimeEnforcer.activePolicies.columns.occurrences',
+      value:    'occurrences',
+      sort:     'occurrences',
+      width:    FIGMA_COLUMN_WIDTH.occurrences,
+    },
+  ];
+}

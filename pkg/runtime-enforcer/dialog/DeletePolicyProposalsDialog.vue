@@ -2,7 +2,6 @@
 import { Card } from '@components/Card';
 import { Banner } from '@components/Banner';
 import RcButton from '@components/RcButton/RcButton.vue';
-import { findBy } from '@shell/utils/array';
 import { PRODUCT_NAME } from '@runtime-enforcer/types/runtime-enforcer.ts';
 import { exceptionToErrorsArray } from '@shell/utils/error';
 import { TIMESTAMP } from '@shell/config/labels-annotations';

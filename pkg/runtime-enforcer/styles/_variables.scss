@@ -1,0 +1,23 @@
+// Base Color Palette
+$dark-red: #A30000;
+$red: #B13333;
+$orange: #FD8D0D;
+$yellow: #FADA38;
+$light-gray: #C3C6D5;
+$dark-gray: #4A4B52;
+$very-light-gray: #DFE6F2;
+$info-blue: #1F67DB;
+$aqua: #0FCFF0;
+$blue: #3E98D3;
+$icon-disabled-gray: #E2E3EB;
+$green: #007032;
+$light-green: #DCE7E1;
+$unavailable-gray: #BFC1D5;
+
+// Status Colors 
+$transitioning-bg-color: $very-light-gray;
+$transitioning-color: $info-blue;
+$ready-bg-color: $light-green;
+$ready-color: $green;
+$failed-bg-color: $red;
+
