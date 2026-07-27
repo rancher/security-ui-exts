@@ -139,8 +139,14 @@ export default class WorkloadPolicyProposal extends SteveModel {
   }
 
   editPolicy() {
-    // eslint-disable-next-line no-console
-    console.warn('WorkloadPolicyProposal.editPolicy() is not yet implemented.');
+    const location = this.detailLocation;
+
+    location.query = {
+      ...location.query,
+      mode: 'edit'
+    };
+
+    this.currentRouter().push(location);
   }
 
   exportPolicy(resources = this) {

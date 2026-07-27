@@ -91,11 +91,21 @@ runtimeEnforcer:
       continue: Continue
   policyProposal:
     label: Policy Proposal
+    policyName: Policy Name
+    description: Description
+    descriptionPlaceholder: Any text you want that better describes this configuration
+    containerName: Container Name
+    allowedExecutables: Allowed Executables
+    executablePlaceholder: /usr/bin/executable
+    addExecutable: Add Executable
     action:
       editPolicy: Edit Policy
       export: Export
       delete: Delete
       promote: Promote
+    badges:
+      learned: Learned
+      manualEntry: Manual Entry
     masthead:
       namespace: Namespace
       workload: Workload
@@ -138,3 +148,6 @@ runtimeEnforcer:
       delete:
         single: Delete Proposal and Restart Workload
         bulk: Delete Proposals and Restart Workloads
+    errors:
+      emptyPath: "Container {container}: Executable path at position {index} cannot be empty."
+      invalidPath: "Container {container}: Executable path {path} must start with a leading slash /."

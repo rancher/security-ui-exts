@@ -214,12 +214,14 @@ describe('WorkloadPolicyProposal model', () => {
 
   describe('editPolicy / exportPolicy / promote', () => {
     it('editPolicy() does not throw', () => {
+      proposal.detailLocation = { query: {} };
+      proposal.currentRouter = () => ({ push: jest.fn() });
+
       expect(() => proposal.editPolicy()).not.toThrow();
     });
 
     it('exportPolicy() dispatches promptModal with itself as the sole resource by default', () => {
       proposal.exportPolicy();
-
       expect(proposal.$dispatch).toHaveBeenCalledWith('promptModal', {
         component:  'ExportPolicyDialog',
         resources:  [proposal],
@@ -229,9 +231,7 @@ describe('WorkloadPolicyProposal model', () => {
 
     it('exportPolicy() dispatches promptModal with the given array of resources when called in bulk', () => {
       const other = new WorkloadPolicyProposal();
-
       proposal.exportPolicy([proposal, other]);
-
       expect(proposal.$dispatch).toHaveBeenCalledWith('promptModal', {
         component:  'ExportPolicyDialog',
         resources:  [proposal, other],
@@ -240,7 +240,10 @@ describe('WorkloadPolicyProposal model', () => {
     });
 
     it('promote() does not throw', () => {
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
       expect(() => proposal.promote()).not.toThrow();
+      warnSpy.mockRestore();
     });
   });
 
