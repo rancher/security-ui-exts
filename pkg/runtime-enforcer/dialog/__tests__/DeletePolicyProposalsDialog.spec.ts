@@ -94,7 +94,7 @@ describe('DeletePolicyProposalsDialog', () => {
   });
 
   describe('redeployWorkload', () => {
-    it('patches workload annotation timestamp, saves workload and closes on success', async() => {
+    it('patches workload annotation timestamp and saves workload on success', async() => {
       const save = jest.fn().mockResolvedValue(undefined);
       const workload = { spec: { template: {} }, save };
       const dispatch = jest.fn().mockResolvedValue(workload);
@@ -113,7 +113,7 @@ describe('DeletePolicyProposalsDialog', () => {
       expect(typeof annotations[TIMESTAMP]).toBe('string');
       expect(annotations[TIMESTAMP]).toMatch(/Z$/);
       expect(save).toHaveBeenCalled();
-      expect(closeSpy).toHaveBeenCalled();
+      expect(closeSpy).not.toHaveBeenCalled();
     });
 
     it('stores formatted errors when workload lookup/save fails', async() => {

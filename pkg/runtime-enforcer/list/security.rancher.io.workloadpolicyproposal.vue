@@ -169,7 +169,7 @@ function deleteSelected() {
 
   store.dispatch('cluster/promptModal', {
     component:  'DeletePolicyProposalsDialog',
-    resources:  Array.isArray(selectedRows.value) ? selectedRows.value : [selectedRows.value],
+    resources:  Array.isArray(selectedRows.value) ? [...selectedRows.value] : [selectedRows.value],
     modalWidth: '640',
   });
 }

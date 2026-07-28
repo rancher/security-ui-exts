@@ -82,8 +82,6 @@ export default {
         annotations[TIMESTAMP] = now;
 
         await workload.save();
-
-        this.close();
       } catch (err) {
         this.errors = exceptionToErrorsArray(err);
       }
