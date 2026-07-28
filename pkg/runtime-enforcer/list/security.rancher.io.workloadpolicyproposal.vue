@@ -4,6 +4,8 @@ import { useStore } from 'vuex';
 import Banner from '@components/Banner/Banner.vue';
 import PaginatedResourceTable from '@shell/components/PaginatedResourceTable';
 import LabeledSelect from '@shell/components/form/LabeledSelect';
+import RichTranslation from '@shell/components/RichTranslation.vue';
+import SubtleLink from '@shell/components/SubtleLink.vue';
 import { RESOURCE, type WorkloadPolicyProposal } from '@runtime-enforcer/types';
 import { getPolicyProposalHeaders, getContainerTableHeaders } from '@runtime-enforcer/config/policy-proposals-table';
 import RcButton from '@components/RcButton/RcButton.vue';
@@ -181,15 +183,17 @@ function deleteSelected() {
       class="policy-info-banner"
     >
       <span class="banner-text">
-        {{ t('runtimeEnforcer.policyProposals.banner.text') }}
-        <a
-          :href="DOCUMENTATION_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="doc-link"
-        >
-          {{ t('runtimeEnforcer.policyProposals.banner.documentation') }}
-        </a>
+        <RichTranslation :k="'runtimeEnforcer.policyProposals.banner.text'">
+          <template #documentation="{ content }">
+            <SubtleLink
+              :href="DOCUMENTATION_URL"
+              target="_blank"
+              :open-in-new-tab-label="t('generic.opensInNewTab')"
+            >
+              {{ content }}
+            </SubtleLink>
+          </template>
+        </RichTranslation>
       </span>
     </Banner>
 
@@ -326,16 +330,6 @@ function deleteSelected() {
     align-items: center;
     flex-wrap: wrap;
     gap: 6px;
-  }
-
-  .doc-link {
-    color: var(--link);
-    font-weight: 600;
-    text-decoration: underline;
-  }
-
-  .doc-link:hover {
-    color: var(--body-text);
   }
 
   .filters-grid {
