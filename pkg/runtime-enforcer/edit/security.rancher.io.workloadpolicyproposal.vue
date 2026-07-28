@@ -4,6 +4,7 @@
       :resource="value"
       :errors="errors"
       :validation-passed="isValid"
+      :can-yaml="false"
       @finish="saveProposal"
       @cancel="cancel"
   >
@@ -118,7 +119,7 @@
 
                     <div class="col span-6 align-vertical-center">
                       <a
-                          class="text-error cursor-pointer"
+                          class="text-link cursor-pointer"
                           @click="removeExecutable(c.name, eIdx)"
                       >
                         {{ t('generic.remove') }}
@@ -376,6 +377,11 @@ export default {
 
 <style lang="scss" scoped>
 .policy-proposal-edit {
+  // Hide the auto-generated status badge next to the title in CruResource
+  :deep(.badge-state) {
+    display: none !important;
+  }
+
   .custom-content-bg {
     background-color: var(--nav-bg, #f4f5f8);
     border: 1px solid var(--border);
