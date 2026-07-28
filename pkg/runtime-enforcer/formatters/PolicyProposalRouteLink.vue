@@ -31,9 +31,16 @@ export default {
       return this.value || this.row?.metadata?.name || '';
     },
     policyProposalDetailLink() {
-      const cluster = this.$route.params.cluster;
-
-      return `/c/${ cluster }/${ PRODUCT_NAME }/${ RESOURCE.POLICY_PROPOSALS }/${ this.row?.metadata?.namespace || '' }%2F${ this.policyProposalValue }`;
+      return {
+        name:   'c-cluster-product-resource-namespace-id',
+        params: {
+          cluster:   this.$route.params.cluster,
+          product:   PRODUCT_NAME,
+          resource:  RESOURCE.POLICY_PROPOSALS,
+          namespace: this.row.metadata.namespace,
+          id:        this.policyProposalValue,
+        }
+      };
     }
   },
 };

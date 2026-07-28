@@ -156,7 +156,7 @@ runtimeEnforcer:
   activePolicies:
     title: Active Policies
     banner:
-      text: In “Protect” mode, an active policy will only allow white-listed executables to run, whilst in “Monitor” mode it observes the violations (if any) without taking action. Want to learn more? Read our
+      text: In “Protect” mode, an active policy will only allow white-listed executables to run, whilst in “Monitor” mode it observes the violations (if any) without taking action. Want to learn more? Read our <documentation>documentation</documentation>
       documentation: documentation
     filters:
       policy: Policy
@@ -245,6 +245,16 @@ runtimeEnforcer:
       deleteWithWorkloadRemoval:
         single: Delete Policy and Restart Workload
         bulk: Delete Policies and Restart Workloads
+      growl:
+        delete:
+          single: The{name} active policy has been successfully deleted.
+          bulk: The selected active policies ({count}) have been successfully deleted.
+        autoRemoval:
+          single: Restarting the corresponding workload might take a few minutes to complete.
+          bulk: Restarting the corresponding workloads might take a few minutes to complete.
+        manualRemoval:
+          single: Don't forget to manually remove the labels of the active policy from the workload and redeploy it.
+          bulk: Don't forget to manually remove the labels of the active policies from the workloads and redeploy them.
     changeModeDialog:
       title:
         single: Change mode for active policy

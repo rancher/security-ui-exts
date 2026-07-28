@@ -10,8 +10,8 @@ import RcButton from '@components/RcButton/RcButton.vue';
 import _ from 'lodash';
 import { PaginationFilterField, PaginationParamFilter } from '@shell/types/store/pagination.types';
 import { WORKLOAD_KINDS } from '@shell/config/types';
-// import SortableTable from '@shell/components/SortableTable';
-// import { workloadPolicies } from '../../../tests/unit/mockdata/workloadpolicies.js';
+import RichTranslation from '@shell/components/RichTranslation.vue';
+import SubtleLink from '@shell/components/SubtleLink.vue';
 
 const store = useStore();
 
@@ -222,15 +222,17 @@ function changeModeSelected() {
       class="policy-info-banner"
     >
       <span class="banner-text">
-        {{ t('runtimeEnforcer.activePolicies.banner.text') }}
-        <a
-          :href="DOCUMENTATION_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="doc-link"
-        >
-          {{ t('runtimeEnforcer.activePolicies.banner.documentation') }}
-        </a>
+        <RichTranslation :k="'runtimeEnforcer.activePolicies.banner.text'">
+          <template #documentation="{ content }">
+            <SubtleLink
+              :href="DOCUMENTATION_URL"
+              target="_blank"
+              :open-in-new-tab-label="t('generic.opensInNewTab')"
+            >
+              {{ content }}
+            </SubtleLink>
+          </template>
+        </RichTranslation>
       </span>
     </Banner>
 
@@ -340,57 +342,6 @@ function changeModeSelected() {
         </div>
       </template>
     </PaginatedResourceTable>
-    <!-- <SortableTable
-      table-key="runtime-enforcer-active-policies-figma-columns"
-      :rows="workloadPolicies"
-      :headers="headers"
-      :namespaced="true"
-      :table-actions="true"
-      :row-actions="true"
-      :search="false"
-      :has-advanced-filtering="false"
-      :key-field="'id'"
-      :use-query-params-for-simple-filtering="useQueryParamsForSimpleFiltering"
-      @selection="onSelectionChange"
-    >
-      <template #header-left>
-        <div class="table-top-left">
-          <RcButton
-            variant="primary"
-            size="medium"
-            :disabled="!selectedRows.length"
-            @click="changeModeSelected"
-          >
-            <i class="icon icon-refresh"></i>
-            {{ t('runtimeEnforcer.activePolicies.actions.changeMode') }}
-          </RcButton>
-          <RcButton
-            variant="primary"
-            size="medium"
-            :disabled="!selectedRows.length"
-            @click="exportSelected"
-          >
-            <i class="icon icon-download"></i>
-            {{ t('runtimeEnforcer.activePolicies.actions.export') }}
-          </RcButton>
-          <RcButton
-            variant="primary"
-            size="medium"
-            :disabled="!selectedRows.length"
-            @click="deleteSelected"
-          >
-            <i class="icon icon-delete"></i>
-            {{ t('runtimeEnforcer.activePolicies.actions.delete') }}
-          </RcButton>
-          <div
-            v-if="selectedRows.length"
-            class="selected-count"
-          >
-            {{ selectedRows.length }} {{ t('runtimeEnforcer.activePolicies.selectedCount', { count: selectedRows.length }, true) }}
-          </div>
-        </div>
-      </template>
-    </SortableTable> -->
   </div>
 </template>
 

@@ -56,7 +56,7 @@ export default {
     confirmText() {
       return this.isBulk
         ? this.t('runtimeEnforcer.activePolicies.deleteDialog.confirm.bulk', { count: this.resources.length }, true)
-        : this.t('runtimeEnforcer.activePolicies.deleteDialog.confirm.single', { name: this.resources[0]?.nameDisplay, workload: this.resources[0]?.metadata?.ownerReferences?.[0]?.name }, true);
+        : this.t('runtimeEnforcer.activePolicies.deleteDialog.confirm.single', { name: this.resources[0]?.nameDisplay }, true);
     },
     manualRemovalText() {
       return this.t(`runtimeEnforcer.activePolicies.deleteDialog.manualRemoval.${ this.isBulk ? 'bulk' : 'single' }`);
@@ -86,6 +86,22 @@ export default {
         )
         : this.t('runtimeEnforcer.activePolicies.deleteDialog.delete');
     },
+    growlMessage() {
+      switch (this.workloadRemovalOption) {
+      case 'keep':
+        return this.isBulk
+          ? this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk')
+          : this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single', { name: this.resources[0]?.nameDisplay });
+      case 'auto':
+        return this.isBulk
+          ? `${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk')} ${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.bulk')}`
+          : `${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single', { name: this.resources[0]?.nameDisplay })} ${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.single')}`;
+      case 'manual':
+        return this.isBulk
+          ? `${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk')} ${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.manualRemoval.bulk')}`
+          : `${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single', { name: this.resources[0]?.nameDisplay })} ${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.manualRemoval.single')}`;
+      }
+    },
   },
 
   methods: {
@@ -110,7 +126,6 @@ export default {
 
         await workload.save();
 
-        this.close();
       } catch (err) {
         this.errors = exceptionToErrorsArray(err);
       }
@@ -120,11 +135,13 @@ export default {
       this.deleteInProgress = true;
       await Promise.all((this.resources || []).map(async (resource) => {
         await resource?.remove?.();
-        await this.redeployWorkload(resource);
+        if (this.workloadRemovalOption === 'auto') {
+          await this.redeployWorkload(resource);
+        }
       }));
 
       this.deleteInProgress = false;
-
+      this.$store.dispatch('growl/success', { message: this.growlMessage });
       this.$router.push({
         name:   `c-cluster-${ PRODUCT_NAME }-resource`,
         params: {

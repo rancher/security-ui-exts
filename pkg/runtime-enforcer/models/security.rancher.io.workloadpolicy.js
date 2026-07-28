@@ -61,6 +61,10 @@ export default class WorkloadPolicyProposal extends SteveModel {
     return out;
   }
 
+  get violationCount() {
+    return this.status?.violationCount || 0;
+  }
+
   changeMode(resources = this) {
     this.$dispatch('promptModal', {
       component:  'ChangeModeDialog',

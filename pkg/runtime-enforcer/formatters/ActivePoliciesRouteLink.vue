@@ -33,7 +33,16 @@ export default {
     activePoliciesDetailLink() {
       const cluster = this.$route.params.cluster;
 
-      return `/c/${ cluster }/${ PRODUCT_NAME }/${ RESOURCE.ACTIVE_POLICIES }/${ this.row?.metadata?.namespace || '' }%2F${ this.activePoliciesValue }`;
+      return {
+        name:   'c-cluster-product-resource-namespace-id',
+        params: {
+          cluster:   this.$route.params.cluster,
+          product:   PRODUCT_NAME,
+          resource:  RESOURCE.ACTIVE_POLICIES,
+          namespace: this.row.metadata.namespace,
+          id:        this.activePoliciesValue,
+        }
+      };
     }
   },
 };
