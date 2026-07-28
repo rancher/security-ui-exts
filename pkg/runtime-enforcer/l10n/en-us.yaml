@@ -147,6 +147,10 @@ runtimeEnforcer:
       delete:
         single: Delete Proposal and Restart Workload
         bulk: Delete Proposals and Restart Workloads
+      growl:
+        single: The policy proposal has been successfully deleted. Restarting the corresponding workload might take a few minutes to complete.
+        bulk: The selected policy proposals ({count}) have been successfully deleted. Restarting the corresponding workloads might take a few minutes to complete.
     errors:
       emptyPath: "Container {container}: Executable path at position {index} cannot be empty."
       invalidPath: "Container {container}: Executable path {path} must start with a leading slash /."
+      
