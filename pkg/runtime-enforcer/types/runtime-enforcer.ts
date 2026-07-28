@@ -8,6 +8,18 @@ export const RESOURCE = {
   ACTIVE_POLICIES:  'security.rancher.io.workloadpolicy',
 };
 
+export const EXEC_SOURCE = {
+  LEARNED: 'learned',
+  MANUAL:  'manual',
+} as const;
+
+export type ExecSource = typeof EXEC_SOURCE[keyof typeof EXEC_SOURCE];
+
+export interface ExecutableItem {
+  path: string;
+  source: ExecSource;
+}
+
 export const WORKLOAD_POLICY_KIND = 'WorkloadPolicy';
 
 export const POLICY_MODE = {
