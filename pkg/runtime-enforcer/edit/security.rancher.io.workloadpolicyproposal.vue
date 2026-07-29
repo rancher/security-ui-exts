@@ -98,23 +98,13 @@
                       class="executable-row row mb-10"
                   >
 
-                    <div class="col span-6 input-with-badge">
-                      <div class="input-container">
+                    <div class="col span-6">
                         <LabeledInput
                             :value="exec.path"
                             :placeholder="t('runtimeEnforcer.policyProposal.executablePlaceholder')"
                             :mode="mode"
                             @update:value="updateExecutablePath(c.name, eIdx, $event)"
                         />
-                      </div>
-                      <div class="badge-wrapper">
-                        <span
-                            class="type-badge text-center"
-                            :class="exec.source === EXEC_SOURCE.LEARNED ? 'badge-learned' : 'badge-manual'"
-                        >
-                          {{ exec.source === EXEC_SOURCE.LEARNED ? t('runtimeEnforcer.policyProposal.badges.learned') : t('runtimeEnforcer.policyProposal.badges.manualEntry') }}
-                        </span>
-                      </div>
                     </div>
 
                     <div class="col span-6 align-vertical-center">
@@ -154,7 +144,6 @@ import NameNsDescription from '@shell/components/form/NameNsDescription';
 import Tabbed from '@shell/components/Tabbed';
 import Tab from '@shell/components/Tabbed/Tab';
 import CreateEditView from '@shell/mixins/create-edit-view';
-import { EXEC_SOURCE } from '@runtime-enforcer/types/runtime-enforcer';
 import Banner from '@components/Banner/Banner';
 
 export default {
@@ -186,8 +175,6 @@ export default {
     return {
       errors:                   [],
       ownerWorkload:            null,
-      manualEntriesByContainer: {},
-      EXEC_SOURCE
     };
   },
 
@@ -245,14 +232,12 @@ export default {
       return Object.keys(rules).map((containerName) => {
         const containerRules = rules[containerName] || {};
         const allowed = containerRules.executables?.allowed || [];
-        const manualSet = this.manualEntriesByContainer[containerName] || new Set();
 
         return {
           name:        containerName,
           image:       this.containerImages[containerName] || this.t('generic.none'),
           executables: allowed.map((path) => ({
-            path,
-            source: manualSet.has(path) ? EXEC_SOURCE.MANUAL : EXEC_SOURCE.LEARNED
+            path
           }))
         };
       });
@@ -288,23 +273,13 @@ export default {
       const allowed = this.ensureRulesPath(containerName);
 
       allowed.push('');
-
-      if (!this.manualEntriesByContainer[containerName]) {
-        this.manualEntriesByContainer[containerName] = new Set();
-      }
-      this.manualEntriesByContainer[containerName].add('');
     },
 
     updateExecutablePath(containerName, execIndex, val) {
       const allowed = this.ensureRulesPath(containerName);
-      const oldVal = allowed[execIndex];
 
       allowed.splice(execIndex, 1, val);
 
-      if (this.manualEntriesByContainer[containerName]) {
-        this.manualEntriesByContainer[containerName].delete(oldVal);
-        this.manualEntriesByContainer[containerName].add(val);
-      }
     },
 
     removeExecutable(containerName, execIndex) {
@@ -375,12 +350,15 @@ export default {
 };
 </script>
 
+<style lang="scss">
+/* Unscoped style to target the parent layout's masthead badge */
+.masthead .badge-state {
+  display: none !important;
+}
+</style>
+
 <style lang="scss" scoped>
 .policy-proposal-edit {
-  // Hide the auto-generated status badge next to the title in CruResource
-  :deep(.badge-state) {
-    display: none !important;
-  }
 
   .custom-content-bg {
     background-color: var(--nav-bg, #f4f5f8);
@@ -392,41 +370,6 @@ export default {
     display: flex;
     align-items: center;
     width: 100%;
-  }
-
-  .input-with-badge {
-    display: flex !important;
-    align-items: center !important;
-    flex-direction: row !important;
-
-    .input-container {
-      flex: 1 1 auto;
-      min-width: 0;
-
-      ::v-deep .labeled-input {
-        width: 100%;
-      }
-    }
-
-    .badge-wrapper {
-      width: 110px;
-      flex-shrink: 0;
-      margin-left: 10px;
-    }
-  }
-
-  .type-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 38px;
-    padding: 0 14px;
-    border-radius: 4px;
-    font-size: 12px;
-    background-color: var(--disabled-bg, #e2e6ec);
-    color: var(--text, #333);
-    white-space: nowrap;
   }
 
   .align-vertical-center {
