@@ -264,7 +264,8 @@ runtimeEnforcer:
         bulk: Switching to Monitor mode will disable active enforcement for this policy. Any executables that violate the policy will no longer be blocked. The Runtime Enforcer will only observe and log these violations.
       confirm:
         single: Are you sure you want to change the current mode for the monitoring-policy active policy from
-        bulk: Are you sure you want to change the current mode for the selected policies (2)? If so, please select the new mode below.
+        bulk: Are you sure you want to change the current mode for the <b>selected policies ({count})</b>? If so, please select the new mode below.
+        bulkSame: Are you sure you want to change the current mode for the <b>selected policies ({count})</b> from
       cancel: Cancel
       changeMode: Change Mode
     exportDialog:

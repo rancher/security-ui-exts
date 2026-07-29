@@ -33,6 +33,13 @@ export default {
       return this.resources.length > 1;
     },
 
+    allSameMode() {
+      return this.resources.every((r) => r.spec.mode === this.resources[0]?.spec.mode);
+    },
+    showModeSelect() {
+      return this.isBulk && !this.allSameMode;
+    },
+
     transitionDirection() {
       if (this.resources[0].spec.mode === POLICY_MODE.MONITOR) {
         return {
@@ -64,7 +71,9 @@ export default {
 
     confirmText() {
       return this.isBulk
-        ? this.t('runtimeEnforcer.activePolicies.changeModeDialog.confirm.bulk', { count: this.resources.length }, true)
+        ? (this.allSameMode ?
+          this.t('runtimeEnforcer.activePolicies.changeModeDialog.confirm.bulkSame', { count: this.resources.length }, true)
+          : this.t('runtimeEnforcer.activePolicies.changeModeDialog.confirm.bulk', { count: this.resources.length }, true))
         : this.t('runtimeEnforcer.activePolicies.changeModeDialog.confirm.single', { name: this.resources[0]?.nameDisplay }, true);
     },
   },
@@ -126,7 +135,7 @@ export default {
         v-clean-html="confirmText"
       />
       <LabeledSelect
-        v-if="isBulk"
+        v-if="showModeSelect"
         class="export-mode-select"
         v-model:value="targetMode"
         :options="modeOptions"
