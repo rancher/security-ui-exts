@@ -53,6 +53,12 @@ export default {
         ? this.t('runtimeEnforcer.policyProposal.deleteDialog.confirm.bulk', { count: this.resources.length }, true)
         : this.t('runtimeEnforcer.policyProposal.deleteDialog.confirm.single', { name: this.resources[0]?.nameDisplay, workload: this.resources[0]?.metadata?.ownerReferences?.[0]?.name }, true);
     },
+
+    growlMessage() {
+      return this.isBulk
+        ? this.t('runtimeEnforcer.policyProposal.deleteDialog.growl.bulk', { count: this.resources.length })
+        : this.t('runtimeEnforcer.policyProposal.deleteDialog.growl.single');
+    },
   },
 
   methods: {
@@ -76,8 +82,6 @@ export default {
         annotations[TIMESTAMP] = now;
 
         await workload.save();
-
-        this.close();
       } catch (err) {
         this.errors = exceptionToErrorsArray(err);
       }
@@ -91,6 +95,8 @@ export default {
       }));
 
       this.deleteInProgress = false;
+
+      this.$store.dispatch('growl/success', { message: this.growlMessage });
 
       this.$router.push({
         name:   `c-cluster-${ PRODUCT_NAME }-resource`,

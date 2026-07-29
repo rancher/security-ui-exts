@@ -1,6 +1,6 @@
 import SteveModel from '@shell/plugins/steve/steve-class';
 import { WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
-import { PRODUCT_NAME, WORKLOAD_POLICY_KIND } from '../types/runtime-enforcer';
+import { PRODUCT_NAME, RESOURCE, WORKLOAD_POLICY_KIND } from '../types/runtime-enforcer';
 
 export default class WorkloadPolicyProposal extends SteveModel {
   get _availableActions() {
@@ -58,8 +58,8 @@ export default class WorkloadPolicyProposal extends SteveModel {
 
   get listLocation() {
     return {
-      name:   `c-cluster-${ PRODUCT_NAME }-policy-proposals`,
-      params: { cluster: this.$rootGetters['clusterId'] },
+      name:   `c-cluster-${ PRODUCT_NAME }-resource`,
+      params: { cluster: this.$rootGetters['clusterId'], resource: RESOURCE.POLICY_PROPOSALS },
     };
   }
 

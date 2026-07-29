@@ -55,6 +55,7 @@ describe('DeletePolicyProposalsDialog', () => {
       expect((wrapper.vm as any).confirmText).toBe(
         'runtimeEnforcer.policyProposal.deleteDialog.confirm.single:{"name":"single-policy","workload":"wk-1"}'
       );
+      expect((wrapper.vm as any).growlMessage).toBe('runtimeEnforcer.policyProposal.deleteDialog.growl.single');
     });
 
     it('is bulk and uses bulk copy for multiple resources', () => {
@@ -69,6 +70,7 @@ describe('DeletePolicyProposalsDialog', () => {
       expect((wrapper.vm as any).confirmText).toBe(
         'runtimeEnforcer.policyProposal.deleteDialog.confirm.bulk:{"count":2}'
       );
+      expect((wrapper.vm as any).growlMessage).toBe('runtimeEnforcer.policyProposal.deleteDialog.growl.bulk');
     });
   });
 
@@ -80,10 +82,19 @@ describe('DeletePolicyProposalsDialog', () => {
 
       expect(wrapper.emitted('close')).toHaveLength(1);
     });
+
+    it('does not dispatch a growl on cancel/close alone', () => {
+      const dispatch = jest.fn();
+      const wrapper = mountDialog({ dispatch });
+
+      (wrapper.vm as any).close();
+
+      expect(dispatch).not.toHaveBeenCalledWith('growl/success', expect.anything());
+    });
   });
 
   describe('redeployWorkload', () => {
-    it('patches workload annotation timestamp, saves workload and closes on success', async() => {
+    it('patches workload annotation timestamp and saves workload on success', async() => {
       const save = jest.fn().mockResolvedValue(undefined);
       const workload = { spec: { template: {} }, save };
       const dispatch = jest.fn().mockResolvedValue(workload);
@@ -102,7 +113,7 @@ describe('DeletePolicyProposalsDialog', () => {
       expect(typeof annotations[TIMESTAMP]).toBe('string');
       expect(annotations[TIMESTAMP]).toMatch(/Z$/);
       expect(save).toHaveBeenCalled();
-      expect(closeSpy).toHaveBeenCalled();
+      expect(closeSpy).not.toHaveBeenCalled();
     });
 
     it('stores formatted errors when workload lookup/save fails', async() => {
@@ -121,10 +132,11 @@ describe('DeletePolicyProposalsDialog', () => {
   });
 
   describe('deletePolicies', () => {
-    it('removes all selected resources and triggers redeploy for each', async() => {
+    it('removes all selected resources, dispatches a success growl and triggers redeploy for each', async() => {
       const push = jest.fn();
+      const dispatch = jest.fn();
       const resources = [createResource('policy-a', 'wk-a'), createResource('policy-b', 'wk-b')];
-      const wrapper = mountDialog({ resources, push });
+      const wrapper = mountDialog({ resources, push, dispatch });
       const redeploySpy = jest.spyOn(wrapper.vm as any, 'redeployWorkload').mockResolvedValue(undefined);
 
       await (wrapper.vm as any).deletePolicies();
@@ -135,6 +147,9 @@ describe('DeletePolicyProposalsDialog', () => {
       expect(redeploySpy).toHaveBeenNthCalledWith(1, resources[0]);
       expect(redeploySpy).toHaveBeenNthCalledWith(2, resources[1]);
       expect((wrapper.vm as any).deleteInProgress).toBe(false);
+      expect(dispatch).toHaveBeenCalledWith('growl/success', {
+        message: 'runtimeEnforcer.policyProposal.deleteDialog.growl.bulk',
+      });
       expect(push).toHaveBeenCalledWith({
         name:   `c-cluster-${ PRODUCT_NAME }-resource`,
         params: { cluster: 'local', product: PRODUCT_NAME },
@@ -165,15 +180,17 @@ describe('DeletePolicyProposalsDialog', () => {
     it('rejects when a remove call fails and keeps deleteInProgress true', async() => {
       const failing = createResource('policy-a', 'wk-a');
       const error = new Error('remove failed');
+      const dispatch = jest.fn();
 
       failing.remove.mockRejectedValueOnce(error);
 
-      const wrapper = mountDialog({ resources: [failing] });
+      const wrapper = mountDialog({ resources: [failing], dispatch });
       const redeploySpy = jest.spyOn(wrapper.vm as any, 'redeployWorkload').mockResolvedValue(undefined);
 
       await expect((wrapper.vm as any).deletePolicies()).rejects.toThrow('remove failed');
       expect(redeploySpy).not.toHaveBeenCalled();
       expect((wrapper.vm as any).deleteInProgress).toBe(true);
+      expect(dispatch).not.toHaveBeenCalledWith('growl/success', expect.anything());
     });
   });
 });

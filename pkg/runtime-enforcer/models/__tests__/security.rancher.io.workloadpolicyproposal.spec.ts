@@ -1,6 +1,6 @@
 import SteveModel from '@shell/plugins/steve/steve-class';
 import WorkloadPolicyProposal from '../security.rancher.io.workloadpolicyproposal';
-import { PRODUCT_NAME } from '../../types/runtime-enforcer';
+import { PRODUCT_NAME, RESOURCE } from '../../types/runtime-enforcer';
 
 jest.mock('@shell/plugins/steve/steve-class', () => {
   const MockSteveModel = class {
@@ -130,8 +130,8 @@ describe('WorkloadPolicyProposal model', () => {
   describe('listLocation', () => {
     it('returns the route to the custom Policy Proposals list page', () => {
       expect(proposal.listLocation).toEqual({
-        name:   `c-cluster-${ PRODUCT_NAME }-policy-proposals`,
-        params: { cluster: 'local' },
+        name:   `c-cluster-${ PRODUCT_NAME }-resource`,
+        params: { cluster: 'local', resource: RESOURCE.POLICY_PROPOSALS },
       });
     });
   });
