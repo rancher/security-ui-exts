@@ -43,6 +43,16 @@ export default class WorkloadPolicyProposal extends SteveModel {
         return action;
       });
 
+    const deleteIndex = out.findIndex((action) => action.action === 'removeProposal');
+
+    if (deleteIndex > -1) {
+      out.splice(deleteIndex, 0, { divider: true });
+    }
+
+    if (this.$rootState.targetRoute && this.$rootState.targetRoute.params && 'id' in this.$rootState.targetRoute.params) {
+      return out;
+    }
+
     out.unshift({
       action:  'changeMode',
       label:   this.t('runtimeEnforcer.activePolicies.actions.changeMode'),
@@ -50,19 +60,35 @@ export default class WorkloadPolicyProposal extends SteveModel {
       enabled: true,
     });
 
-
-
-    const deleteIndex = out.findIndex((action) => action.action === 'removeProposal');
-
-    if (deleteIndex > -1) {
-      out.splice(deleteIndex, 0, { divider: true });
-    }
-
     return out;
   }
 
   get violationCount() {
     return this.status?.violationCount || 0;
+  }
+
+  get activeViolationCount() {
+    return this.status?.activeViolationCount || 0;
+  }
+
+  get fullDetailPageOverride() {
+    return true;
+  }
+
+  get disableResourceDetailDrawer() {
+    return true;
+  }
+
+  get executables() {
+    const rulesByContainer = this.spec?.rulesByContainer || {};
+    const executables = [];
+
+    Object.values(rulesByContainer).forEach((container) => {
+      const allowedExecutables = container?.executables?.allowed || [];
+      executables.push(...allowedExecutables);
+    });
+
+    return executables;
   }
 
   changeMode(resources = this) {

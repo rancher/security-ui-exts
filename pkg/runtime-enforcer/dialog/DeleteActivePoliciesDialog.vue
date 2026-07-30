@@ -189,33 +189,38 @@ export default {
           name="workloadRemovalOptions"
           data-testid="workload-removal-radio"
         />
-      <span
-        class="confirm-text"
+      <div
+        v-if="workloadRemovalOption === 'manual'"
+        class="mb-16"
       >
-        {{ t(`runtimeEnforcer.activePolicies.deleteDialog.manualRemoval.${ this.isBulk ? 'bulk' : 'single' }`) }}
-        <a
-          :href="DOCUMENTATION_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="doc-link"
+        <span
+          class="confirm-text"
         >
-          {{ t('runtimeEnforcer.activePolicies.deleteDialog.learnMore') }}
-        </a>
-      </span>
-      <div class="tag-group">
-        <div
-          v-for="resource in resources"
-          :key="resource.metadata.uid"
-          class="mt-2"
-        >
-          <RcTag
-            :type="type"
-            class="tag-row"
-            :highlight="false"
+          {{ t(`runtimeEnforcer.activePolicies.deleteDialog.manualRemoval.${ this.isBulk ? 'bulk' : 'single' }`) }}
+          <a
+            :href="DOCUMENTATION_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="doc-link"
           >
-            <div class="tag-data">{{WORKLOAD_PREFIX}} {{ resource.metadata.name }}</div>
-          </RcTag>
-          <CopyToClipboard class="cp-board" :value="`${ WORKLOAD_PREFIX } ${ resource.metadata.name }`" />
+            {{ t('runtimeEnforcer.activePolicies.deleteDialog.learnMore') }}
+          </a>
+        </span>
+        <div class="tag-group">
+          <div
+            v-for="resource in resources"
+            :key="resource.metadata.uid"
+            class="mt-2"
+          >
+            <RcTag
+              :type="type"
+              class="tag-row"
+              :highlight="false"
+            >
+              <div class="tag-data">{{WORKLOAD_PREFIX}} {{ resource.metadata.name }}</div>
+            </RcTag>
+            <CopyToClipboard class="cp-board" :value="`${ WORKLOAD_PREFIX } ${ resource.metadata.name }`" />
+          </div>
         </div>
       </div>
     </template>

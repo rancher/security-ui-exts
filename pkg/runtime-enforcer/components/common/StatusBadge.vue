@@ -1,6 +1,6 @@
 <template>
   <div
-    class="badge"
+    class="badge badge-ss"
     :class="statusClass"
   >
     <div
@@ -16,6 +16,7 @@
         {{ t(`runtimeEnforcer.activePolicies.status.${status.toLowerCase()}`) }}
       </div>
       <div
+        v-if="nodesInfo && Object.keys(nodesInfo).length > 0"
         class="message-hover-overlay"
         :class="{ 'show-top': showOnTop }"
       >
@@ -84,7 +85,9 @@ export default {
 
 <style lang="scss" scoped>
   @import '../../styles/_variables.scss';
-
+  .badge-ss {
+    line-height: 0;
+  }
   .badge {
     /* layout */
     display: inline-block;

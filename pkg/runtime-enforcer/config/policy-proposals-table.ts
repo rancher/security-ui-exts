@@ -192,15 +192,15 @@ export function getActivePoliciesHeaders() {
     {
       name:     'violations',
       labelKey: 'runtimeEnforcer.activePolicies.columns.violations',
-      value:    'violationCount',
-      sort:     'violationCount',
+      value:    'activeViolationCount',
+      sort:     'activeViolationCount',
       width:    FIGMA_COLUMN_WIDTH.violations,
     },
     {
       name:     'occurrences',
       labelKey: 'runtimeEnforcer.activePolicies.columns.occurrences',
-      value:    'status.observedGeneration',
-      sort:     'status.observedGeneration',
+      value:    'violationCount',
+      sort:     'violationCount',
       width:    FIGMA_COLUMN_WIDTH.occurrences,
     },
   ];

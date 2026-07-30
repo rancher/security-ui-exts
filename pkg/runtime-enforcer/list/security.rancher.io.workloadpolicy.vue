@@ -215,7 +215,7 @@ function changeModeSelected() {
 </script>
 
 <template>
-  <div class="policy-proposals-page">
+  <div class="active-policies-page">
 
     <Banner
       color="info"
@@ -346,7 +346,7 @@ function changeModeSelected() {
 </template>
 
 <style scoped lang="scss">
-  .policy-proposals-page {
+  .active-policies-page {
     display: flex;
     flex-direction: column;
     gap: 24px;

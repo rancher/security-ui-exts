@@ -157,15 +157,15 @@ const containerHeaders = computed(() => [
         <template #additional-actions>
           <RcButton
             variant="primary"
-            size="large"
             left-icon="upgrade-alt"
+            size="large"
             @click="proposal.promote()"
           >
             {{ i18n.t('runtimeEnforcer.policyProposal.action.promote') }}
           </RcButton>
         </template>
       </TitleBar>
-      <RancherMeta :properties="metaProperties" />
+      <RancherMeta :properties="metaProperties"/>
     </template>
     <template #bottom-area>
       <h3 class="mmb-6">
@@ -210,5 +210,8 @@ const containerHeaders = computed(() => [
   background: var(--tag-bg);
   color: var(--tag-primary);
   font-size: 13px;
+}
+:deep(.top-area) {
+  border-bottom: dashed var(--border-width) var(--input-border);
 }
 </style>

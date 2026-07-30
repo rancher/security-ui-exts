@@ -35,12 +35,33 @@
         <LiveDate :value="property.value" />
       </div>
     </div>
-    <div v-else-if="property.type === 'tags'" class="tags">
+    <div v-if="property.type === 'tags'" class="tags">
       <div class="tags">
         <div v-for="tag in property.tags" :key="tag" class="tag">
           <span class="tag-text">{{ tag }}</span>
         </div>
       </div>
+    </div>
+    <div v-if="property.type === 'icon'" class="text">
+      <div v-if="property.label" class="label">
+        {{ property.label }}
+      </div>
+      <span
+        v-if="property.value"
+        class="icon-text-wrap"
+      >
+        <img
+          v-if="property.imgSrc"
+          :src="property.imgSrc"
+          alt=""
+          width="16"
+          height="16"
+          class="mode-icon"
+        >
+        <span class="mode-text" :class="property.value.toLowerCase()">
+          {{ property.value }}
+        </span>
+      </span>
     </div>
   </div>
 </template>
@@ -67,7 +88,7 @@ export default {
     padding-right: 16px;
     flex: 1 0 0;
     break-inside: avoid;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
   }
 
   .text {
@@ -81,7 +102,7 @@ export default {
     font-size: 14px;
     font-style: normal;
     font-weight: 400;
-    // line-height: 21px; /* 150% */
+    line-height: 21px; /* 150% */
 
     .label {
       display: flex;
@@ -143,6 +164,33 @@ export default {
         font-weight: 400;
         line-height: 22px; /* 169.231% */
       }
+    }
+  }
+
+  .icon-text-wrap {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+
+  .mode-icon {
+    margin-right: 8px;
+  }
+
+  .mode-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: Lato;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 21px; /* 150% */
+    &.monitor {
+      color: #1F67DB;
+    }
+    &.protect {
+      color: #007032;
     }
   }
 </style>

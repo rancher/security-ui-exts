@@ -151,7 +151,7 @@ runtimeEnforcer:
         title:
           single: '{name} has been deleted'
           bulk: Selected policy proposals ({count}) have been deleted
-        single: The policy proposal has been successfully deleted. Restarting the corresponding workload might take a few minutes to complete.
+        single: The policy proposal {name} has been successfully deleted. Restarting the corresponding workload might take a few minutes to complete.
         bulk: The selected policy proposals ({count}) have been successfully deleted. Restarting the corresponding workloads might take a few minutes to complete.
     promoteDialog:
       title:
@@ -302,7 +302,7 @@ runtimeEnforcer:
           single: '{name} has been deleted'
           bulk: Selected active policies ({count}) have been deleted
         delete:
-          single: The{name} active policy has been successfully deleted.
+          single: The {name} active policy has been successfully deleted.
           bulk: The selected active policies ({count}) have been successfully deleted.
         autoRemoval:
           single: Restarting the corresponding workload might take a few minutes to complete.
@@ -327,3 +327,35 @@ runtimeEnforcer:
       confirm:
         single: 'Are you sure you want to export the <b>{name}</b> active policy? If so, please select the target mode below.'
         bulk: 'Are you sure you want to export the <b>selected active policies ({count})</b>? If so, please select the target mode below.'
+  activePolicy:
+    label: Active Policy
+    policyName: Policy Name
+    description: Description
+    descriptionPlaceholder: Any text you want that better describes this configuration
+    containerName: Container Name
+    allowedExecutables: Allowed Executables
+    executablePlaceholder: /usr/bin/executable
+    addExecutable: Add Executable
+    action:
+      changeMode: Change Mode
+      editPolicy: Edit Policy
+      export: Export
+      delete: Delete
+    badges:
+      learned: Learned
+      manualEntry: Manual Entry
+    masthead:
+      namespace: Namespace
+      workload: Workload
+      workloadType: Workload Type
+      containers: Containers
+      executables: Executables
+      mode: Mode
+      violations: Violations
+      occurrences: Occurrences
+      nodes: Nodes
+      age: Age
+    tabs:
+      nodesEnforcement: Nodes Enforcement
+      allowedExecutables: Allowed Executables
+      violations: Violations
