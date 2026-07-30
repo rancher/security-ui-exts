@@ -163,7 +163,6 @@ export default {
 <style lang="scss" scoped>
 .delete-policy-proposals-dialog-card {
   box-shadow: none;
-  border-radius: var(--border-radius);
 
   :deep(.card-actions) {
     justify-content: end;

@@ -192,7 +192,6 @@ export default {
 <style lang="scss" scoped>
 .export-policy-dialog-card {
   box-shadow: none;
-  border-radius: var(--border-radius);
 
   :deep(.card-actions) {
     justify-content: end;
@@ -225,7 +224,6 @@ export default {
   .mode-text {
     overflow: hidden;
     text-overflow: ellipsis;
-    font-family: Lato;
     font-size: 14px;
     font-style: normal;
     font-weight: 500;

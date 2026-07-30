@@ -244,7 +244,6 @@ export default {
 <style lang="scss" scoped>
 .delete-policy-proposals-dialog-card {
   box-shadow: none;
-  border-radius: var(--border-radius);
 
   :deep(.card-actions) {
     justify-content: end;
@@ -295,7 +294,6 @@ export default {
     white-space: nowrap;
     max-width: calc(100%);
     line-height: 21px;
-    font-family: Lato;
     font-size: 13px;
     font-weight: 400;
     align-items: center;
