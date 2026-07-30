@@ -150,6 +150,55 @@ runtimeEnforcer:
       growl:
         single: The policy proposal has been successfully deleted. Restarting the corresponding workload might take a few minutes to complete.
         bulk: The selected policy proposals ({count}) have been successfully deleted. Restarting the corresponding workloads might take a few minutes to complete.
+    promoteDialog:
+      title:
+        single: Promote policy proposal to active policy
+        bulk: Promote policy proposals to active policies
+      banner:
+        single: Promoting will create the active policy CRD and delete the proposal permanently afterwards. <b>This action cannot be undone.</b>
+        bulk: For each proposal, promoting will create the active policy CRD and delete the proposal permanently afterwards. <b>This action cannot be undone.</b>
+      confirm:
+        single: 'Are you sure you want to promote the <b>{name}</b> policy proposal to active policy? If so, please select the target mode below to continue.'
+        bulk: 'Are you sure you want to promote the <b>selected policy proposals ({count})</b> to active policies? If so, please select the target mode below to continue.'
+      mode:
+        monitor: Monitor mode
+        protect: Protect mode
+      cancel: Cancel
+      promoteAndContinue: Promote and Continue
+      applyStep:
+        title:
+          single: Apply the active policy on the workload
+          bulk: Apply the active policies on the workloads
+        banner:
+          single: If the <b>{name}</b> workload is managed via GitOps (e.g., Fleet), we recommend manually applying the new active policy. Otherwise, the next (re)deployment will overwrite or remove the generated policy label.
+          bulk: If at least one workload is managed via GitOps (e.g., Fleet), we recommend manually applying the new active policies. Otherwise, the next (re)deployment will overwrite or remove the generated policy labels.
+        options:
+          automatic:
+            single: Automatically apply the active policy and restart the workload
+            bulk: Automatically apply the active policies and restart the workloads
+            tooltip: runtimeEnforcer.policyProposal.promoteDialog.applyStep.options.automatic.tooltip
+          manual:
+            single: Manually apply the active policy (recommended for GitOps)
+            bulk: Manually apply the active policies (recommended for GitOps)
+            tooltip: runtimeEnforcer.policyProposal.promoteDialog.applyStep.options.manual.tooltip
+        manualDescription:
+          single: To manually apply the active policy on the workload, you need to copy the label below on the corresponding workload and redeploy it. <learnMore>Learn more</learnMore>
+          bulk: To manually apply the active policies on the workloads, you need to copy the labels below on the corresponding workloads and redeploy them. <learnMore>Learn more</learnMore>
+      finish: Finish
+      errorTitle: Failed to promote policy proposal
+      growl:
+        title:
+          single: '{name} has been promoted to active policy'
+          bulk: Selected policy proposals ({count}) have been promoted to active policies
+        base:
+          single: The policy proposal has been successfully promoted to an active policy.
+          bulk: The selected policy proposals ({count}) have been successfully promoted to active policies.
+        manual:
+          single: Don't forget to manually apply the active policy on the corresponding workload and redeploy it.
+          bulk: Don't forget to manually apply the active policies on the corresponding workloads and redeploy them.
+        automatic:
+          single: Restarting the corresponding workload might take a few minutes to complete.
+          bulk: Restarting the corresponding workloads might take a few minutes to complete.
     errors:
       emptyPath: "Container {container}: Executable path at position {index} cannot be empty."
       invalidPath: "Container {container}: Executable path {path} must start with a leading slash /."

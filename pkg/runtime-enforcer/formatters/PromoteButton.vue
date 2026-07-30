@@ -2,7 +2,7 @@
   <RcButton
     variant="secondary"
     size="medium"
-    @click="promoteFn()"
+    @click="row.promote()"
   >
     <i class="icon icon-upgrade-alt"></i>
     {{ t('runtimeEnforcer.policyProposals.actions.promote') }}
@@ -23,10 +23,6 @@ export default {
       type:    Object,
       default: () => ({})
     },
-    promoteFn: {
-      type:    Function,
-      required: true
-    }
   }
 };
 </script>

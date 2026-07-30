@@ -3,7 +3,7 @@ export const PRODUCT_NAME = 'runtimeEnforcer';
 export const CHART_REGISTRY_URL = 'oci://dp.apps.rancher.io/charts';
 export const DOCKER_CONFIG_JSON_TYPE = '.dockerconfigjson';
 
-export const RESOURCE = { 
+export const RESOURCE = {
   POLICY_PROPOSALS: 'security.rancher.io.workloadpolicyproposal',
   ACTIVE_POLICIES:  'security.rancher.io.workloadpolicy',
 };
@@ -152,3 +152,17 @@ export const POLICY_STATUS = {
 export const DOCUMENTATION_URL = 'https://github.com/rancher-sandbox/runtime-enforcer/tree/main/docs';
 
 export const WORKLOAD_PREFIX = 'security.rancher.io/policy :';
+
+export const POLICY_LABEL_KEY = 'security.rancher.io/policy';
+
+export const PROMOTE_LABEL_KEY = 'security.rancher.io/promote';
+
+export const APPLY_MODE = {
+  AUTOMATIC: 'automatic',
+  MANUAL:    'manual',
+} as const;
+
+export type ApplyMode = typeof APPLY_MODE[keyof typeof APPLY_MODE];
+
+// Client-side cutoff for the background watch that waits for a promoted proposal's WorkloadPolicy to appear
+export const PROMOTE_WATCH_TIMEOUT_MS = 20000;

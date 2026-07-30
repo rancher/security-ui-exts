@@ -149,6 +149,18 @@ function filterRowsApi(pagination: any) {
   return pagination;
 }
 
+function promoteSelected() {
+  if (!selectedRows.value.length) {
+    return;
+  }
+
+  store.dispatch('cluster/promptModal', {
+    component:  'PromotePolicyDialog',
+    resources:  Array.isArray(selectedRows.value) ? [...selectedRows.value] : [selectedRows.value],
+    modalWidth: '640',
+  });
+}
+
 function exportSelected() {
   if (!selectedRows.value.length) {
     return;
@@ -253,6 +265,7 @@ function deleteSelected() {
             variant="primary"
             size="medium"
             :disabled="!selectedRows.length"
+            @click="promoteSelected"
           >
             <i class="icon icon-upgrade-alt"></i>
             {{ t('runtimeEnforcer.policyProposals.actions.promote') }}

@@ -130,10 +130,10 @@ export default class WorkloadPolicyProposal extends SteveModel {
   get childrenRec() {
     return Object.entries(this.rulesByContainer).map(([containerName, containerRules]) => {
       return {
-        container:   containerName,
-        image:       containerRules?.image || '',
+        container:       containerName,
+        image:           containerRules?.image || '',
         executableCount: containerRules?.executables?.allowed?.length || 0,
-        executables: containerRules?.executables?.allowed || [],
+        executables:     containerRules?.executables?.allowed || [],
       };
     });
   }
@@ -165,9 +165,12 @@ export default class WorkloadPolicyProposal extends SteveModel {
     });
   }
 
-  promote() {
-    // eslint-disable-next-line no-console
-    console.warn('WorkloadPolicyProposal.promote() is not yet implemented.');
+  promote(resources = this) {
+    this.$dispatch('promptModal', {
+      component:  'PromotePolicyDialog',
+      resources:  Array.isArray(resources) ? resources : [resources],
+      modalWidth: '640',
+    });
   }
 
 }
