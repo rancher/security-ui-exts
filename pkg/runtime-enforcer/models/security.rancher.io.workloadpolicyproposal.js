@@ -128,14 +128,43 @@ export default class WorkloadPolicyProposal extends SteveModel {
   }
 
   get childrenRec() {
-    return Object.entries(this.rulesByContainer).map(([containerName, containerRules]) => {
-      return {
-        container:       containerName,
-        image:           containerRules?.image || '',
-        executableCount: containerRules?.executables?.allowed?.length || 0,
-        executables:     containerRules?.executables?.allowed || [],
-      };
-    });
+    let ownerWorkload = null;
+    let image = null;
+
+    return (() => {
+      try {
+        ownerWorkload = (this.$getters['all'](this.ownerWorkloadSteveType) || []).find((w) => `${ w.metadata.namespace }/${ w.metadata.name }` === `${ this.metadata?.namespace }/${ this.workload }`);
+        const containers = ownerWorkload.spec?.template?.spec?.containers
+          || ownerWorkload.spec?.jobTemplate?.spec?.template?.spec?.containers
+          || [];
+
+        image = containers.reduce((acc, container) => {
+          acc[container.name] = container.image;
+
+          return acc;
+        }, {});
+
+        console.log('image', image, this.rulesByContainer);
+
+        return Object.entries(this.rulesByContainer).map(([containerName, containerRules]) => {
+          return {
+            container:       containerName,
+            image:           image[containerName] || '',
+            executableCount: containerRules?.executables?.allowed?.length || 0,
+            executables:     containerRules?.executables?.allowed || [],
+          };
+        });
+      } catch {
+        return Object.entries(this.rulesByContainer).map(([containerName, containerRules]) => {
+          return {
+            container:       containerName,
+            image:           '',
+            executableCount: containerRules?.executables?.allowed?.length || 0,
+            executables:     containerRules?.executables?.allowed || [],
+          };
+        });
+      }
+    })();
   }
 
   editPolicy() {

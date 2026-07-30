@@ -212,6 +212,90 @@ describe('WorkloadPolicyProposal model', () => {
     });
   });
 
+  describe('childrenRec', () => {
+    it('builds child rows from the workload template containers when available', () => {
+      proposal.metadata = { namespace: 'team-a', name: 'proposal-1', ownerReferences: [{ name: 'nginx', kind: 'Deployment' }] };
+      proposal.spec = {
+        rulesByContainer: {
+          web: { executables: { allowed: ['/usr/bin/nginx'] } },
+          sidecar: { executables: { allowed: ['/usr/bin/agent', '/usr/bin/metrics'] } },
+        },
+      };
+      proposal.$getters = {
+        all: jest.fn().mockReturnValue([
+          {
+            metadata: { namespace: 'team-a', name: 'nginx' },
+            spec:     {
+              template: {
+                spec: {
+                  containers: [
+                    { name: 'web', image: 'nginx:1.25' },
+                    { name: 'sidecar', image: 'busybox:1.36' },
+                  ],
+                },
+              },
+            },
+          },
+        ]),
+      };
+
+      const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+      const children = proposal.childrenRec;
+
+      expect(children).toEqual([
+        { container: 'web', image: 'nginx:1.25', executableCount: 1, executables: ['/usr/bin/nginx'] },
+        { container: 'sidecar', image: 'busybox:1.36', executableCount: 2, executables: ['/usr/bin/agent', '/usr/bin/metrics'] },
+      ]);
+      expect(logSpy).toHaveBeenCalledWith('image', expect.objectContaining({ web: 'nginx:1.25', sidecar: 'busybox:1.36' }), proposal.rulesByContainer);
+      logSpy.mockRestore();
+    });
+
+    it('uses job template containers when the workload is a job-based resource', () => {
+      proposal.metadata = { namespace: 'team-a', name: 'proposal-2', ownerReferences: [{ name: 'backup', kind: 'CronJob' }] };
+      proposal.spec = {
+        rulesByContainer: {
+          worker: { executables: { allowed: ['/usr/bin/worker'] } },
+        },
+      };
+      proposal.$getters = {
+        all: jest.fn().mockReturnValue([
+          {
+            metadata: { namespace: 'team-a', name: 'backup' },
+            spec:     {
+              jobTemplate: {
+                spec: {
+                  template: {
+                    spec: {
+                      containers: [{ name: 'worker', image: 'repo/worker:v2' }],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ]),
+      };
+
+      expect(proposal.childrenRec).toEqual([
+        { container: 'worker', image: 'repo/worker:v2', executableCount: 1, executables: ['/usr/bin/worker'] },
+      ]);
+    });
+
+    it('falls back to empty images when the owner workload cannot be resolved', () => {
+      proposal.metadata = { namespace: 'team-a', name: 'proposal-3', ownerReferences: [{ name: 'missing', kind: 'Deployment' }] };
+      proposal.spec = {
+        rulesByContainer: {
+          web: { executables: { allowed: ['/usr/bin/nginx'] } },
+        },
+      };
+      proposal.$getters = { all: jest.fn().mockReturnValue([]) };
+
+      expect(proposal.childrenRec).toEqual([
+        { container: 'web', image: '', executableCount: 1, executables: ['/usr/bin/nginx'] },
+      ]);
+    });
+  });
+
   describe('editPolicy / exportPolicy / promote', () => {
     it('editPolicy() does not throw', () => {
       proposal.detailLocation = { query: {} };

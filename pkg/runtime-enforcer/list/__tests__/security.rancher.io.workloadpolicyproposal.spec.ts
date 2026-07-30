@@ -21,6 +21,10 @@ jest.mock('@shell/config/types', () => ({
     DEPLOYMENT: 'Deployment',
     DAEMON_SET: 'DaemonSet',
   },
+  WORKLOAD_KIND_TO_TYPE_MAPPING: {
+    Deployment: 'apps.deployment',
+    CronJob:    'batch.cronjob',
+  },
 }));
 
 jest.mock('@components/Banner/Banner.vue', () => ({
@@ -58,6 +62,13 @@ jest.mock('@components/RcButton/RcButton.vue', () => ({
 }));
 
 jest.mock('@shell/types/store/pagination.types', () => ({
+  FilterArgs: class FilterArgs {
+    filters: unknown[];
+
+    constructor(input: { filters: unknown[] }) {
+      this.filters = input.filters;
+    }
+  },
   PaginationFilterField: class PaginationFilterField {
     field: string;
     value: string;
@@ -281,5 +292,96 @@ describe('security.rancher.io.workloadpolicyproposal list', () => {
       resources:  selected,
       modalWidth: '640',
     });
+  });
+
+  it('does not open promote modal when no selected rows', () => {
+    const wrapper = makeWrapper({ canCreate: false });
+
+    (wrapper.vm as any).selectedRows = [];
+    (wrapper.vm as any).promoteSelected();
+
+    expect(mockStoreDispatch).not.toHaveBeenCalled();
+  });
+
+  it('opens promote modal with selected rows', () => {
+    const wrapper = makeWrapper({ canCreate: false });
+    const selected = [{ metadata: { name: 'policy-a' } }];
+
+    (wrapper.vm as any).selectedRows = selected;
+    (wrapper.vm as any).promoteSelected();
+
+    expect(mockStoreDispatch).toHaveBeenCalledWith('cluster/promptModal', {
+      component:  'PromotePolicyDialog',
+      resources:  selected,
+      modalWidth: '640',
+    });
+  });
+
+  it('does not open delete modal when no selected rows', () => {
+    const wrapper = makeWrapper({ canCreate: false });
+
+    (wrapper.vm as any).selectedRows = [];
+    (wrapper.vm as any).deleteSelected();
+
+    expect(mockStoreDispatch).not.toHaveBeenCalled();
+  });
+
+  it('opens delete modal with selected rows', () => {
+    const wrapper = makeWrapper({ canCreate: false });
+    const selected = [{ metadata: { name: 'policy-a' } }];
+
+    (wrapper.vm as any).selectedRows = selected;
+    (wrapper.vm as any).deleteSelected();
+
+    expect(mockStoreDispatch).toHaveBeenCalledWith('cluster/promptModal', {
+      component:  'DeletePolicyProposalsDialog',
+      resources:  selected,
+      modalWidth: '640',
+    });
+  });
+
+  it('skips fetching secondary resources when pagination is enabled', async() => {
+    const wrapper = makeWrapper({ canCreate: false });
+
+    const result = await (wrapper.vm as any).fetchSecondaryResources({ canPaginate: true });
+
+    expect(result).toBeUndefined();
+    expect(mockStoreDispatch).not.toHaveBeenCalled();
+  });
+
+  it('fetches all workload resources when pagination is disabled', async() => {
+    const wrapper = makeWrapper({ canCreate: false });
+
+    await (wrapper.vm as any).fetchSecondaryResources({ canPaginate: false });
+
+    expect(mockStoreDispatch).toHaveBeenCalledWith('cluster/findAll', { type: 'apps.deployment' });
+    expect(mockStoreDispatch).toHaveBeenCalledWith('cluster/findAll', { type: 'batch.cronjob' });
+  });
+
+  it('fetches a single page of workload resources for the current owner kind', async() => {
+    const wrapper = makeWrapper({ canCreate: false });
+    const page = [{ metadata: { namespace: 'team-a', name: 'nginx', ownerReferences: [{ kind: 'Deployment' }] } }];
+
+    mockStoreDispatch.mockResolvedValueOnce([{ metadata: { name: 'nginx' } }]);
+
+    const result = await (wrapper.vm as any).fetchPageSecondaryResources({ force: false, page });
+
+    expect(mockStoreDispatch).toHaveBeenCalledWith('cluster/findPage', {
+      type: 'apps.deployment',
+      opt:  expect.objectContaining({
+        force: false,
+        pagination: expect.anything(),
+      }),
+    });
+    expect(result).toEqual([{ metadata: { name: 'nginx' } }]);
+  });
+
+  it('returns early when no page rows are provided', async() => {
+    const wrapper = makeWrapper({ canCreate: false });
+
+    const result = await (wrapper.vm as any).fetchPageSecondaryResources({ force: false, page: [] });
+
+    expect(result).toBeUndefined();
+    expect(mockStoreDispatch).not.toHaveBeenCalled();
   });
 });

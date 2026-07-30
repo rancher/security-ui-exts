@@ -10,9 +10,10 @@ import { DOCUMENTATION_URL, RESOURCE, type WorkloadPolicyProposal } from '@runti
 import { getPolicyProposalHeaders, getContainerTableHeaders } from '@runtime-enforcer/config/policy-proposals-table';
 import RcButton from '@components/RcButton/RcButton.vue';
 import _ from 'lodash';
-import { PaginationFilterField, PaginationParamFilter } from '@shell/types/store/pagination.types';
 import { WORKLOAD_KINDS } from '@shell/config/types';
 import SortableTable from '@shell/components/SortableTable';
+import { WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
+import { FilterArgs, PaginationFilterField, PaginationParamFilter } from '@shell/types/store/pagination.types';
 
 const store = useStore();
 
@@ -183,6 +184,38 @@ function deleteSelected() {
     modalWidth: '640',
   });
 }
+
+async function fetchSecondaryResources({ canPaginate }: { canPaginate: boolean }) {
+  if (canPaginate) {
+    return;
+  }
+
+  return await Promise.all(
+    Object.values(WORKLOAD_KIND_TO_TYPE_MAPPING).map((workloadType) =>
+      store.dispatch(`cluster/findAll`, { type: workloadType })
+    )
+  );
+}
+
+async function fetchPageSecondaryResources({ force, page }: { force: any; page: any[] }) {
+  if (!page?.length) {
+    return;
+  }
+
+  const opt = {
+    force,
+    pagination: new FilterArgs({
+      filters: PaginationParamFilter.createMultipleFields(page.map((r: any) => new PaginationFilterField({
+        field: 'id',
+        value: `${ r.metadata.namespace }/${ r.metadata.name }`
+      }))),
+    })
+  };
+  const workloadResource = WORKLOAD_KIND_TO_TYPE_MAPPING[page[0]?.metadata?.ownerReferences?.[0]?.kind];
+  const workload = await store.dispatch(`cluster/findPage`, { type: workloadResource, opt });
+
+  return workload;
+}
 </script>
 
 <template>
@@ -256,6 +289,8 @@ function deleteSelected() {
       :key-field="'id'"
       :local-filter="filterRowsLocal"
       :api-filter="filterRowsApi"
+      :fetch-secondary-resources="fetchSecondaryResources"
+      :fetch-page-secondary-resources="fetchPageSecondaryResources"
       :use-query-params-for-simple-filtering="useQueryParamsForSimpleFiltering"
       @selection="onSelectionChange"
     >
