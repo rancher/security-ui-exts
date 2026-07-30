@@ -148,6 +148,9 @@ runtimeEnforcer:
         single: Delete Proposal and Restart Workload
         bulk: Delete Proposals and Restart Workloads
       growl:
+        title:
+          single: '{name} has been deleted'
+          bulk: Selected policy proposals ({count}) have been deleted
         single: The policy proposal has been successfully deleted. Restarting the corresponding workload might take a few minutes to complete.
         bulk: The selected policy proposals ({count}) have been successfully deleted. Restarting the corresponding workloads might take a few minutes to complete.
     promoteDialog:
@@ -295,6 +298,9 @@ runtimeEnforcer:
         single: Delete Policy and Restart Workload
         bulk: Delete Policies and Restart Workloads
       growl:
+        title:
+          single: '{name} has been deleted'
+          bulk: Selected active policies ({count}) have been deleted
         delete:
           single: The{name} active policy has been successfully deleted.
           bulk: The selected active policies ({count}) have been successfully deleted.

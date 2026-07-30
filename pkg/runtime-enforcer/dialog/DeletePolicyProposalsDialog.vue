@@ -58,6 +58,12 @@ export default {
         ? this.t('runtimeEnforcer.policyProposal.deleteDialog.growl.bulk', { count: this.resources.length })
         : this.t('runtimeEnforcer.policyProposal.deleteDialog.growl.single');
     },
+
+    growlTitle() {
+      return this.isBulk
+        ? this.t('runtimeEnforcer.policyProposal.deleteDialog.growl.title.bulk', { count: this.resources.length }, true)
+        : this.t('runtimeEnforcer.policyProposal.deleteDialog.growl.title.single', { name: this.resources[0]?.nameDisplay }, true);
+    },
   },
 
   methods: {
@@ -95,7 +101,7 @@ export default {
 
       this.deleteInProgress = false;
 
-      this.$store.dispatch('growl/success', { message: this.growlMessage });
+      this.$store.dispatch('growl/success', { title: this.growlTitle, message: this.growlMessage });
 
       this.$router.push({
         name:   `c-cluster-${ PRODUCT_NAME }-resource`,
