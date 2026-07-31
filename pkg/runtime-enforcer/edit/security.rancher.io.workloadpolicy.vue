@@ -20,6 +20,7 @@
           :value="value"
           :mode="mode"
           name-label="runtimeEnforcer.activePolicies.columns.policy"
+          descriptionPlaceholder="runtimeEnforcer.activePolicy.descriptionPlaceholder"
       />
 
       <div class="row mb-20">
@@ -131,7 +132,7 @@
                   <div class="row mt-10">
                     <div class="col span-6">
                       <a
-                          class="text-primary cursor-pointer text-bold"
+                          class="text-link cursor-pointer px-12"
                           @click="addExecutable(c.name)"
                       >
                         {{ t('runtimeEnforcer.policyProposal.addExecutable') }}
@@ -453,6 +454,11 @@ export default {
 
   .cursor-pointer {
     cursor: pointer;
+  }
+
+  .px-12 {
+    padding-left: 12px;
+    padding-right: 12px;
   }
 }
 </style>

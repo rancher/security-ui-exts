@@ -21,6 +21,7 @@
           :value="value"
           :mode="mode"
           name-label="runtimeEnforcer.policyProposal.policyName"
+          descriptionPlaceholder="runtimeEnforcer.policyProposal.descriptionPlaceholder"
       />
 
       <div class="row mb-20">
@@ -123,7 +124,7 @@
                   <div class="row mt-10">
                     <div class="col span-6">
                       <a
-                          class="text-primary cursor-pointer px-12"
+                          class="text-link cursor-pointer px-12"
                           @click="addExecutable(c.name)"
                       >
                         {{ t('runtimeEnforcer.policyProposal.addExecutable') }}
