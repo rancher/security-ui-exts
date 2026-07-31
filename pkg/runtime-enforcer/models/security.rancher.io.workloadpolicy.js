@@ -182,4 +182,9 @@ export default class WorkloadPolicyProposal extends SteveModel {
       modalWidth:     '640',
     });
   }
+
+  editPolicy() {
+    this.goToEdit();
+  }
+
 }

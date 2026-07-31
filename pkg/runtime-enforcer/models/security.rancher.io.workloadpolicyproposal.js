@@ -170,14 +170,7 @@ export default class WorkloadPolicyProposal extends SteveModel {
   }
 
   editPolicy() {
-    const location = this.detailLocation;
-
-    location.query = {
-      ...location.query,
-      mode: 'edit'
-    };
-
-    this.currentRouter().push(location);
+    this.goToEdit();
   }
 
   exportPolicy(resources = this) {
