@@ -26,11 +26,7 @@ const store = useStore();
 const route = useRoute();
 const i18n = useI18n(store);
 
-const canEdit = computed(async () => {
-  const policyEntry = await store.dispatch('cluster/find', { type: RESOURCE.ACTIVE_POLICIES, id: policy.id});
-
-  return policyEntry?.canEdit;
-});
+const canUpdate = computed(() => policy.canUpdate);
 
 const ownerWorkload = ref<any>(null);
 
@@ -145,7 +141,7 @@ const metaProperties = computed<MetadataProperty[]>(() => [
         </div>
         <div class="resource-header-actions">
           <RcButton
-            v-if="canEdit"
+            v-if="canUpdate"
             variant="primary"
             left-icon="refresh"
             size="large"
