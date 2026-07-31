@@ -296,10 +296,9 @@ describe('WorkloadPolicyProposal model', () => {
 
   describe('editPolicy / exportPolicy / promote', () => {
     it('editPolicy() does not throw', () => {
-      proposal.detailLocation = { query: {} };
-      proposal.currentRouter = () => ({ push: jest.fn() });
-
+      proposal.goToEdit = jest.fn();
       expect(() => proposal.editPolicy()).not.toThrow();
+      expect(proposal.goToEdit).toHaveBeenCalled();
     });
 
     it('exportPolicy() dispatches promptModal with itself as the sole resource by default', () => {
