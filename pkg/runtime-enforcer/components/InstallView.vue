@@ -918,10 +918,10 @@ onMounted(async() => {
               data-testid="appco-secret"
               :register-before-hook="registerSecretHook"
               :limit-to-namespace="false"
-              :namespace="'default'"
+              :namespace="'cattle-system'"
               :in-store="inStore"
               :allow-ssh="false"
-              generate-name="appco-auth-"
+              generate-name="clusterrepo-appco-auth-"
               :cache-secrets="true"
               @inputauthval="onAuthInputChange"
             />
