@@ -75,11 +75,20 @@ export default {
       try {
         const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
 
+        //Keep this log for debugging some special workload type, like CronJob
+        console.log('Fetch the workload based on type:', resource);
+
         const workload = await this.$store.dispatch('cluster/find', {
           type: resource.ownerWorkloadSteveType,
           id:   `${ resource.metadata.namespace }/${ resource.metadata.ownerReferences?.[0]?.name }`,
         });
 
+        //Keep this log for debugging some special workload type, like CronJob
+        console.log('After fetching, the workload is:', workload);
+
+        if (!workload) {
+          return;
+        }
 
         const metadata = workload.spec.template.metadata ??= {};
         const annotations = metadata.annotations ??= {};
@@ -95,8 +104,9 @@ export default {
     async deletePolicies() {
       this.deleteInProgress = true;
       await Promise.all((this.resources || []).map(async (resource) => {
+        const resourceBackup = { ...resource };
         await resource?.remove?.();
-        await this.redeployWorkload(resource);
+        await this.redeployWorkload(resourceBackup);
       }));
 
       this.deleteInProgress = false;

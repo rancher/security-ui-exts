@@ -161,8 +161,8 @@ runtimeEnforcer:
         single: Promoting will create the active policy CRD and delete the proposal permanently afterwards. <b>This action cannot be undone.</b>
         bulk: For each proposal, promoting will create the active policy CRD and delete the proposal permanently afterwards. <b>This action cannot be undone.</b>
       confirm:
-        single: 'Are you sure you want to promote the <b>{name}</b> policy proposal to active policy? If so, please select the target mode below to continue.'
-        bulk: 'Are you sure you want to promote the <b>selected policy proposals ({count})</b> to active policies? If so, please select the target mode below to continue.'
+        single: 'Are you sure you want to promote the <b>{name}</b> policy proposal to active policy? If so, please select the target mode below to continue. In the next step, you will decide how to apply the active policy on the <b>{workload}</b> workload.'
+        bulk: 'Are you sure you want to promote the <b>selected policy proposals ({count})</b> to active policies? If so, please select the target mode below to continue. In the next step, you will decide how to apply the active policies on the workloads.'
       mode:
         monitor: Monitor mode
         protect: Protect mode

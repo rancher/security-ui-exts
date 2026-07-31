@@ -205,7 +205,7 @@ const containerHeaders = computed(() => [
 .executable-pill {
   display: inline-block;
   padding: 2px 8px;
-  margin: 2px 4px 2px 0;
+  margin: 4px;
   border-radius: 4px;
   background: var(--tag-bg);
   color: var(--tag-primary);

@@ -2,7 +2,6 @@ import { shallowMount } from '@vue/test-utils';
 import DeleteActivePoliciesDialog from '../DeleteActivePoliciesDialog.vue';
 import { exceptionToErrorsArray } from '@shell/utils/error';
 import { PRODUCT_NAME } from '@runtime-enforcer/types/runtime-enforcer.ts';
-import { TIMESTAMP } from '@shell/config/labels-annotations';
 
 jest.mock('@shell/components/Resource/Detail/CopyToClipboard.vue', () => ({
   __esModule: true,
@@ -235,41 +234,32 @@ describe('DeleteActivePoliciesDialog', () => {
     });
   });
 
-  describe('redeployWorkload', () => {
-    it('finds workload, updates restart timestamp, and saves', async() => {
-      const save = jest.fn().mockResolvedValue(undefined);
-      const workload = { spec: { template: {} }, save };
-      const dispatch = jest.fn(async(action: string) => {
-        if (action === 'cluster/find') {
-          return workload;
-        }
-      });
+  describe('unlabelAndRedeployWorkload', () => {
+    it('is a no-op placeholder that resolves without dispatching', async() => {
+      const dispatch = jest.fn();
       const { wrapper } = mountDialog({ dispatch });
-      const resource = createResource('policy-a', 'deploy-a');
 
-      await (wrapper.vm as any).redeployWorkload(resource);
-
-      expect(dispatch).toHaveBeenCalledWith('cluster/find', {
-        type: 'apps.deployment',
-        id:   'runtime-enforcer/deploy-a',
-      });
-      expect(typeof workload.spec.template.metadata.annotations[TIMESTAMP]).toBe('string');
-      expect(workload.spec.template.metadata.annotations[TIMESTAMP]).toMatch(/Z$/);
-      expect(save).toHaveBeenCalledTimes(1);
+      await expect((wrapper.vm as any).unlabelAndRedeployWorkload(createResource('policy-a', 'deploy-a'))).resolves.toBeUndefined();
+      expect(dispatch).not.toHaveBeenCalledWith('cluster/find', expect.anything());
     });
 
-    it('stores formatted errors when workload fetch/save fails', async() => {
+    it('stores formatted errors when an internal error occurs', async() => {
       const err = new Error('boom');
-      const dispatch = jest.fn().mockRejectedValue(err);
+      const dateSpy = jest.spyOn(Date.prototype, 'toISOString').mockImplementation(() => {
+        throw err;
+      });
+
+      const dispatch = jest.fn();
       const { wrapper } = mountDialog({ dispatch });
       const mockedExceptionToErrorsArray = exceptionToErrorsArray as jest.Mock;
 
       mockedExceptionToErrorsArray.mockReturnValueOnce(['formatted-error']);
 
-      await (wrapper.vm as any).redeployWorkload(createResource('policy-a', 'deploy-a'));
+      await (wrapper.vm as any).unlabelAndRedeployWorkload(createResource('policy-a', 'deploy-a'));
 
       expect(mockedExceptionToErrorsArray).toHaveBeenCalledWith(err);
       expect((wrapper.vm as any).errors).toEqual(['formatted-error']);
+      dateSpy.mockRestore();
     });
   });
 
@@ -279,7 +269,7 @@ describe('DeleteActivePoliciesDialog', () => {
       const dispatch = jest.fn();
       const push = jest.fn();
       const { wrapper } = mountDialog({ resources, dispatch, push });
-      const redeploySpy = jest.spyOn(wrapper.vm as any, 'redeployWorkload').mockResolvedValue(undefined);
+      const redeploySpy = jest.spyOn(wrapper.vm as any, 'unlabelAndRedeployWorkload').mockResolvedValue(undefined);
 
       (wrapper.vm as any).workloadRemovalOption = 'keep';
       await (wrapper.vm as any).deletePolicies();
@@ -303,7 +293,7 @@ describe('DeleteActivePoliciesDialog', () => {
       const resources = [createResource('a', 'wk-a'), createResource('b', 'wk-b')];
       const dispatch = jest.fn();
       const { wrapper } = mountDialog({ resources, dispatch });
-      const redeploySpy = jest.spyOn(wrapper.vm as any, 'redeployWorkload').mockResolvedValue(undefined);
+      const redeploySpy = jest.spyOn(wrapper.vm as any, 'unlabelAndRedeployWorkload').mockResolvedValue(undefined);
 
       (wrapper.vm as any).workloadRemovalOption = 'auto';
       await (wrapper.vm as any).deletePolicies();
@@ -323,7 +313,7 @@ describe('DeleteActivePoliciesDialog', () => {
       const resources = [createResource('a', 'wk-a')];
       const dispatch = jest.fn();
       const { wrapper } = mountDialog({ resources, dispatch });
-      const redeploySpy = jest.spyOn(wrapper.vm as any, 'redeployWorkload').mockResolvedValue(undefined);
+      const redeploySpy = jest.spyOn(wrapper.vm as any, 'unlabelAndRedeployWorkload').mockResolvedValue(undefined);
 
       (wrapper.vm as any).workloadRemovalOption = 'manual';
       await (wrapper.vm as any).deletePolicies();
@@ -345,7 +335,7 @@ describe('DeleteActivePoliciesDialog', () => {
       const dispatch = jest.fn();
       const push = jest.fn();
       const { wrapper } = mountDialog({ resources: [failing], dispatch, push });
-      const redeploySpy = jest.spyOn(wrapper.vm as any, 'redeployWorkload').mockResolvedValue(undefined);
+      const redeploySpy = jest.spyOn(wrapper.vm as any, 'unlabelAndRedeployWorkload').mockResolvedValue(undefined);
 
       await expect((wrapper.vm as any).deletePolicies()).rejects.toThrow('remove failed');
       expect(redeploySpy).not.toHaveBeenCalled();

@@ -7,9 +7,10 @@ import { exceptionToErrorsArray } from '@shell/utils/error';
 import { TIMESTAMP } from '@shell/config/labels-annotations';
 import RadioGroup from '@components/Form/Radio/RadioGroup.vue';
 import { _EDIT } from '@shell/config/query-params';
-import { DOCUMENTATION_URL, WORKLOAD_PREFIX } from '@runtime-enforcer/types';
+import { DOCUMENTATION_URL, WORKLOAD_PREFIX, POLICY_LABEL_KEY } from '@runtime-enforcer/types';
 import RcTag from '@components/Pill/RcTag/RcTag.vue';
 import CopyToClipboard from '@shell/components/Resource/Detail/CopyToClipboard.vue';
+import { WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
 
 export default {
   emits: ['close'],
@@ -114,22 +115,38 @@ export default {
       this.$emit('close');
     },
 
-    async redeployWorkload(resource) {
+    async unlabelAndRedeployWorkload(resource) {
       try {
         const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
 
-        const workload = await this.$store.dispatch('cluster/find', {
-          type: resource.ownerWorkloadSteveType,
-          id:   `${ resource.metadata.namespace }/${ resource.metadata.ownerReferences?.[0]?.name }`,
-        });
+        //Todo: Keep this block as place holder until the workload type and workload name are got in active policy data
+        // const workload = await this.$store.dispatch('cluster/find', {
+        //   type: WORKLOAD_KIND_TO_TYPE_MAPPING[resource.metadata?.ownerReferences?.[0]?.kind],
+        //   id:   `${ resource.metadata.namespace }/${ resource.metadata.ownerReferences?.[0]?.name }`,
+        // });
 
+        // if (!workload) {
+        //   return;
+        // }
+        // const podTemplate = workload.spec?.jobTemplate?.spec?.template ?? workload.spec?.template;
 
-        const metadata = workload.spec.template.metadata ??= {};
-        const annotations = metadata.annotations ??= {};
+        // if (!podTemplate) {
+        //   return;
+        // }
 
-        annotations[TIMESTAMP] = now;
+        // const templateMetadata = podTemplate.metadata ??= {};
+        // const labels = templateMetadata.labels ??= {};
 
-        await workload.save();
+        // delete labels[POLICY_LABEL_KEY];
+
+        // const metadata = workload.spec.template.metadata ??= {};
+        // const annotations = metadata.annotations ??= {};
+
+        // annotations[TIMESTAMP] = now;
+
+        // await workload.save();
+
+        //Todo-end
 
       } catch (err) {
         this.errors = exceptionToErrorsArray(err);
@@ -139,9 +156,11 @@ export default {
     async deletePolicies() {
       this.deleteInProgress = true;
       await Promise.all((this.resources || []).map(async (resource) => {
+        const resourceBackup = { ...resource };
+
         await resource?.remove?.();
         if (this.workloadRemovalOption === 'auto') {
-          await this.redeployWorkload(resource);
+          await this.unlabelAndRedeployWorkload(resourceBackup);
         }
       }));
 

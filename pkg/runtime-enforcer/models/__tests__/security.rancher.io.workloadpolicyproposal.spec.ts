@@ -1,6 +1,7 @@
 import SteveModel from '@shell/plugins/steve/steve-class';
 import WorkloadPolicyProposal from '../security.rancher.io.workloadpolicyproposal';
 import { PRODUCT_NAME, RESOURCE } from '../../types/runtime-enforcer';
+import { PROMOTE_LABEL_KEY } from '@runtime-enforcer/types';
 
 jest.mock('@shell/plugins/steve/steve-class', () => {
   const MockSteveModel = class {
@@ -340,7 +341,11 @@ describe('WorkloadPolicyProposal model', () => {
       expect(proposal.toActivePolicyResource('protect')).toEqual({
         apiVersion: 'security.rancher.io/v1alpha1',
         kind:       'WorkloadPolicy',
-        metadata:   { name: 'deploy-nginx-ingress', namespace: 'ingress' },
+        metadata:   {
+          name:      'deploy-nginx-ingress',
+          namespace: 'ingress',
+          labels:    { [PROMOTE_LABEL_KEY]: 'true' },
+        },
         spec:       {
           mode:             'protect',
           rulesByContainer: { nginx: { executables: { allowed: ['/usr/bin/nginx'] } } },
@@ -362,7 +367,11 @@ describe('WorkloadPolicyProposal model', () => {
 
       const result = proposal.toActivePolicyResource('monitor');
 
-      expect(result.metadata).toEqual({ name: 'deploy-nginx-ingress', namespace: 'ingress' });
+      expect(result.metadata).toEqual({
+        name:      'deploy-nginx-ingress',
+        namespace: 'ingress',
+        labels:    { [PROMOTE_LABEL_KEY]: 'true' },
+      });
       expect(result.status).toBeUndefined();
     });
   });

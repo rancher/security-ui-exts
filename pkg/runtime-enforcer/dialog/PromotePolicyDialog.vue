@@ -69,7 +69,7 @@ export default {
     confirmText() {
       return this.isBulk
         ? this.t('runtimeEnforcer.policyProposal.promoteDialog.confirm.bulk', { count: this.resources.length }, true)
-        : this.t('runtimeEnforcer.policyProposal.promoteDialog.confirm.single', { name: this.resources[0]?.nameDisplay }, true);
+        : this.t('runtimeEnforcer.policyProposal.promoteDialog.confirm.single', { name: this.resources[0]?.nameDisplay, workload: this.resources[0]?.workload }, true);
     },
 
     modeOptions() {

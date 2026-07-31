@@ -91,7 +91,7 @@ describe('PromotePolicyDialog', () => {
       const { wrapper } = mountDialog({ resources: [createResource('proposal-a')] });
 
       expect((wrapper.vm as any).confirmText).toBe(
-        'runtimeEnforcer.policyProposal.promoteDialog.confirm.single {"name":"proposal-a"}'
+        'runtimeEnforcer.policyProposal.promoteDialog.confirm.single {"name":"proposal-a","workload":"wk-a"}'
       );
     });
 
