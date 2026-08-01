@@ -161,16 +161,16 @@ export function getActivePoliciesHeaders() {
     {
       name:     'workload',
       labelKey: 'runtimeEnforcer.activePolicies.columns.workload',
-      value:    'metadata.ownerReferences.0.name',
-      sort:     'metadata.ownerReferences.0.name',
+      value:    'workloadRef.workloadName',
+      sort:     'workloadRef.workloadName',
       formatter: 'WorkloadRouteLink',
       width:    FIGMA_COLUMN_WIDTH.workload,
     },
     {
       name:     'workloadType',
       labelKey: 'runtimeEnforcer.activePolicies.columns.workloadType',
-      value:    'metadata.ownerReferences.0.kind',
-      sort:     'metadata.ownerReferences.0.kind',
+      value:    'workloadRef.workloadType',
+      sort:     'workloadRef.workloadType',
       width:    FIGMA_COLUMN_WIDTH.workloadType,
     },
     {

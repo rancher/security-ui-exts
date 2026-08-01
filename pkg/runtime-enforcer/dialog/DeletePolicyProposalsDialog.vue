@@ -2,9 +2,10 @@
 import { Card } from '@components/Card';
 import { Banner } from '@components/Banner';
 import RcButton from '@components/RcButton/RcButton.vue';
-import { PRODUCT_NAME } from '@runtime-enforcer/types/runtime-enforcer.ts';
+import { PRODUCT_NAME } from '@runtime-enforcer/types';
 import { exceptionToErrorsArray } from '@shell/utils/error';
 import { TIMESTAMP } from '@shell/config/labels-annotations';
+import { WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
 
 export default {
   emits: ['close'],
@@ -79,7 +80,7 @@ export default {
         console.log('Fetch the workload based on type:', resource);
 
         const workload = await this.$store.dispatch('cluster/find', {
-          type: resource.ownerWorkloadSteveType,
+          type: WORKLOAD_KIND_TO_TYPE_MAPPING[resource.metadata?.ownerReferences?.[0]?.kind],
           id:   `${ resource.metadata.namespace }/${ resource.metadata.ownerReferences?.[0]?.name }`,
         });
 
@@ -90,7 +91,13 @@ export default {
           return;
         }
 
-        const metadata = workload.spec.template.metadata ??= {};
+        const podTemplate = workload.spec?.jobTemplate?.spec?.template ?? workload.spec?.template;
+
+        if (!podTemplate) {
+          return;
+        }
+
+        const metadata = podTemplate.metadata ??= {};
         const annotations = metadata.annotations ??= {};
 
         annotations[TIMESTAMP] = now;

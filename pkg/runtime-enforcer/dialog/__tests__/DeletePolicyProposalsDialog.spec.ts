@@ -14,7 +14,7 @@ const createResource = (name = 'proposal-a', workloadName?: string) => ({
   nameDisplay: name,
   metadata: {
     namespace:       'runtime-enforcer',
-    ownerReferences: workloadName ? [{ name: workloadName }] : [],
+    ownerReferences: workloadName ? [{ kind: 'Deployment', name: workloadName }] : [],
   },
   ownerWorkloadSteveType: 'apps.deployment',
   remove:                 jest.fn().mockResolvedValue(undefined),

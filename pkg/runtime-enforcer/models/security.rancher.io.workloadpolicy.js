@@ -1,5 +1,6 @@
 import SteveModel from '@shell/plugins/steve/steve-class';
-import { RESOURCE } from '../types/runtime-enforcer';
+import { RESOURCE, PROMOTE_LABEL_KEY } from '../types/runtime-enforcer';
+import { WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
 
 export default class WorkloadPolicyProposal extends SteveModel {
   get _availableActions() {
@@ -61,6 +62,43 @@ export default class WorkloadPolicyProposal extends SteveModel {
     });
 
     return out;
+  }
+
+  get workloadRef() {
+    let workloads = [];
+
+    return (() => {
+      try {
+        Promise.all(
+          Object.values(WORKLOAD_KIND_TO_TYPE_MAPPING).map((workloadType) => {
+            const workloadList = this.$getters['all'](workloadType);
+
+            workloads = workloads.concat(workloadList || []);
+          })
+        );
+
+        const workload = workloads.find((workload) => {
+          return workload.metadata?.labels?.[PROMOTE_LABEL_KEY] === this.metadata?.name;
+        });
+
+        if (workload) {
+          return {
+            workloadName: workload.metadata?.name || '',
+            workloadType: workload.kind || '',
+          };
+        }
+
+        return {
+          workloadName: '',
+          workloadType: '',
+        };
+      } catch {
+        return {
+          workloadName: '',
+          workloadType: '',
+        };
+      }
+    })();
   }
 
   get violationCount() {

@@ -8,10 +8,11 @@ import { DOCUMENTATION_URL, RESOURCE, type WorkloadPolicy } from '@runtime-enfor
 import { getActivePoliciesHeaders } from '@runtime-enforcer/config/policy-proposals-table';
 import RcButton from '@components/RcButton/RcButton.vue';
 import _ from 'lodash';
-import { PaginationFilterField, PaginationParamFilter } from '@shell/types/store/pagination.types';
 import { WORKLOAD_KINDS } from '@shell/config/types';
 import RichTranslation from '@shell/components/RichTranslation.vue';
 import SubtleLink from '@shell/components/SubtleLink.vue';
+import { WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
+import { FilterArgs, PaginationFilterField, PaginationParamFilter } from '@shell/types/store/pagination.types';
 
 const store = useStore();
 
@@ -27,7 +28,7 @@ function getAnyFilterOption() {
     label: t('runtimeEnforcer.activePolicies.filters.any')
   };
 }
-
+a
 const filters = ref({
   policySearch:   '',
   workloadSearch: '',
@@ -212,6 +213,30 @@ function changeModeSelected() {
     modalWidth: '640',
   });
 };
+
+async function fetchSecondaryResources({ canPaginate }: { canPaginate: boolean }) {
+  if (canPaginate) {
+    return;
+  }
+
+  return await Promise.all(
+    Object.values(WORKLOAD_KIND_TO_TYPE_MAPPING).map((workloadType) =>
+      store.dispatch(`cluster/findAll`, { type: workloadType })
+    )
+  );
+}
+
+async function fetchPageSecondaryResources({ force, page }: { force: any; page: any[] }) {
+  if (!page?.length) {
+    return;
+  }
+
+  return await Promise.all(
+    Object.values(WORKLOAD_KIND_TO_TYPE_MAPPING).map((workloadType) =>
+      store.dispatch(`cluster/findAll`, { type: workloadType })
+    )
+  );
+}
 </script>
 
 <template>
@@ -301,6 +326,8 @@ function changeModeSelected() {
       :key-field="'id'"
       :local-filter="filterRowsLocal"
       :api-filter="filterRowsApi"
+      :fetch-secondary-resources="fetchSecondaryResources"
+      :fetch-page-secondary-resources="fetchPageSecondaryResources"
       :use-query-params-for-simple-filtering="useQueryParamsForSimpleFiltering"
       @selection="onSelectionChange"
     >
