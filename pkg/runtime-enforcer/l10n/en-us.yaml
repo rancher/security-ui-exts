@@ -96,6 +96,7 @@ runtimeEnforcer:
     containerName: Container Name
     allowedExecutables: Allowed Executables
     executablePlaceholder: /usr/bin/executable
+    allowedExecutablesTooltip: runtimeEnforcer.policyProposal.allowedExecutablesTooltip
     addExecutable: Add Executable
     action:
       editPolicy: Edit Policy
@@ -181,8 +182,8 @@ runtimeEnforcer:
             bulk: Automatically apply the active policies and restart the workloads
             tooltip: runtimeEnforcer.policyProposal.promoteDialog.applyStep.options.automatic.tooltip
           manual:
-            single: Manually apply the active policy (recommended for GitOps)
-            bulk: Manually apply the active policies (recommended for GitOps)
+            single: Manually apply the active policy <b>(recommended for GitOps)</b>
+            bulk: Manually apply the active policies <b>(recommended for GitOps)</b>
             tooltip: runtimeEnforcer.policyProposal.promoteDialog.applyStep.options.manual.tooltip
         manualDescription:
           single: To manually apply the active policy on the workload, you need to copy the label below on the corresponding workload and redeploy it. <learnMore>Learn more</learnMore>
@@ -282,16 +283,18 @@ runtimeEnforcer:
         keep:
           single: Do not remove the label of the active policy from the workload
           bulk: Do not remove the labels of the active policies from the workloads
+          tooltip: runtimeEnforcer.activePolicies.deleteDialog.workloadRemovalOptions.keep.tooltip
         remove:
           single: Automatically remove the label of the active policy and restart the workload
           bulk: Automatically remove the labels of the active policies and restart the workloads
+          tooltip: runtimeEnforcer.activePolicies.deleteDialog.workloadRemovalOptions.remove.tooltip
         manual:
-          single: Manually remove the label of the active policy (recommended for GitOps)
-          bulk: Manually remove the labels of the active policies (recommended for GitOps)
+          single: Manually remove the label of the active policy <b>(recommended for GitOps)</b>
+          bulk: Manually remove the labels of the active policies <b>(recommended for GitOps)</b>
+          tooltip: runtimeEnforcer.activePolicies.deleteDialog.workloadRemovalOptions.manual.tooltip
       manualRemoval:
-        single: To manually remove the label of the active policy from the workload, you need to remove the label below from the corresponding workload and redeploy it.
-        bulk: To manually remove the labels of the active policies from the workloads, you need to remove the labels below from the corresponding workloads and redeploy them.
-      learnMore: Learn more
+        single: To manually remove the label of the active policy from the workload, you need to remove the label below from the corresponding workload and redeploy it. <learnMore>Learn more</learnMore>
+        bulk: To manually remove the labels of the active policies from the workloads, you need to remove the labels below from the corresponding workloads and redeploy them. <learnMore>Learn more</learnMore>
       cancel: Cancel
       delete: Delete
       deleteWithWorkloadRemoval:

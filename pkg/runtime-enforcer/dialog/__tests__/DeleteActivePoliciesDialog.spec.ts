@@ -95,7 +95,7 @@ describe('DeleteActivePoliciesDialog', () => {
           value: 'auto',
         },
         {
-          label: 'runtimeEnforcer.activePolicies.deleteDialog.workloadRemovalOptions.manual.single',
+          label: 'runtimeEnforcer.activePolicies.deleteDialog.workloadRemovalOptions.manual.single:{}',
           value: 'manual',
         },
       ]);
@@ -114,7 +114,7 @@ describe('DeleteActivePoliciesDialog', () => {
           value: 'auto',
         },
         {
-          label: 'runtimeEnforcer.activePolicies.deleteDialog.workloadRemovalOptions.manual.bulk',
+          label: 'runtimeEnforcer.activePolicies.deleteDialog.workloadRemovalOptions.manual.bulk:{}',
           value: 'manual',
         },
       ]);

@@ -88,7 +88,10 @@
                     <label class="text-bold m-0">
                       {{ t('runtimeEnforcer.policyProposal.allowedExecutables') }}
                     </label>
-                    <i class="icon icon-info ml-5 text-muted" />
+                    <i
+                        class="icon icon-info ml-5 text-muted"
+                        v-clean-tooltip="t('runtimeEnforcer.policyProposal.allowedExecutablesTooltip')"
+                    />
                   </div>
 
                   <!-- Executables Rows -->

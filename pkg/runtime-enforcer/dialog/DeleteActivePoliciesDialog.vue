@@ -5,11 +5,13 @@ import RcButton from '@components/RcButton/RcButton.vue';
 import { PRODUCT_NAME } from '@runtime-enforcer/types/runtime-enforcer.ts';
 import { exceptionToErrorsArray } from '@shell/utils/error';
 import { TIMESTAMP } from '@shell/config/labels-annotations';
-import RadioGroup from '@components/Form/Radio/RadioGroup.vue';
+import RadioButton from '@components/Form/Radio/RadioButton.vue';
 import { _EDIT } from '@shell/config/query-params';
 import { DOCUMENTATION_URL, WORKLOAD_PREFIX, POLICY_LABEL_KEY } from '@runtime-enforcer/types';
 import RcTag from '@components/Pill/RcTag/RcTag.vue';
 import CopyToClipboard from '@shell/components/Resource/Detail/CopyToClipboard.vue';
+import RichTranslation from '@shell/components/RichTranslation.vue';
+import SubtleLink from '@shell/components/SubtleLink.vue';
 import { WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
 
 export default {
@@ -19,9 +21,11 @@ export default {
     Card,
     Banner,
     RcButton,
-    RadioGroup,
+    RadioButton,
     RcTag,
     CopyToClipboard,
+    RichTranslation,
+    SubtleLink,
   },
 
   props: {
@@ -62,6 +66,9 @@ export default {
     manualRemovalText() {
       return this.t(`runtimeEnforcer.activePolicies.deleteDialog.manualRemoval.${ this.isBulk ? 'bulk' : 'single' }`);
     },
+    manualDescriptionKey() {
+      return `runtimeEnforcer.activePolicies.deleteDialog.manualRemoval.${ this.isBulk ? 'bulk' : 'single' }`;
+    },
     workloadRemovalOptions() {
       return [
         {
@@ -73,7 +80,7 @@ export default {
           value: 'auto',
         },
         {
-          label: this.t(`runtimeEnforcer.activePolicies.deleteDialog.workloadRemovalOptions.manual.${ this.isBulk ? 'bulk' : 'single' }`),
+          label: this.t(`runtimeEnforcer.activePolicies.deleteDialog.workloadRemovalOptions.manual.${ this.isBulk ? 'bulk' : 'single' }`, {}, true),
           value: 'manual',
         },
       ];
@@ -200,46 +207,99 @@ export default {
         class="confirm-text"
         v-clean-html="confirmText"
       />
-      <RadioGroup
-          class="mb-16"
-          v-model:value="workloadRemovalOption"
-          :mode="_EDIT"
-          :options="workloadRemovalOptions"
-          name="workloadRemovalOptions"
-          data-testid="workload-removal-radio"
-        />
       <div
-        v-if="workloadRemovalOption === 'manual'"
-        class="mb-16"
+        class="workload-removal-option-group"
+        role="radiogroup"
+        data-testid="workload-removal-radio"
       >
-        <span
-          class="confirm-text"
-        >
-          {{ t(`runtimeEnforcer.activePolicies.deleteDialog.manualRemoval.${ this.isBulk ? 'bulk' : 'single' }`) }}
-          <a
-            :href="DOCUMENTATION_URL"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="doc-link"
+        <div>
+          <RadioButton
+            name="workloadRemovalOptions"
+            :value="workloadRemovalOption"
+            val="keep"
+            :label="workloadRemovalOptions[0].label"
+            :mode="_EDIT"
+            :use-body-text-color="true"
+            @update:value="workloadRemovalOption = $event"
           >
-            {{ t('runtimeEnforcer.activePolicies.deleteDialog.learnMore') }}
-          </a>
-        </span>
-        <div class="tag-group">
-          <div
-            v-for="resource in resources"
-            :key="resource.metadata.uid"
-            class="mt-2"
+            <template #label>
+              {{ workloadRemovalOptions[0].label }}
+              <i
+                v-clean-tooltip="t('runtimeEnforcer.activePolicies.deleteDialog.workloadRemovalOptions.keep.tooltip')"
+                class="icon icon-info icon-lg option-tooltip-icon"
+              />
+            </template>
+          </RadioButton>
+        </div>
+
+        <div>
+          <RadioButton
+            name="workloadRemovalOptions"
+            :value="workloadRemovalOption"
+            val="auto"
+            :label="workloadRemovalOptions[1].label"
+            :mode="_EDIT"
+            :use-body-text-color="true"
+            @update:value="workloadRemovalOption = $event"
           >
-            <RcTag
-              :type="type"
-              class="tag-row"
-              :highlight="false"
-            >
-              <div class="tag-data">{{WORKLOAD_PREFIX}} {{ resource.metadata.name }}</div>
-            </RcTag>
-            <CopyToClipboard class="cp-board" :value="`${ WORKLOAD_PREFIX } ${ resource.metadata.name }`" />
-          </div>
+            <template #label>
+              {{ workloadRemovalOptions[1].label }}
+              <i
+                v-clean-tooltip="t('runtimeEnforcer.activePolicies.deleteDialog.workloadRemovalOptions.remove.tooltip')"
+                class="icon icon-info icon-lg option-tooltip-icon"
+              />
+            </template>
+          </RadioButton>
+        </div>
+
+        <div>
+          <RadioButton
+            name="workloadRemovalOptions"
+            :value="workloadRemovalOption"
+            val="manual"
+            :label="workloadRemovalOptions[2].label"
+            :mode="_EDIT"
+            :use-body-text-color="true"
+            @update:value="workloadRemovalOption = $event"
+          >
+            <template #label>
+              <span v-clean-html="workloadRemovalOptions[2].label" />
+              <i
+                v-clean-tooltip="t('runtimeEnforcer.activePolicies.deleteDialog.workloadRemovalOptions.manual.tooltip')"
+                class="icon icon-info icon-lg option-tooltip-icon"
+              />
+            </template>
+
+            <template #description>
+              <template v-if="workloadRemovalOption === 'manual'">
+                <p class="confirm-text">
+                  <RichTranslation :k="manualDescriptionKey">
+                    <template #learnMore="{ content }">
+                      <SubtleLink
+                        :href="DOCUMENTATION_URL"
+                        target="_blank"
+                      >
+                        {{ content }}
+                      </SubtleLink>
+                    </template>
+                  </RichTranslation>
+                </p>
+                <div
+                  v-for="resource in resources"
+                  :key="resource.metadata.uid"
+                  class="mt-2"
+                >
+                  <RcTag
+                    class="tag-row"
+                    :highlight="false"
+                  >
+                    <div class="tag-data">{{ WORKLOAD_PREFIX }} {{ resource.metadata.name }}</div>
+                  </RcTag>
+                  <CopyToClipboard class="cp-board" :value="`${ WORKLOAD_PREFIX } ${ resource.metadata.name }`" />
+                </div>
+              </template>
+            </template>
+          </RadioButton>
         </div>
       </div>
     </template>
@@ -287,13 +347,22 @@ export default {
   .bg-danger:disabled {
     background-color: var(--rc-active-disabled-background) !important;
   }
-  .mb-16 {
-    margin-bottom: 16px;
-  }
 
-  .tag-row {
-    display: inline-flex;
-    align-items: center;
+  .workload-removal-option-group {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-bottom: 16px;
+
+    :deep(.radio-button-outer-container-description) {
+      color: var(--body-text);
+      font-size: 14px;
+      margin-top: 16px;
+    }
+
+    .option-tooltip-icon {
+      margin-left: 8px;
+    }
   }
 
   .cp-board {
@@ -301,11 +370,9 @@ export default {
     right: 0;
     top: 0;
   }
-  .tag-group {
-    max-height: calc(100vh - 780px);
-    overflow-y: auto;
-  }
   .tag-row {
+    display: inline-flex;
+    align-items: center;
     background-color: var(--rc-active-disabled-background);
     border: 1px solid var(--rc-active-disabled-background);
     border-radius: 4px;

@@ -84,7 +84,7 @@ export default {
     },
 
     manualOptionLabel() {
-      return this.t(`runtimeEnforcer.policyProposal.promoteDialog.applyStep.options.manual.${ this.isBulk ? 'bulk' : 'single' }`);
+      return this.t(`runtimeEnforcer.policyProposal.promoteDialog.applyStep.options.manual.${ this.isBulk ? 'bulk' : 'single' }`, {}, true);
     },
 
     manualDescriptionKey() {
@@ -222,7 +222,7 @@ export default {
               @update:value="applyOption = $event"
             >
               <template #label>
-                {{ manualOptionLabel }}
+                <span v-clean-html="manualOptionLabel" />
                 <i
                   v-clean-tooltip="t('runtimeEnforcer.policyProposal.promoteDialog.applyStep.options.manual.tooltip')"
                   class="icon icon-info icon-lg option-tooltip-icon"
@@ -321,7 +321,7 @@ export default {
   .apply-option-group {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 7px;
     margin-bottom: 16px;
 
     :deep(.radio-button-outer-container-description) {
