@@ -12,7 +12,7 @@ import { _EDIT } from '@shell/config/query-params';
 import {
   PRODUCT_NAME, POLICY_MODE, APPLY_MODE, WORKLOAD_PREFIX, DOCUMENTATION_URL
 } from '../types/runtime-enforcer';
-import { applyPromoteLabel, snapshotProposal, runPromoteFollowUps } from '../utils/promote';
+import { applyPromoteLabel, applyWorkloadPolicyLabel, snapshotProposal } from '../utils/promote';
 
 export default {
   emits: ['close'],
@@ -122,7 +122,7 @@ export default {
       this.promoteInProgress = true;
 
       try {
-        await Promise.all(this.resources.map((resource) => applyPromoteLabel(resource)));
+        await Promise.all(this.resources.map((resource) => applyPromoteLabel(resource, this.targetMode)));
       } catch (err) {
         this.promoteInProgress = false;
         this.$store.dispatch('growl/fromError', { title: this.t('runtimeEnforcer.policyProposal.promoteDialog.errorTitle'), err });
@@ -132,12 +132,11 @@ export default {
 
       const autoApply = this.applyOption === APPLY_MODE.AUTOMATIC;
 
-      this.resources.forEach((resource) => {
-        runPromoteFollowUps(this.$store, snapshotProposal(resource), {
-          targetMode: this.targetMode,
-          autoApply,
+      if (autoApply) {
+        this.resources.forEach((resource) => {
+          applyWorkloadPolicyLabel(this.$store, snapshotProposal(resource)).catch(() => {});
         });
-      });
+      }
 
       this.$store.dispatch('growl/success', { title: this.growlTitle, message: this.growlMessage });
 

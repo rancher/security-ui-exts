@@ -8,12 +8,12 @@ jest.mock('@shell/components/Resource/Detail/CopyToClipboard.vue', () => ({
 }));
 
 jest.mock('../../utils/promote', () => ({
-  applyPromoteLabel:   jest.fn().mockResolvedValue(undefined),
-  snapshotProposal:    jest.fn((resource) => ({ snapshot: resource.nameDisplay })),
-  runPromoteFollowUps: jest.fn(),
+  applyPromoteLabel:        jest.fn().mockResolvedValue(undefined),
+  applyWorkloadPolicyLabel: jest.fn().mockResolvedValue(undefined),
+  snapshotProposal:         jest.fn((resource) => ({ snapshot: resource.nameDisplay })),
 }));
 
-import { applyPromoteLabel, snapshotProposal, runPromoteFollowUps } from '../../utils/promote';
+import { applyPromoteLabel, applyWorkloadPolicyLabel, snapshotProposal } from '../../utils/promote';
 
 const t = jest.fn((key: string, args?: Record<string, any>) => (args ? `${ key } ${ JSON.stringify(args) }` : key));
 
@@ -151,7 +151,7 @@ describe('PromotePolicyDialog', () => {
   });
 
   describe('finish', () => {
-    it('applies labels, runs follow-ups, dispatches growl, and routes for single resource', async() => {
+    it('applies labels, applies workload policy label, dispatches growl, and routes for single resource', async() => {
       const resource = createResource('proposal-a', 'wk-a');
       const dispatch = jest.fn();
       const push = jest.fn();
@@ -164,13 +164,9 @@ describe('PromotePolicyDialog', () => {
 
       await (wrapper.vm as any).finish();
 
-      expect(applyPromoteLabel).toHaveBeenCalledWith(resource);
+      expect(applyPromoteLabel).toHaveBeenCalledWith(resource, POLICY_MODE.PROTECT);
       expect(snapshotProposal).toHaveBeenCalledWith(resource);
-      expect(runPromoteFollowUps).toHaveBeenCalledWith(
-        { dispatch },
-        { snapshot: 'proposal-a' },
-        { targetMode: POLICY_MODE.PROTECT, autoApply: true }
-      );
+      expect(applyWorkloadPolicyLabel).toHaveBeenCalledWith({ dispatch }, { snapshot: 'proposal-a' });
       expect(dispatch).toHaveBeenCalledWith('growl/success', {
         title:   (wrapper.vm as any).growlTitle,
         message: (wrapper.vm as any).growlMessage,
@@ -194,18 +190,14 @@ describe('PromotePolicyDialog', () => {
       expect(wrapper.emitted('close')).toHaveLength(1);
     });
 
-    it('sets autoApply false when manual option selected', async() => {
+    it('does not apply workload policy label when manual option selected', async() => {
       const resource = createResource('proposal-a');
       const { wrapper } = mountDialog({ resources: [resource] });
 
       (wrapper.vm as any).applyOption = APPLY_MODE.MANUAL;
       await (wrapper.vm as any).finish();
 
-      expect(runPromoteFollowUps).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.anything(),
-        expect.objectContaining({ autoApply: false })
-      );
+      expect(applyWorkloadPolicyLabel).not.toHaveBeenCalled();
     });
 
     it('dispatches growl/fromError and keeps dialog open when applyPromoteLabel fails', async() => {
@@ -223,7 +215,7 @@ describe('PromotePolicyDialog', () => {
         title: 'runtimeEnforcer.policyProposal.promoteDialog.errorTitle',
         err,
       });
-      expect(runPromoteFollowUps).not.toHaveBeenCalled();
+      expect(applyWorkloadPolicyLabel).not.toHaveBeenCalled();
       expect(push).not.toHaveBeenCalled();
       expect((wrapper.vm as any).promoteInProgress).toBe(false);
       expect(wrapper.emitted('close')).toBeUndefined();

@@ -163,6 +163,3 @@ export const APPLY_MODE = {
 } as const;
 
 export type ApplyMode = typeof APPLY_MODE[keyof typeof APPLY_MODE];
-
-// Client-side cutoff for the background watch that waits for a promoted proposal's WorkloadPolicy to appear
-export const PROMOTE_WATCH_TIMEOUT_MS = 20000;
