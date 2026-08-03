@@ -268,6 +268,7 @@ async function fetchPageSecondaryResources({ force, page }: { force: any; page: 
           :options="workloadTypeOptions"
           :close-on-select="true"
           :multiple="false"
+          size="medium"
         />
       </div>
     </div>
@@ -396,7 +397,8 @@ async function fetchPageSecondaryResources({ force, page }: { force: any; page: 
   }
 
   .form-control {
-    height: 40px;//32px;
+    height: 32px;
+    box-sizing: border-box;
     border: 1px solid var(--border);
     border-radius: 4px;
     padding: 0 10px;
