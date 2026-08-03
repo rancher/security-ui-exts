@@ -148,8 +148,6 @@ export default class WorkloadPolicyProposal extends SteveModel {
           return acc;
         }, {});
 
-        console.log('image', image, this.rulesByContainer);
-
         return Object.entries(this.rulesByContainer).map(([containerName, containerRules]) => {
           return {
             container:       containerName,

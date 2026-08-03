@@ -14,6 +14,7 @@ import { PRODUCT_NAME, RESOURCE } from '@runtime-enforcer/types';
 import ActionMenu from '@shell/components/ActionMenuShell.vue';
 import StatusBadge from '@runtime-enforcer/components/common/StatusBadge.vue';
 import ExpandableDescription from '@common/components/ExpandableDescription.vue';
+import { WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
 
 
 const props = defineProps<{
@@ -28,10 +29,10 @@ const i18n = useI18n(store);
 
 const canUpdate = computed(() => policy.canUpdate);
 
-const ownerWorkload = ref<any>(null);
-
 onMounted(async() => {
-  //ToDo: Prepare to get wroklaod info from backend data
+  if (!policy.workloadRef?.workloadName && !policy.workloadRef?.workloadType) {
+    await getWorkloadData();
+  }
 });
 
 const namespaceRoute = computed(() => ({
@@ -43,6 +44,14 @@ const namespaceRoute = computed(() => ({
     id:       policy.metadata?.namespace,
   },
 }));
+
+const getWorkloadData = async() => {
+  return Promise.all(
+    Object.values(WORKLOAD_KIND_TO_TYPE_MAPPING).map((workloadType) =>
+      store.dispatch(`cluster/findAll`, { type: workloadType })
+    )
+  );
+};
 
 const modetext = computed(() => {
   return i18n.t(`runtimeEnforcer.activePolicies.mode.${policy.spec.mode.toLowerCase()}`);
@@ -66,15 +75,15 @@ const metaProperties = computed<MetadataProperty[]>(() => [
     route: namespaceRoute.value,
   },
   {
-    type:  ownerWorkload.value ? 'route' : 'text',
+    type:  'route',
     label: i18n.t('runtimeEnforcer.activePolicy.masthead.workload'),
-    value: '',//policy.workload,
-    route: ownerWorkload.value?.detailLocation,
+    value: policy.workloadRef?.workloadName ?? '',
+    route: policy.workloadRef?.workloadLocation ?? null,
   },
   {
     type:  'text',
     label: i18n.t('runtimeEnforcer.activePolicy.masthead.workloadType'),
-    value: '',//policy.workloadType,
+    value: policy.workloadRef?.workloadType ?? '',
   },
   {
     type:  'icon',

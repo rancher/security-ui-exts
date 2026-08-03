@@ -28,7 +28,7 @@ function getAnyFilterOption() {
     label: t('runtimeEnforcer.activePolicies.filters.any')
   };
 }
-a
+
 const filters = ref({
   policySearch:   '',
   workloadSearch: '',
@@ -219,7 +219,7 @@ async function fetchSecondaryResources({ canPaginate }: { canPaginate: boolean }
     return;
   }
 
-  return await Promise.all(
+  return Promise.all(
     Object.values(WORKLOAD_KIND_TO_TYPE_MAPPING).map((workloadType) =>
       store.dispatch(`cluster/findAll`, { type: workloadType })
     )
@@ -231,7 +231,7 @@ async function fetchPageSecondaryResources({ force, page }: { force: any; page: 
     return;
   }
 
-  return await Promise.all(
+  return Promise.all(
     Object.values(WORKLOAD_KIND_TO_TYPE_MAPPING).map((workloadType) =>
       store.dispatch(`cluster/findAll`, { type: workloadType })
     )

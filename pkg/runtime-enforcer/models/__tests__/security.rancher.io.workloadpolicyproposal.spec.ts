@@ -240,15 +240,12 @@ describe('WorkloadPolicyProposal model', () => {
         ]),
       };
 
-      const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
       const children = proposal.childrenRec;
 
       expect(children).toEqual([
         { container: 'web', image: 'nginx:1.25', executableCount: 1, executables: ['/usr/bin/nginx'] },
         { container: 'sidecar', image: 'busybox:1.36', executableCount: 2, executables: ['/usr/bin/agent', '/usr/bin/metrics'] },
       ]);
-      expect(logSpy).toHaveBeenCalledWith('image', expect.objectContaining({ web: 'nginx:1.25', sidecar: 'busybox:1.36' }), proposal.rulesByContainer);
-      logSpy.mockRestore();
     });
 
     it('uses job template containers when the workload is a job-based resource', () => {

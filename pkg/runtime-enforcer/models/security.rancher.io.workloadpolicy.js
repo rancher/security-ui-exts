@@ -1,5 +1,5 @@
 import SteveModel from '@shell/plugins/steve/steve-class';
-import { RESOURCE, PROMOTE_LABEL_KEY } from '../types/runtime-enforcer';
+import { RESOURCE, POLICY_LABEL_KEY, PRODUCT_NAME } from '../types/runtime-enforcer';
 import { WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
 
 export default class WorkloadPolicyProposal extends SteveModel {
@@ -69,33 +69,45 @@ export default class WorkloadPolicyProposal extends SteveModel {
 
     return (() => {
       try {
-        Promise.all(
-          Object.values(WORKLOAD_KIND_TO_TYPE_MAPPING).map((workloadType) => {
-            const workloadList = this.$getters['all'](workloadType);
+        Object.values(WORKLOAD_KIND_TO_TYPE_MAPPING).map((workloadType) => {
+          const workloadList = this.$getters['all'](workloadType);
 
-            workloads = workloads.concat(workloadList || []);
-          })
-        );
+          workloads = workloads.concat(workloadList || []);
+        });
 
         const workload = workloads.find((workload) => {
-          return workload.metadata?.labels?.[PROMOTE_LABEL_KEY] === this.metadata?.name;
+          const podTemplate = workload.spec?.jobTemplate?.spec?.template ?? workload.spec?.template;
+
+          if (!podTemplate) {
+            return;
+          }
+
+          const metadata = podTemplate.metadata ??= {};
+          const labels = metadata.labels ??= {};
+
+          return labels?.[POLICY_LABEL_KEY] === this.metadata?.name && this.metadata?.namespace === workload.metadata?.namespace;
         });
 
         if (workload) {
+          const cluster = this.$rootState.targetRoute.params.cluster;
+
           return {
-            workloadName: workload.metadata?.name || '',
-            workloadType: workload.kind || '',
+            workloadName:     workload.metadata?.name || '',
+            workloadType:     workload.kind || '',
+            workloadLocation: `/c/${ cluster }/${ PRODUCT_NAME }/${ WORKLOAD_KIND_TO_TYPE_MAPPING[workload.kind] || '' }/${ workload.metadata?.namespace || '' }/${ workload.metadata?.name || '' }`,
           };
         }
 
         return {
-          workloadName: '',
-          workloadType: '',
+          workloadName:     '',
+          workloadType:     '',
+          workloadLocation: '',
         };
       } catch {
         return {
-          workloadName: '',
-          workloadType: '',
+          workloadName:     '',
+          workloadType:     '',
+          workloadLocation: '',
         };
       }
     })();
@@ -123,6 +135,7 @@ export default class WorkloadPolicyProposal extends SteveModel {
 
     Object.values(rulesByContainer).forEach((container) => {
       const allowedExecutables = container?.executables?.allowed || [];
+
       executables.push(...allowedExecutables);
     });
 
@@ -159,4 +172,3 @@ export default class WorkloadPolicyProposal extends SteveModel {
     });
   }
 }
-
