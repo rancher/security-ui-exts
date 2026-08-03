@@ -23,28 +23,30 @@
         <div class="title">
           {{ t('runtimeEnforcer.activePolicies.status.popup.nodes', { count: nodesInfo.totalNodes }) }}
         </div>
-        <div class="message-wrap" v-if="nodesInfo.failedNodes > 0">
-          <div
-            :class="`dot badge-failed`"
-          ></div>
-          <div class="message">
-            {{ nodesInfo.failedNodes }} {{ t('runtimeEnforcer.activePolicies.status.popup.failed', { count: nodesInfo.failedNodes }) }}
+        <div class="message-list">
+          <div class="message-wrap" v-if="nodesInfo.failedNodes > 0">
+            <div
+              :class="`dot badge-failed`"
+            ></div>
+            <div class="message">
+              {{ nodesInfo.failedNodes }} {{ t('runtimeEnforcer.activePolicies.status.popup.failed', { count: nodesInfo.failedNodes }) }}
+            </div>
           </div>
-        </div>
-        <div class="message-wrap" v-if="nodesInfo.transitioningNodes > 0">
-          <div
-            :class="`dot badge-transitioning`"
-          ></div>
-          <div class="message">
-            {{ nodesInfo.transitioningNodes }} {{ t('runtimeEnforcer.activePolicies.status.popup.transitioning', { count: nodesInfo.transitioningNodes }) }}
+          <div class="message-wrap" v-if="nodesInfo.transitioningNodes > 0">
+            <div
+              :class="`dot badge-transitioning`"
+            ></div>
+            <div class="message">
+              {{ nodesInfo.transitioningNodes }} {{ t('runtimeEnforcer.activePolicies.status.popup.transitioning', { count: nodesInfo.transitioningNodes }) }}
+            </div>
           </div>
-        </div>
-        <div class="message-wrap" v-if="nodesInfo.successfulNodes > 0">
-          <div
-            :class="`dot badge-ready`"
-          ></div>
-          <div class="message">
-            {{ nodesInfo.successfulNodes }} {{ t('runtimeEnforcer.activePolicies.status.popup.ready', { count: nodesInfo.successfulNodes }) }}
+          <div class="message-wrap" v-if="nodesInfo.successfulNodes > 0">
+            <div
+              :class="`dot badge-ready`"
+            ></div>
+            <div class="message">
+              {{ nodesInfo.successfulNodes }} {{ t('runtimeEnforcer.activePolicies.status.popup.ready', { count: nodesInfo.successfulNodes }) }}
+            </div>
           </div>
         </div>
       </div>
@@ -147,16 +149,23 @@ export default {
     .title {
       font-weight: 600;
       font-size: 16px;
+      line-height: 22px;
       color: var(--body-text);
       margin-bottom: 12px;
     }
     .message {
       color: var(--body-text);
       font-size: 14px;
+      line-height: 20px;
 
       white-space: pre-wrap;
       word-break: break-word;
     }
+  }
+  .message-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
   .message-hover-overlay.show-top {
     top: auto;
@@ -183,12 +192,11 @@ export default {
   .message-wrap {
     display: flex;
     align-items: flex-start;
-    gap: 8px;
-    margin: 2px 0;
+    gap: 12px;
     .dot {
       width: 8px;
       height: 8px;
-      margin-top: 4px;
+      margin-top: 6px;
       min-width: 8px;
       border-radius: 50%;
       border-width: 1px;
@@ -213,6 +221,7 @@ export default {
     .message {
       color: var(--body-text);
       font-size: 14px;
+      line-height: 20px;
       word-break: break-word;
     }
   }
