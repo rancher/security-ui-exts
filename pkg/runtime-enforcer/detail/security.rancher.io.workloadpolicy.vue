@@ -15,7 +15,7 @@ import { PRODUCT_NAME, RESOURCE } from '@runtime-enforcer/types';
 import ActionMenu from '@shell/components/ActionMenuShell.vue';
 import StatusBadge from '@runtime-enforcer/components/common/StatusBadge.vue';
 import ExpandableDescription from '@common/components/ExpandableDescription.vue';
-import { WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
+import AllowedExecutablesTable from "@runtime-enforcer/components/AllowedExecutablesTable.vue";
 
 
 const props = defineProps<{
@@ -32,10 +32,10 @@ const i18n = useI18n(store);
 
 const canUpdate = computed(() => policy.canUpdate);
 
+const ownerWorkload = ref<any>(null);
+
 onMounted(async() => {
-  if (!policy.workloadRef?.workloadName && !policy.workloadRef?.workloadType) {
-    await getWorkloadData();
-  }
+  //ToDo: Prepare to get wroklaod info from backend data
 });
 
 const namespaceRoute = computed(() => ({
@@ -47,14 +47,6 @@ const namespaceRoute = computed(() => ({
     id:       policy.metadata?.namespace,
   },
 }));
-
-const getWorkloadData = async() => {
-  return Promise.all(
-    Object.values(WORKLOAD_KIND_TO_TYPE_MAPPING).map((workloadType) =>
-      store.dispatch(`cluster/findAll`, { type: workloadType })
-    )
-  );
-};
 
 const modetext = computed(() => {
   return i18n.t(`runtimeEnforcer.activePolicies.mode.${policy.spec.mode.toLowerCase()}`);
@@ -78,15 +70,15 @@ const metaProperties = computed<MetadataProperty[]>(() => [
     route: namespaceRoute.value,
   },
   {
-    type:  'route',
+    type:  ownerWorkload.value ? 'route' : 'text',
     label: i18n.t('runtimeEnforcer.activePolicy.masthead.workload'),
-    value: policy.workloadRef?.workloadName ?? '',
-    route: policy.workloadRef?.workloadLocation ?? null,
+    value: '',//policy.workload,
+    route: ownerWorkload.value?.detailLocation,
   },
   {
     type:  'text',
     label: i18n.t('runtimeEnforcer.activePolicy.masthead.workloadType'),
-    value: policy.workloadRef?.workloadType ?? '',
+    value: '',//policy.workloadType,
   },
   {
     type:   'icon',
@@ -190,6 +182,10 @@ const metaProperties = computed<MetadataProperty[]>(() => [
         :weight="20"
         :label="t('runtimeEnforcer.activePolicy.tabs.allowedExecutables')"
       >
+        <AllowedExecutablesTable
+            :rules-by-container="policy.spec?.rulesByContainer"
+            :container-images="containerImages"
+        />
       </Tab>
       <Tab
         name="violations"

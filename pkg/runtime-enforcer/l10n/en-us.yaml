@@ -339,7 +339,6 @@ runtimeEnforcer:
     description: Description
     descriptionPlaceholder: Any text you want that better describes this configuration
     containerName: Container Name
-    allowedExecutables: Allowed Executables
     executablePlaceholder: /usr/bin/executable
     addExecutable: Add Executable
     action:
@@ -365,3 +364,10 @@ runtimeEnforcer:
       nodesEnforcement: Nodes Enforcement
       allowedExecutables: Allowed Executables
       violations: Violations
+    allowedExecutables:
+      table:
+        executable: Executable
+        container: Container
+        image: Image
+        provenance: Provenance
+
