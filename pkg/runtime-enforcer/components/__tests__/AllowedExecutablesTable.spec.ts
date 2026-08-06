@@ -37,7 +37,6 @@ describe('AllowedExecutablesTable.vue', () => {
                       <slot name="col:image" :row="row">
                         <td>{{ row.image }}</td>
                       </slot>
-                      <td>{{ row.provenance }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -66,7 +65,7 @@ describe('AllowedExecutablesTable.vue', () => {
     expect(sortableTable.props('paging')).toBe(false);
   });
 
-  it('correctly maps rulesByContainer and containerImages into table rows', () => {
+  it('correctly maps rulesByContainer and imageMap into table rows', () => {
     const rulesByContainer = {
       'nginx-controller': {
         executables: {
@@ -80,12 +79,12 @@ describe('AllowedExecutablesTable.vue', () => {
       },
     };
 
-    const containerImages = {
+    const imageMap = {
       'nginx-controller': 'registry.k8s.io/ingress-nginx/controller:v1.10.0',
       'sidecar-agent': 'quay.io/sidecar:v1.0.0',
     };
 
-    const wrapper = createWrapper({ rulesByContainer, containerImages });
+    const wrapper = createWrapper({ rulesByContainer, imageMap });
     const sortableTable = wrapper.findComponent({ name: 'SortableTable' });
     const rows = sortableTable.props('rows');
 
@@ -95,21 +94,18 @@ describe('AllowedExecutablesTable.vue', () => {
       executable: '/usr/sbin/nginx',
       container: 'nginx-controller',
       image: 'registry.k8s.io/ingress-nginx/controller:v1.10.0',
-      provenance: '-',
     });
     expect(rows[1]).toEqual({
       id: 'nginx-controller-1-/usr/bin/curl',
       executable: '/usr/bin/curl',
       container: 'nginx-controller',
       image: 'registry.k8s.io/ingress-nginx/controller:v1.10.0',
-      provenance: '-',
     });
     expect(rows[2]).toEqual({
       id: 'sidecar-agent-0-/bin/agent',
       executable: '/bin/agent',
       container: 'sidecar-agent',
       image: 'quay.io/sidecar:v1.0.0',
-      provenance: '-',
     });
   });
 
@@ -140,11 +136,11 @@ describe('AllowedExecutablesTable.vue', () => {
     const rulesByContainer = {
       web: { executables: { allowed: ['/usr/bin/web'] } },
     };
-    const containerImages = {
+    const imageMap = {
       web: 'nginx:latest',
     };
 
-    const wrapper = createWrapper({ rulesByContainer, containerImages });
+    const wrapper = createWrapper({ rulesByContainer, imageMap });
     expect(wrapper.text()).toContain('image: nginx:latest');
   });
 
@@ -153,7 +149,7 @@ describe('AllowedExecutablesTable.vue', () => {
       web: { executables: { allowed: ['/usr/bin/web'] } },
     };
 
-    const wrapper = createWrapper({ rulesByContainer, containerImages: {} });
+    const wrapper = createWrapper({ rulesByContainer, imageMap: {} });
     const mutedSpan = wrapper.find('span.text-muted');
 
     expect(mutedSpan.exists()).toBe(true);
@@ -183,12 +179,6 @@ describe('AllowedExecutablesTable.vue', () => {
         value: 'image',
         label: 'runtimeEnforcer.activePolicy.allowedExecutables.table.image',
         sort: 'image',
-      },
-      {
-        name: 'provenance',
-        value: 'provenance',
-        label: 'runtimeEnforcer.activePolicy.allowedExecutables.table.provenance',
-        sort: 'provenance',
       },
     ]);
   });

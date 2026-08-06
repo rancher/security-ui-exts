@@ -184,7 +184,7 @@ const metaProperties = computed<MetadataProperty[]>(() => [
       >
         <AllowedExecutablesTable
             :rules-by-container="policy.spec?.rulesByContainer"
-            :container-images="containerImages"
+            :container-images="policy.workloadRef?.imageMap"
         />
       </Tab>
       <Tab

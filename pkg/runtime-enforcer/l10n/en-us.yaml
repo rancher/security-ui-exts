@@ -369,5 +369,4 @@ runtimeEnforcer:
         executable: Executable
         container: Container
         image: Image
-        provenance: Provenance
 

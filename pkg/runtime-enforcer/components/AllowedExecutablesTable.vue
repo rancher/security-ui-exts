@@ -6,7 +6,7 @@ import SortableTable from '@shell/components/SortableTable';
 
 const props = defineProps<{
   rulesByContainer: Record<string, any>;
-  containerImages?: Record<string, string>;
+  imageMap?: Record<string, string>;
 }>();
 
 const store = useStore();
@@ -14,19 +14,18 @@ const i18n = useI18n(store);
 
 const rows = computed(() => {
   const rules = props.rulesByContainer || {};
-  const items: Array<{ id: string; executable: string; container: string; image: string; provenance: string }> = [];
+  const items: Array<{ id: string; executable: string; container: string; image: string }> = [];
 
   Object.entries(rules).forEach(([containerName, containerRules]: [string, any]) => {
     const allowed = containerRules?.executables?.allowed || [];
-    const image = props.containerImages?.[containerName] || '';
+    const image = props.imageMap?.[containerName] || '';
 
     allowed.forEach((execPath: string, index: number) => {
       items.push({
-        id:         `${containerName}-${index}-${execPath}`,
-        executable: execPath,
-        container:  containerName,
+        id:          `${containerName}-${index}-${execPath}`,
+        executable:  execPath,
+        container:   containerName,
         image,
-        provenance: '-', // Placeholder until backend provides "Learned/Manual Entry" data
       });
     });
   });
@@ -52,12 +51,6 @@ const headers = computed(() => [
     value: 'image',
     label: i18n.t('runtimeEnforcer.activePolicy.allowedExecutables.table.image'),
     sort:  'image',
-  },
-  {
-    name:  'provenance',
-    value: 'provenance',
-    label: i18n.t('runtimeEnforcer.activePolicy.allowedExecutables.table.provenance'),
-    sort:  'provenance',
   },
 ]);
 </script>
