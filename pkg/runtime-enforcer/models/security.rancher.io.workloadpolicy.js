@@ -95,7 +95,7 @@ export default class WorkloadPolicyProposal extends SteveModel {
             || workload.spec?.jobTemplate?.spec?.template?.spec?.containers
             || [];
 
-          const image = containers.reduce((acc, container) => {
+          const imageMap = containers.reduce((acc, container) => {
             acc[container.name] = container.image;
 
             return acc;
@@ -105,6 +105,7 @@ export default class WorkloadPolicyProposal extends SteveModel {
             workloadName:     workload.metadata?.name || '',
             workloadType:     workload.kind || '',
             workloadLocation: `/c/${ cluster }/${ PRODUCT_NAME }/${ WORKLOAD_KIND_TO_TYPE_MAPPING[workload.kind] || '' }/${ workload.metadata?.namespace || '' }/${ workload.metadata?.name || '' }`,
+            imageMap,
           };
         }
 
@@ -112,13 +113,14 @@ export default class WorkloadPolicyProposal extends SteveModel {
           workloadName:     '',
           workloadType:     '',
           workloadLocation: '',
+          imageMap:         {},
         };
       } catch {
         return {
           workloadName:     '',
           workloadType:     '',
           workloadLocation: '',
-          imageMap:     null,
+          imageMap:         {}
         };
       }
     })();

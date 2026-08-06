@@ -194,33 +194,27 @@ export default {
   },
 
   async fetch() {
-    const workloadName = this.workloadName;
-    const namespace = this.value.metadata?.namespace;
+    // 1. Populate Vuex cache so Steven's `workloadRef` getter can find labeled workloads
+    const loadPromises = Object.values(WORKLOAD_KIND_TO_TYPE_MAPPING).map((type) =>
+        this.$store.dispatch('cluster/findAll', { type })
+    );
 
-    if (!namespace || !workloadName) {
-      return;
-    }
+    await Promise.allSettled(loadPromises);
 
-    const fallbackTypes = [...new Set(Object.values(WORKLOAD_KIND_TO_TYPE_MAPPING))];
+    // 2. If workloadRef fails (e.g., the workload is missing the policy label), fallback to direct API fetch
+    if (!this.value.workloadRef?.workloadName) {
+      const name = this.workloadName;
+      const type = this.ownerWorkloadSteveType;
 
-    const typesToTry = [
-      this.value.ownerWorkloadSteveType,
-      this.ownerWorkloadSteveType,
-      ...fallbackTypes
-    ];
-
-    for (const type of typesToTry) {
-      if (!type) continue;
-      try {
-        this.ownerWorkload = await this.$store.dispatch('cluster/find', {
-          type,
-          id: `${ namespace }/${ workloadName }`,
-        });
-        if (this.ownerWorkload) {
-          break;
+      if (name && type) {
+        try {
+          this.ownerWorkload = await this.$store.dispatch('cluster/find', {
+            type,
+            id:   `${ this.value.metadata?.namespace }/${ name }`,
+          });
+        } catch (err) {
+          // Silently try next fallback
         }
-      } catch (err) {
-        // Silently try next fallback type
       }
     }
   },
@@ -242,37 +236,38 @@ export default {
     },
 
     workloadName() {
-      if (this.ownerRef.name) {
-        return this.ownerRef.name;
+      // Try workloadRef first
+      if (this.value.workloadRef?.workloadName) {
+        return this.value.workloadRef.workloadName;
       }
-      if (this.spec.workload) {
-        return this.spec.workload;
-      }
-      // Fallback: extract workload name from active policy name (e.g. "deploy-gitjob" -> "gitjob")
+
+      // Fallbacks
+      if (this.ownerRef.name) return this.ownerRef.name;
+      if (this.spec.workload) return this.spec.workload;
+
       const name = this.value.metadata?.name || '';
       const parts = name.split('-');
       if (parts.length > 1) {
-        parts.shift(); // remove prefix like "deploy", "ds", "cronjob"
+        parts.shift();
         return parts.join('-');
       }
       return name;
     },
 
     workloadType() {
-      if (this.ownerRef.kind) {
-        return this.ownerRef.kind;
+      // Try workloadRef first
+      if (this.value.workloadRef?.workloadType) {
+        return this.value.workloadRef.workloadType;
       }
-      if (this.spec.workloadType) {
-        return this.spec.workloadType;
-      }
+
+      // Fallbacks
+      if (this.ownerRef.kind) return this.ownerRef.kind;
+      if (this.spec.workloadType) return this.spec.workloadType;
 
       const name = this.value.metadata?.name || '';
       for (const [prefix, kind] of Object.entries(WORKLOAD_PREFIX_MAP)) {
-        if (name.startsWith(prefix)) {
-          return kind;
-        }
+        if (name.startsWith(prefix)) return kind;
       }
-
       return Object.keys(WORKLOAD_KIND_TO_TYPE_MAPPING)[0] || '';
     },
 
@@ -294,6 +289,13 @@ export default {
     },
 
     containerImages() {
+      // 1. Attempt to use Steven's imageMap from workloadRef
+      const refImages = this.value.workloadRef?.imageMap;
+      if (refImages && Object.keys(refImages).length > 0) {
+        return refImages;
+      }
+
+      // 2. Fallback to reading from the network-fetched ownerWorkload
       const containers = this.ownerWorkload?.spec?.template?.spec?.containers
           || this.ownerWorkload?.spec?.jobTemplate?.spec?.template?.spec?.containers
           || [];
