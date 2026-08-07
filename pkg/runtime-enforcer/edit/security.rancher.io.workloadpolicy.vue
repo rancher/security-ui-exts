@@ -158,7 +158,7 @@ import Tab from '@shell/components/Tabbed/Tab';
 import CreateEditView from '@shell/mixins/create-edit-view';
 import Banner from '@components/Banner/Banner';
 import RadioGroup from '@components/Form/Radio/RadioGroup';
-import { POLICY_MODE, WORKLOAD_PREFIX_MAP } from '@runtime-enforcer/types';
+import { POLICY_MODE } from '@runtime-enforcer/types';
 import { WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
 export default {
   name: 'WorkloadPolicyEdit',
@@ -213,20 +213,12 @@ export default {
       return this.value.spec;
     },
 
-    ownerRef() {
-      return this.value.metadata?.ownerReferences?.[0] || {};
-    },
-
     workloadName() {
-      if (this.value.workloadRef?.workloadName) {
-        return this.value.workloadRef.workloadName;
-      }
+      return this.value.workloadRef?.workloadName || '';
     },
 
     workloadType() {
-      if (this.value.workloadRef?.workloadType) {
-        return this.value.workloadRef.workloadType;
-      }
+      return this.value.workloadRef?.workloadType || '';
     },
 
     ownerWorkloadSteveType() {

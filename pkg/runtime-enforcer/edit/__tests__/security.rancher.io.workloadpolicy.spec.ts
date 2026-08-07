@@ -112,7 +112,7 @@ describe('WorkloadPolicyEdit component', () => {
     expect(wrapper.vm.containerList[0].image).toBe('registry.k8s.io/nginx:v1.0');
   });
 
-  it('returns undefined for workload properties when workloadRef is not present', () => {
+  it('returns empty strings for workload properties when workloadRef is missing or unpopulated', () => {
     const wrapper = shallowMount(WorkloadPolicyEdit, {
       global: {
         plugins: [store],
@@ -133,8 +133,8 @@ describe('WorkloadPolicyEdit component', () => {
       },
     });
 
-    expect(wrapper.vm.workloadName).toBeUndefined();
-    expect(wrapper.vm.workloadType).toBeUndefined();
+    expect(wrapper.vm.workloadName).toBe('');
+    expect(wrapper.vm.workloadType).toBe('');
     expect(wrapper.vm.containerImages).toBeUndefined();
   });
 

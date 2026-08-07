@@ -113,13 +113,6 @@ export const RUNTIME_ENFORCER = {
   SCHEMA:     RESOURCE.POLICY_PROPOSALS,
 };
 
-export const WORKLOAD_PREFIX_MAP: Record<string, string> = {
-  'ds-': 'DaemonSet',
-  'ss-': 'StatefulSet',
-  'cronjob-': 'CronJob',
-  'deployment-': 'Deployment',
-};
-
 export const CERT_MANAGER_CSI_DRIVER = {
   CONTROLLER: 'cert-manager-csi-driver',
   CHART_NAME: 'cert-manager-csi-driver',
