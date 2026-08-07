@@ -194,29 +194,11 @@ export default {
   },
 
   async fetch() {
-    // 1. Populate Vuex cache so Steven's `workloadRef` getter can find labeled workloads
     const loadPromises = Object.values(WORKLOAD_KIND_TO_TYPE_MAPPING).map((type) =>
         this.$store.dispatch('cluster/findAll', { type })
     );
 
     await Promise.allSettled(loadPromises);
-
-    // 2. If workloadRef fails (e.g., the workload is missing the policy label), fallback to direct API fetch
-    if (!this.value.workloadRef?.workloadName) {
-      const name = this.workloadName;
-      const type = this.ownerWorkloadSteveType;
-
-      if (name && type) {
-        try {
-          this.ownerWorkload = await this.$store.dispatch('cluster/find', {
-            type,
-            id:   `${ this.value.metadata?.namespace }/${ name }`,
-          });
-        } catch (err) {
-          // Silently try next fallback
-        }
-      }
-    }
   },
 
   computed: {
@@ -236,39 +218,15 @@ export default {
     },
 
     workloadName() {
-      // Try workloadRef first
       if (this.value.workloadRef?.workloadName) {
         return this.value.workloadRef.workloadName;
       }
-
-      // Fallbacks
-      if (this.ownerRef.name) return this.ownerRef.name;
-      if (this.spec.workload) return this.spec.workload;
-
-      const name = this.value.metadata?.name || '';
-      const parts = name.split('-');
-      if (parts.length > 1) {
-        parts.shift();
-        return parts.join('-');
-      }
-      return name;
     },
 
     workloadType() {
-      // Try workloadRef first
       if (this.value.workloadRef?.workloadType) {
         return this.value.workloadRef.workloadType;
       }
-
-      // Fallbacks
-      if (this.ownerRef.kind) return this.ownerRef.kind;
-      if (this.spec.workloadType) return this.spec.workloadType;
-
-      const name = this.value.metadata?.name || '';
-      for (const [prefix, kind] of Object.entries(WORKLOAD_PREFIX_MAP)) {
-        if (name.startsWith(prefix)) return kind;
-      }
-      return Object.keys(WORKLOAD_KIND_TO_TYPE_MAPPING)[0] || '';
     },
 
     ownerWorkloadSteveType() {
@@ -289,21 +247,10 @@ export default {
     },
 
     containerImages() {
-      // 1. Attempt to use Steven's imageMap from workloadRef
       const refImages = this.value.workloadRef?.imageMap;
       if (refImages && Object.keys(refImages).length > 0) {
         return refImages;
       }
-
-      // 2. Fallback to reading from the network-fetched ownerWorkload
-      const containers = this.ownerWorkload?.spec?.template?.spec?.containers
-          || this.ownerWorkload?.spec?.jobTemplate?.spec?.template?.spec?.containers
-          || [];
-
-      return containers.reduce((acc, container) => {
-        acc[container.name] = container.image;
-        return acc;
-      }, {});
     },
 
     containerList() {
@@ -315,7 +262,7 @@ export default {
 
         return {
           name:        containerName,
-          image:       containerRules.image || this.containerImages[containerName] || this.t('generic.none'),
+          image:       containerRules.image || this.containerImages?.[containerName] || this.t('generic.none'),
           executables: allowed.map((path) => ({
             path
           }))

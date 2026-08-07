@@ -112,7 +112,7 @@ describe('WorkloadPolicyEdit component', () => {
     expect(wrapper.vm.containerList[0].image).toBe('registry.k8s.io/nginx:v1.0');
   });
 
-  it('falls back to ownerReferences and ownerWorkload when workloadRef is missing or empty', () => {
+  it('returns undefined for workload properties when workloadRef is not present', () => {
     const wrapper = shallowMount(WorkloadPolicyEdit, {
       global: {
         plugins: [store],
@@ -122,12 +122,8 @@ describe('WorkloadPolicyEdit component', () => {
       props: {
         mode:  'edit',
         value: {
-          metadata: {
-            name:            'deploy-nginx-ingress',
-            namespace:       'ingress',
-            ownerReferences: [{ name: 'nginx-deployment', kind: 'Deployment' }],
-          },
-          spec: {
+          metadata: { name: 'deploy-nginx-ingress', namespace: 'ingress' },
+          spec:     {
             mode:             'protect',
             rulesByContainer: {
               nginx: { executables: { allowed: ['/usr/bin/nginx'] } },
@@ -137,19 +133,9 @@ describe('WorkloadPolicyEdit component', () => {
       },
     });
 
-    wrapper.vm.ownerWorkload = {
-      spec: {
-        template: {
-          spec: {
-            containers: [{ name: 'nginx', image: 'nginx:1.25' }],
-          },
-        },
-      },
-    };
-
-    expect(wrapper.vm.workloadName).toBe('nginx-deployment');
-    expect(wrapper.vm.workloadType).toBe('Deployment');
-    expect(wrapper.vm.containerImages).toEqual({ nginx: 'nginx:1.25' });
+    expect(wrapper.vm.workloadName).toBeUndefined();
+    expect(wrapper.vm.workloadType).toBeUndefined();
+    expect(wrapper.vm.containerImages).toBeUndefined();
   });
 
   it('validates form and catches empty or invalid executable paths', () => {
