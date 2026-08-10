@@ -15,6 +15,7 @@ import { PRODUCT_NAME, RESOURCE } from '@runtime-enforcer/types';
 import ActionMenu from '@shell/components/ActionMenuShell.vue';
 import StatusBadge from '@runtime-enforcer/components/common/StatusBadge.vue';
 import ExpandableDescription from '@common/components/ExpandableDescription.vue';
+import { WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
 import AllowedExecutablesTable from "@runtime-enforcer/components/AllowedExecutablesTable.vue";
 
 
@@ -32,10 +33,10 @@ const i18n = useI18n(store);
 
 const canUpdate = computed(() => policy.canUpdate);
 
-const ownerWorkload = ref<any>(null);
-
 onMounted(async() => {
-  //ToDo: Prepare to get wroklaod info from backend data
+  if (!policy.workloadRef?.workloadName && !policy.workloadRef?.workloadType) {
+    await getWorkloadData();
+  }
 });
 
 const namespaceRoute = computed(() => ({
@@ -47,6 +48,14 @@ const namespaceRoute = computed(() => ({
     id:       policy.metadata?.namespace,
   },
 }));
+
+const getWorkloadData = async() => {
+  return Promise.all(
+      Object.values(WORKLOAD_KIND_TO_TYPE_MAPPING).map((workloadType) =>
+          store.dispatch(`cluster/findAll`, { type: workloadType })
+      )
+  );
+};
 
 const modetext = computed(() => {
   return i18n.t(`runtimeEnforcer.activePolicies.mode.${policy.spec.mode.toLowerCase()}`);
@@ -70,15 +79,15 @@ const metaProperties = computed<MetadataProperty[]>(() => [
     route: namespaceRoute.value,
   },
   {
-    type:  ownerWorkload.value ? 'route' : 'text',
+    type:  'route',
     label: i18n.t('runtimeEnforcer.activePolicy.masthead.workload'),
-    value: '',//policy.workload,
-    route: ownerWorkload.value?.detailLocation,
+    value: policy.workloadRef?.workloadName ?? '',
+    route: policy.workloadRef?.workloadLocation ?? null,
   },
   {
     type:  'text',
     label: i18n.t('runtimeEnforcer.activePolicy.masthead.workloadType'),
-    value: '',//policy.workloadType,
+    value: policy.workloadRef?.workloadType ?? '',
   },
   {
     type:   'icon',
@@ -120,12 +129,12 @@ const metaProperties = computed<MetadataProperty[]>(() => [
       <div class="header">
         <div class="resource-header">
           <h1
-            class="resource-header-name-state"
-            style="margin-bottom: 4px;"
+              class="resource-header-name-state"
+              style="margin-bottom: 4px;"
           >
             <RouterLink
-              class="resource-link"
-              :to="`/c/${$route.params.cluster}/${ PRODUCT_NAME }/${RESOURCE.ACTIVE_POLICIES}`"
+                class="resource-link"
+                :to="`/c/${$route.params.cluster}/${ PRODUCT_NAME }/${RESOURCE.ACTIVE_POLICIES}`"
             >
               {{ t('runtimeEnforcer.activePolicy.label') }}:
             </RouterLink>
@@ -133,8 +142,8 @@ const metaProperties = computed<MetadataProperty[]>(() => [
               {{ $route.params.id }}
             </span>
             <StatusBadge
-              style="margin-left: 12px"
-              :status="policy?.metadata?.state?.name"
+                style="margin-left: 12px"
+                :status="policy?.metadata?.state?.name"
             />
           </h1>
           <ExpandableDescription
@@ -145,55 +154,55 @@ const metaProperties = computed<MetadataProperty[]>(() => [
         </div>
         <div class="resource-header-actions">
           <RcButton
-            v-if="canUpdate"
-            variant="primary"
-            left-icon="refresh"
-            size="large"
-            @click="policy.changeMode()"
+              v-if="canUpdate"
+              variant="primary"
+              left-icon="refresh"
+              size="large"
+              @click="policy.changeMode()"
           >
             {{ i18n.t('runtimeEnforcer.activePolicy.action.changeMode') }}
           </RcButton>
           <ActionMenu
-            button-variant="multiAction"
-            :resource="policy"
-            data-testid="masthead-action-menu"
-            :button-aria-label="t('component.resource.detail.titleBar.ariaLabel.actionMenu', { resource: RESOURCE.ACTIVE_POLICIES })"
+              button-variant="multiAction"
+              :resource="policy"
+              data-testid="masthead-action-menu"
+              :button-aria-label="t('component.resource.detail.titleBar.ariaLabel.actionMenu', { resource: RESOURCE.ACTIVE_POLICIES })"
           />
         </div>
       </div>
       <RancherMeta :properties="metaProperties"/>
     </template>
     <template #bottom-area>
-     <ResourceTabs
-      :value="policy"
-      mode="view"
-      :need-related="false"
-      :needEvents="false"
-      @update:value="$emit('input', $event)"
-    >
-      <Tab
-        name="nodesEnforcement"
-        :weight="30"
-        :label="t('runtimeEnforcer.activePolicy.tabs.nodesEnforcement')"
+      <ResourceTabs
+          :value="policy"
+          mode="view"
+          :need-related="false"
+          :needEvents="false"
+          @update:value="$emit('input', $event)"
       >
-      </Tab>
-      <Tab
-        name="allowedExecutables"
-        :weight="20"
-        :label="t('runtimeEnforcer.activePolicy.tabs.allowedExecutables')"
-      >
-        <AllowedExecutablesTable
-            :rules-by-container="policy.spec?.rulesByContainer"
-            :container-images="policy.workloadRef?.imageMap"
-        />
-      </Tab>
-      <Tab
-        name="violations"
-        :weight="20"
-        :label="t('runtimeEnforcer.activePolicy.tabs.violations')"
-      >
-      </Tab>
-    </ResourceTabs>
+        <Tab
+            name="nodesEnforcement"
+            :weight="30"
+            :label="t('runtimeEnforcer.activePolicy.tabs.nodesEnforcement')"
+        >
+        </Tab>
+        <Tab
+            name="allowedExecutables"
+            :weight="20"
+            :label="t('runtimeEnforcer.activePolicy.tabs.allowedExecutables')"
+        >
+          <AllowedExecutablesTable
+              :rules-by-container="policy.spec?.rulesByContainer"
+              :image-map="policy.workloadRef?.imageMap"
+          />
+        </Tab>
+        <Tab
+            name="violations"
+            :weight="20"
+            :label="t('runtimeEnforcer.activePolicy.tabs.violations')"
+        >
+        </Tab>
+      </ResourceTabs>
     </template>
   </DetailPage>
 </template>
@@ -216,78 +225,78 @@ const metaProperties = computed<MetadataProperty[]>(() => [
 }
 
 .header {
-      /* layout */
+  /* layout */
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  align-self: stretch;
+  /* style */
+  border-radius: 6px;
+  min-width: 740px;
+  padding-top: 10px;
+
+  .resource-header {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 4px;
+    flex: 1 0 0;
+    max-width: calc(100% - 350px);
+
+    .resource-header-name-state {
       display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 24px;
-      align-self: stretch;
-      /* style */
-      border-radius: 6px;
-      min-width: 740px;
-      padding-top: 10px;
+      align-items: center;
+      max-width: 100%;
 
-      .resource-header {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: flex-start;
-        gap: 4px;
-        flex: 1 0 0;
-        max-width: calc(100% - 350px);
-
-        .resource-header-name-state {
-          display: flex;
-          align-items: center;
-          max-width: 100%;
-
-          .resource-header-name {
-            display: inline-block;
-            flex: 1;
-            white-space: nowrap;
-            overflow-x: hidden;
-            overflow-y: clip;
-            text-overflow: ellipsis;
-            margin-left: 4px;
-          }
-        }
-
-        .resource-header-description {
-          /* layout */
-          display: flex;
-          max-width: 900px;
-          height: 21px;
-          flex-direction: column;
-          justify-content: center;
-          /* typography */
-          overflow: hidden;
-          color: var(--disabled-text);
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          font-family: Lato;
-          font-size: 14px;
-          font-style: normal;
-          font-weight: 400;
-          line-height: 21px; /* 150% */
-        }
-      }
-
-      .resource-header-actions {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-
-        &:deep() button[data-testid="masthead-action-menu"] {
-          border-radius: 4px;
-          width: 35px;
-          height: 40px;
-
-          display: inline-flex;
-          flex-direction: row;
-          justify-content: center;
-          align-items: center;
-        }
+      .resource-header-name {
+        display: inline-block;
+        flex: 1;
+        white-space: nowrap;
+        overflow-x: hidden;
+        overflow-y: clip;
+        text-overflow: ellipsis;
+        margin-left: 4px;
       }
     }
+
+    .resource-header-description {
+      /* layout */
+      display: flex;
+      max-width: 900px;
+      height: 21px;
+      flex-direction: column;
+      justify-content: center;
+      /* typography */
+      overflow: hidden;
+      color: var(--disabled-text);
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: Lato;
+      font-size: 14px;
+      font-style: normal;
+      font-weight: 400;
+      line-height: 21px; /* 150% */
+    }
+  }
+
+  .resource-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    &:deep() button[data-testid="masthead-action-menu"] {
+      border-radius: 4px;
+      width: 35px;
+      height: 40px;
+
+      display: inline-flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+    }
+  }
+}
 
 </style>
