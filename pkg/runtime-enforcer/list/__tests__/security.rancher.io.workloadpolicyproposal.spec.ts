@@ -51,7 +51,7 @@ jest.mock('@shell/components/form/LabeledSelect', () => ({
   default:    { name: 'LabeledSelect', template: '<div />' },
 }));
 
-jest.mock('@shell/components/SortableTable', () => ({
+jest.mock('@common/components/customized/SortableTable', () => ({
   __esModule: true,
   default:    { name: 'SortableTable', template: '<div />' },
 }));

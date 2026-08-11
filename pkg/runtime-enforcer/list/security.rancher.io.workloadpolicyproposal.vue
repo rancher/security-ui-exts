@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { useStore } from 'vuex';
 import Banner from '@components/Banner/Banner.vue';
-import PaginatedResourceTable from '@shell/components/PaginatedResourceTable';
+import PaginatedResourceTable from '@common/components/customized/PaginatedResourceTable.vue';
 import LabeledSelect from '@shell/components/form/LabeledSelect';
 import RichTranslation from '@shell/components/RichTranslation.vue';
 import SubtleLink from '@shell/components/SubtleLink.vue';
@@ -11,7 +11,7 @@ import { getPolicyProposalHeaders, getContainerTableHeaders } from '@runtime-enf
 import RcButton from '@components/RcButton/RcButton.vue';
 import _ from 'lodash';
 import { WORKLOAD_KINDS } from '@shell/config/types';
-import SortableTable from '@shell/components/SortableTable';
+import SortableTable from '@common/components/customized/SortableTable';
 import { WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
 import { FilterArgs, PaginationFilterField, PaginationParamFilter } from '@shell/types/store/pagination.types';
 

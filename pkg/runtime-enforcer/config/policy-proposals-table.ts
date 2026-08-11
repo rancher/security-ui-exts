@@ -100,14 +100,6 @@ export function getPolicyProposalHeaders(input: HeaderBuilderInput) {
 export function getContainerTableHeaders() {
   return [
     {
-      name:   'frontPlaceholder',
-      value:  '',
-      label:  '\u00A0',
-      width:  FIGMA_COLUMN_WIDTH.frontPlaceholder,
-      sort:   false,
-      search: false,
-    },
-    {
       name:  'container',
       value: 'container',
       labelKey: 'runtimeEnforcer.policyProposal.containers.table.container',
@@ -127,14 +119,6 @@ export function getContainerTableHeaders() {
       labelKey: 'runtimeEnforcer.policyProposal.containers.table.executables',
       sort:  'executableCount',
       width: FIGMA_COLUMN_WIDTH.executableCount,
-    },
-    {
-      name:   'executables',
-      value:  'executables',
-      label:  '\u00A0',
-      formatter: 'ExecutableLabels',
-      sort:   false,
-      search: false,
     },
   ];
 }
