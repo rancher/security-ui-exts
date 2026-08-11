@@ -61,7 +61,6 @@ export default {
 .mode-text {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-family: Lato;
   font-size: 14px;
   font-style: normal;
   font-weight: 500;

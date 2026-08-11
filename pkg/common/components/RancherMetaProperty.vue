@@ -48,7 +48,7 @@
       </div>
       <span
         v-if="property.value"
-        class="icon-text-wrap"
+        class="ss-icon-text-wrap"
       >
         <img
           v-if="property.imgSrc"
@@ -167,7 +167,7 @@ export default {
     }
   }
 
-  .icon-text-wrap {
+  .ss-icon-text-wrap {
     display: inline-flex;
     align-items: center;
     flex-wrap: nowrap;
@@ -181,7 +181,6 @@ export default {
   .mode-text {
     overflow: hidden;
     text-overflow: ellipsis;
-    font-family: Lato;
     font-size: 14px;
     font-style: normal;
     font-weight: 500;
