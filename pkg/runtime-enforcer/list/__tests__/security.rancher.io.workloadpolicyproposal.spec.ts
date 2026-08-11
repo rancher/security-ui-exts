@@ -32,7 +32,7 @@ jest.mock('@components/Banner/Banner.vue', () => ({
   default:    { name: 'Banner', template: '<div><slot /></div>' },
 }));
 
-jest.mock('@shell/components/PaginatedResourceTable', () => ({
+jest.mock('@common/components/customized/PaginatedResourceTable.vue', () => ({
   __esModule: true,
   default:    {
     name:  'PaginatedResourceTable',

@@ -181,13 +181,13 @@ export default {
       // Hardcoded logic to not overcomplicate just adding the conditions of next and previous
       const tr = e.target.closest('TR');
 
-      if (tr.classList.contains('sub-row') || tr.classList.contains('additional-sub-row')) {
+      if (tr.classList.contains('sub-row') || tr.classList.contains('ss-additional-sub-row')) {
         const trPreviousRow = tr.previousElementSibling;
         const trNextRow = tr.nextElementSibling;
 
         trPreviousRow.classList[option]('sub-row-hovered');
 
-        if (!trPreviousRow.classList.contains('main-row')) {
+        if (!trPreviousRow.classList.contains('ss-main-row')) {
           const trMainRow = trPreviousRow.previousElementSibling;
 
           trMainRow.classList[option]('sub-row-hovered');
@@ -234,7 +234,7 @@ export default {
         return;
       }
 
-      while ( tgtRow && !tgtRow.classList.contains('main-row') ) {
+      while ( tgtRow && !tgtRow.classList.contains('ss-main-row') ) {
         tgtRow = tgtRow.previousElementSibling;
       }
 
@@ -518,7 +518,7 @@ export default {
           let tr = input.closest('tr');
           let first = true;
 
-          while ( tr && (first || tr.classList.contains('sub-row') || tr.classList.contains('additional-sub-row')) ) {
+          while ( tr && first ) {
             if (on) {
               tr.classList.add('row-selected');
             } else {

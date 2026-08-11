@@ -179,7 +179,7 @@ export default {
     },
 
     subRows: {
-      // If there are sub-rows, your main row must have <tr class="main-row"> to identify it
+      // If there are sub-rows, your main row must have <tr class="ss-main-row"> to identify it
       type:    Boolean,
       default: false,
     },
@@ -954,6 +954,22 @@ export default {
       return val;
     },
 
+    expandAll() {
+      const expanded = {};
+
+      this.rows.forEach((row) => {
+        const key = row[this.keyField];
+
+        expanded[key] = true;
+      });
+
+      this.expanded = expanded;
+    },
+
+    collapseAll() {
+      this.expanded = {};
+    },
+
     setBulkActionOfInterest(action) {
       this.actionOfInterest = action;
     },
@@ -977,7 +993,7 @@ export default {
     },
 
     nearestCheckbox() {
-      return document.activeElement.closest('tr.main-row')?.querySelector('.checkbox-custom');
+      return document.activeElement.closest('tr.ss-main-row')?.querySelector('.checkbox-custom');
     },
 
     focusAdjacent(next = true) {
@@ -1231,7 +1247,11 @@ export default {
             </li>
           </ul>
           <slot name="watch-controls" />
-          <slot name="header-right" />
+          <slot
+            name="header-right"
+            :expand-all="expandAll"
+            :collapse-all="collapseAll"
+          />
           <AsyncButton
             v-if="!hideManualRefreshButton && isTooManyItemsToAutoUpdate"
             mode="manual-refresh"
@@ -1431,20 +1451,18 @@ export default {
           :key="row.key"
         >
           <slot
-            name="main-row"
+            name="ss-main-row"
             :row="row.row"
           >
             <slot
-              :name="'main-row:' + (row.row.mainRowKey || i)"
+              :name="'ss-main-row:' + (row.row.mainRowKey || i)"
               :full-colspan="fullColspan"
             >
-              <!-- The data-cant-run-bulk-action-of-interest attribute is being used instead of :class because
-                because our selection.js invokes toggleClass and :class clobbers what was added by toggleClass if
-                the value of :class changes. -->
+              <!-- Keep row-selected class derived from selectedRows so expand/collapse re-renders don't drop selection styling. -->
               <tr
-                class="main-row"
+                class="ss-main-row"
                 :data-testid="componentTestid + '-' + i + '-row'"
-                :class="{ 'has-sub-row': row.showSubRow}"
+                :class="{ 'has-sub-row': row.showSubRow, 'row-selected': selectedRows.includes(row.row) }"
                 :data-node-id="row.key"
                 :data-cant-run-bulk-action-of-interest="actionOfInterest && !row.canRunBulkActionOfInterest"
               >
@@ -1581,6 +1599,7 @@ export default {
           <slot
             v-if="row.showSubRow"
             name="sub-row"
+            class="ss-sub-row"
             :full-colspan="fullColspan"
             :row="row.row"
             :sub-matches="subMatches"
@@ -1600,13 +1619,13 @@ export default {
               :i="i"
               :onRowMouseEnter="onRowMouseEnter"
               :onRowMouseLeave="onRowMouseLeave"
-              name="additional-sub-row"
+              name="ss-additional-sub-row"
             />
             <tr
               v-if="row.row.stateDescription"
               :key="row.row[keyField] + '-description'"
               :data-testid="componentTestid + '-' + i + '-row-description'"
-              class="state-description sub-row"
+              class="state-description ss-sub-row"
               @mouseenter="onRowMouseEnter"
               @mouseleave="onRowMouseLeave"
             >
@@ -1896,6 +1915,10 @@ export default {
     text-align: left;
   }
 
+  .ss-sub-row {
+    padding: 8px;
+  }
+
   .sortable-table {
     border-collapse: collapse;
     min-width: 400px;
@@ -1903,6 +1926,29 @@ export default {
     outline: 1px solid var(--border);
     background: var(--sortable-table-bg);
     border-radius: 4px;
+    .ss-sub-row {
+      .sub-table {
+        padding: 16px 32px;
+        .sortable-table {
+          border-radius: 0 !important;
+          border: 0 !important;
+          outline: 0;
+          thead {
+            tr:hover {
+              background-color: var(--body-bg);
+            }
+          }
+        }
+      }
+      .sortable-table td:last-child {
+          padding-right: 0;
+      }
+      tbody {
+        tr {
+          border-bottom: 0;
+        }
+      }
+    }
 
     &.overflow-x {
       overflow-x: visible;
@@ -1933,26 +1979,30 @@ export default {
         border-bottom: 1px solid var(--sortable-table-top-divider);
         background-color: var(--sortable-table-row-bg);
 
-        &.main-row.has-sub-row {
+        &.ss-main-row.has-sub-row {
+          border-bottom: 1px solid var(--sortable-table-top-divider);
+        }
+        &.ss-additional-sub-row.has-sub-row {
           border-bottom: 0;
         }
-        &.additional-sub-row.has-sub-row {
-          border-bottom: 0;
-        }
 
-        // if a main-row is hovered also hover it's sibling sub row. note - the reverse is handled in selection.js
-        &.main-row:not(.row-selected):hover + .sub-row {
+        // if a ss-main-row is hovered also hover it's sibling sub row. note - the reverse is handled in selection.js
+        &.ss-main-row:not(.row-selected):hover {
           background-color: var(--sortable-table-hover-bg);
         }
 
-        // Case with only additional-sub-row
-        &.main-row:not(.row-selected):hover + .additional-sub-row {
+        // Case with only ss-additional-sub-row
+        &.ss-main-row:not(.row-selected):hover {
           background-color: var(--sortable-table-hover-bg);
         }
 
-        // Case with both additional-sub-row and sub-row
-        &.main-row:not(.row-selected):hover + .additional-sub-row + .sub-row{
+        // Case with both ss-additional-sub-row and sub-row
+        &.ss-main-row:not(.row-selected):hover {
           background-color: var(--sortable-table-hover-bg);
+        }
+
+        &.ss-sub-row:hover {
+          background-color: var(--body-bg)
         }
 
         &:last-of-type {

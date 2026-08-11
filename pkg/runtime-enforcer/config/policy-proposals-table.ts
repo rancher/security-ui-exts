@@ -9,9 +9,8 @@ export const FIGMA_COLUMN_WIDTH = {
   executables:  130,
   age:          100,
   promote:      100,
-  frontPlaceholder: 30,
-  container:    200,
-  image:        200,
+  container:    230,
+  image:        250,
   executableCount: 120,
   mode: 120,
   status: 120,
@@ -119,6 +118,14 @@ export function getContainerTableHeaders() {
       labelKey: 'runtimeEnforcer.policyProposal.containers.table.executables',
       sort:  'executableCount',
       width: FIGMA_COLUMN_WIDTH.executableCount,
+    },
+    {
+      name:   'executables',
+      value:  'executables',
+      label:  '\u00A0',
+      formatter: 'ExecutableLabels',
+      sort:   false,
+      search: false,
     },
   ];
 }

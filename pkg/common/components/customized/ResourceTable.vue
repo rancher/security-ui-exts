@@ -751,10 +751,11 @@ export default {
 
     <template
       v-if="showGrouping"
-      #header-right
+      #header-right="scope"
     >
       <slot
         name="header-right"
+        v-bind="scope"
       />
     </template>
 
