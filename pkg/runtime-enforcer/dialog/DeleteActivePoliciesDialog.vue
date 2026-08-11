@@ -89,8 +89,8 @@ export default {
       return this.workloadRemovalOption === 'auto'
         ? (
           this.isBulk
-            ? this.t('runtimeEnforcer.activePolicies.deleteDialog.deleteWithWorkloadRemoval.bulk')
-            : this.t('runtimeEnforcer.activePolicies.deleteDialog.deleteWithWorkloadRemoval.single')
+            ? `${this.t('runtimeEnforcer.activePolicies.deleteDialog.deletePolicy.bulk')} & ${this.t('runtimeEnforcer.activePolicies.deleteDialog.restartWorkload.bulk')}`
+            : `${this.t('runtimeEnforcer.activePolicies.deleteDialog.deletePolicy.single')} & ${this.t('runtimeEnforcer.activePolicies.deleteDialog.restartWorkload.single')}`
         )
         : this.t('runtimeEnforcer.activePolicies.deleteDialog.delete');
     },

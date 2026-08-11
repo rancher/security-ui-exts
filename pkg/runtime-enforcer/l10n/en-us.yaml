@@ -146,8 +146,11 @@ runtimeEnforcer:
         bulk: Are you sure you want to delete the <b>selected policy proposals ({count})</b> and restart their corresponding workloads?
       cancel: Cancel
       delete:
-        single: Delete Proposal and Restart Workload
-        bulk: Delete Proposals and Restart Workloads
+        single: Delete Proposal
+        bulk: Delete Proposals
+      restartWorkload:
+        single: Restart Workload
+        bulk: Restart Workloads
       growl:
         title:
           single: '{name} has been deleted'
@@ -298,9 +301,12 @@ runtimeEnforcer:
         bulk: To manually remove the labels of the active policies from the workloads, you need to remove the labels below from the corresponding workloads and redeploy them. <learnMore>Learn more</learnMore>
       cancel: Cancel
       delete: Delete
-      deleteWithWorkloadRemoval:
-        single: Delete Policy and Restart Workload
-        bulk: Delete Policies and Restart Workloads
+      deletePolicy:
+        single: Delete Policy
+        bulk: Delete Policies
+      restartWorkload:
+        single: Restart Workload
+        bulk: Restart Workloads
       growl:
         title:
           single: '{name} has been deleted'

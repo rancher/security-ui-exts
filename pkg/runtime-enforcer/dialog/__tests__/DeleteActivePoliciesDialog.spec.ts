@@ -136,14 +136,14 @@ describe('DeleteActivePoliciesDialog', () => {
       const { wrapper } = mountDialog({ resources: [createResource()] });
 
       (wrapper.vm as any).workloadRemovalOption = 'auto';
-      expect((wrapper.vm as any).deleteButtonText).toBe('runtimeEnforcer.activePolicies.deleteDialog.deleteWithWorkloadRemoval.single');
+      expect((wrapper.vm as any).deleteButtonText).toBe('runtimeEnforcer.activePolicies.deleteDialog.deletePolicy.single & runtimeEnforcer.activePolicies.deleteDialog.restartWorkload.single');
     });
 
     it('uses auto bulk text when auto is selected in bulk mode', () => {
       const { wrapper } = mountDialog({ resources: [createResource('a'), createResource('b')] });
 
       (wrapper.vm as any).workloadRemovalOption = 'auto';
-      expect((wrapper.vm as any).deleteButtonText).toBe('runtimeEnforcer.activePolicies.deleteDialog.deleteWithWorkloadRemoval.bulk');
+      expect((wrapper.vm as any).deleteButtonText).toBe('runtimeEnforcer.activePolicies.deleteDialog.deletePolicy.bulk & runtimeEnforcer.activePolicies.deleteDialog.restartWorkload.bulk');
     });
   });
 

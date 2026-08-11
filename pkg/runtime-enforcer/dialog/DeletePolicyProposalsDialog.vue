@@ -48,6 +48,12 @@ export default {
         : this.t('runtimeEnforcer.policyProposal.deleteDialog.delete.single');
     },
 
+    restartWorkloadText() {
+      return this.isBulk
+        ? this.t('runtimeEnforcer.policyProposal.deleteDialog.restartWorkload.bulk')
+        : this.t('runtimeEnforcer.policyProposal.deleteDialog.restartWorkload.single');
+    },
+
     confirmText() {
       return this.isBulk
         ? this.t('runtimeEnforcer.policyProposal.deleteDialog.confirm.bulk', { count: this.resources.length }, true)
@@ -171,7 +177,7 @@ export default {
         :disabled="deleteInProgress"
         @click="deletePolicies"
       >
-        {{ deleteButtonText }}
+        {{ deleteButtonText }} & {{ restartWorkloadText }}
       </RcButton>
     </template>
   </Card>
