@@ -370,6 +370,14 @@ runtimeEnforcer:
       nodesEnforcement: Nodes Enforcement
       allowedExecutables: Allowed Executables
       violations: Violations
+    nodesEnforcement:
+      failedTooltip: Failed to enforce the active policy on this node.
+      table:
+        status: Status
+        since: Since
+        node: Node
+        issueCode: Issue Code
+        message: Message
     allowedExecutables:
       table:
         executable: Executable

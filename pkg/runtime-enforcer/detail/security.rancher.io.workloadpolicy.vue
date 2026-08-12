@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted } from 'vue';
 // import { useRoute } from 'vue-router';
 import { getCurrentInstance } from 'vue';
 import { useStore } from 'vuex';
@@ -17,11 +17,13 @@ import StatusBadge from '@runtime-enforcer/components/common/StatusBadge.vue';
 import ExpandableDescription from '@common/components/ExpandableDescription.vue';
 import { WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
 import AllowedExecutablesTable from "@runtime-enforcer/components/AllowedExecutablesTable.vue";
-
+import NodesEnforcementTable from "@runtime-enforcer/components/NodesEnforcementTable.vue";
 
 const props = defineProps<{
   value: any;
 }>();
+
+const emit = defineEmits(['input']);
 
 const policy = props.value;
 
@@ -29,7 +31,7 @@ const store = useStore();
 // const route = useRoute();
 const instance = getCurrentInstance();
 const route = instance?.proxy?.$route as any;
-const i18n = useI18n(store);
+const { t } = useI18n(store);
 
 const canUpdate = computed(() => policy.canUpdate);
 
@@ -51,14 +53,14 @@ const namespaceRoute = computed(() => ({
 
 const getWorkloadData = async() => {
   return Promise.all(
-      Object.values(WORKLOAD_KIND_TO_TYPE_MAPPING).map((workloadType) =>
-          store.dispatch(`cluster/findAll`, { type: workloadType })
-      )
+    Object.values(WORKLOAD_KIND_TO_TYPE_MAPPING).map((workloadType) =>
+      store.dispatch('cluster/findAll', { type: workloadType })
+    )
   );
 };
 
 const modetext = computed(() => {
-  return i18n.t(`runtimeEnforcer.activePolicies.mode.${policy.spec.mode.toLowerCase()}`);
+  return t(`runtimeEnforcer.activePolicies.mode.${policy.spec.mode.toLowerCase()}`);
 });
 
 const modeIconImgSrc = computed(() => {
@@ -74,50 +76,50 @@ const modeIconImgSrc = computed(() => {
 const metaProperties = computed<MetadataProperty[]>(() => [
   {
     type:  'route',
-    label: i18n.t('runtimeEnforcer.activePolicy.masthead.namespace'),
+    label: t('runtimeEnforcer.activePolicy.masthead.namespace'),
     value: policy.metadata?.namespace,
     route: namespaceRoute.value,
   },
   {
     type:  'route',
-    label: i18n.t('runtimeEnforcer.activePolicy.masthead.workload'),
+    label: t('runtimeEnforcer.activePolicy.masthead.workload'),
     value: policy.workloadRef?.workloadName ?? '',
     route: policy.workloadRef?.workloadLocation ?? null,
   },
   {
     type:  'text',
-    label: i18n.t('runtimeEnforcer.activePolicy.masthead.workloadType'),
+    label: t('runtimeEnforcer.activePolicy.masthead.workloadType'),
     value: policy.workloadRef?.workloadType ?? '',
   },
   {
     type:   'icon',
-    label:  i18n.t('runtimeEnforcer.activePolicy.masthead.mode'),
+    label:  t('runtimeEnforcer.activePolicy.masthead.mode'),
     value:  modetext.value,
     imgSrc: modeIconImgSrc.value,
   },
   {
     type:  'text',
-    label: i18n.t('runtimeEnforcer.activePolicy.masthead.violations'),
+    label: t('runtimeEnforcer.activePolicy.masthead.violations'),
     value: `${ policy.activeViolationCount ?? 0 }`,
   },
   {
     type:  'text',
-    label: i18n.t('runtimeEnforcer.activePolicy.masthead.occurrences'),
+    label: t('runtimeEnforcer.activePolicy.masthead.occurrences'),
     value: policy.violationCount ?? 0,
   },
   {
     type:  'text',
-    label: i18n.t('runtimeEnforcer.activePolicy.masthead.nodes'),
+    label: t('runtimeEnforcer.activePolicy.masthead.nodes'),
     value: policy.status?.totalNodes ?? 0,
   },
   {
     type:  'text',
-    label: i18n.t('runtimeEnforcer.activePolicy.masthead.executables'),
+    label: t('runtimeEnforcer.activePolicy.masthead.executables'),
     value: policy.executables.length,
   },
   {
     type:  'date',
-    label: i18n.t('runtimeEnforcer.activePolicy.masthead.age'),
+    label: t('runtimeEnforcer.activePolicy.masthead.age'),
     value: policy.metadata?.creationTimestamp,
   },
 ]);
@@ -160,7 +162,7 @@ const metaProperties = computed<MetadataProperty[]>(() => [
               size="large"
               @click="policy.changeMode()"
           >
-            {{ i18n.t('runtimeEnforcer.activePolicy.action.changeMode') }}
+            {{ t('runtimeEnforcer.activePolicy.action.changeMode') }}
           </RcButton>
           <ActionMenu
               button-variant="multiAction"
@@ -170,21 +172,25 @@ const metaProperties = computed<MetadataProperty[]>(() => [
           />
         </div>
       </div>
-      <RancherMeta :properties="metaProperties"/>
+      <RancherMeta :properties="metaProperties" />
     </template>
     <template #bottom-area>
       <ResourceTabs
           :value="policy"
           mode="view"
           :need-related="false"
-          :needEvents="false"
-          @update:value="$emit('input', $event)"
+          :need-events="false"
+          @update:value="emit('input', $event)"
       >
         <Tab
             name="nodesEnforcement"
             :weight="30"
             :label="t('runtimeEnforcer.activePolicy.tabs.nodesEnforcement')"
+            :count="policy.status?.totalNodes ?? 0"
+            :display-alert-icon="(policy.status?.failedNodes ?? 0) > 0"
+            :error-icon-tooltip="t('runtimeEnforcer.activePolicy.nodesEnforcement.failedTooltip')"
         >
+          <NodesEnforcementTable :status="policy.status" />
         </Tab>
         <Tab
             name="allowedExecutables"
@@ -222,6 +228,19 @@ const metaProperties = computed<MetadataProperty[]>(() => [
 }
 :deep(.bottom-area) {
   margin-top: 0 !important;
+}
+
+:deep(.resource-tabs) {
+  ul.tabs.horizontal {
+    li.tab {
+      padding-left: 0 !important;
+      &:first-child {
+        > a {
+          padding-left: 0 !important;
+        }
+      }
+    }
+  }
 }
 
 .header {
@@ -299,4 +318,11 @@ const metaProperties = computed<MetadataProperty[]>(() => [
   }
 }
 
+.text-error {
+  color: var(--error);
+}
+
+.ml-5 {
+  margin-left: 5px;
+}
 </style>
