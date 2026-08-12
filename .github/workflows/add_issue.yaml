@@ -14,13 +14,15 @@ jobs:
         id: app-token
         env:
           APP_ID: ${{ secrets.ADD_ISSUE_APP_ID }}
-        if: env.APP_ID != ''
+          PRIVATE_KEY: ${{ secrets.ADD_ISSUE_PRIVATE_KEY }}
+        if: env.APP_ID != '' && env.PRIVATE_KEY != ''
         with:
           client-id: ${{ secrets.ADD_ISSUE_APP_ID }}
           private-key: ${{ secrets.ADD_ISSUE_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           permission-organization-projects: write
       - uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        if: steps.app-token.outcome == 'success'
         with:
           project-url: https://github.com/orgs/rancher/projects/143
           github-token: ${{ steps.app-token.outputs.token }}
