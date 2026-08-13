@@ -112,8 +112,8 @@ export default {
     },
     growlTitle() {
       return this.isBulk
-        ? this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.title.bulk', { count: this.resources.length }, true)
-        : this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.title.single', { name: this.resources[0]?.nameDisplay }, true);
+        ? this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.title.bulk')
+        : this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.title.single');
     },
   },
 

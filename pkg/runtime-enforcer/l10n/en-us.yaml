@@ -153,9 +153,9 @@ runtimeEnforcer:
         bulk: Restart Workloads
       growl:
         title:
-          single: '{name} has been deleted'
-          bulk: Selected policy proposals ({count}) have been deleted
-        single: The policy proposal {name} has been successfully deleted. Restarting the corresponding workload might take a few minutes to complete.
+          single: Policy Proposal Deleted
+          bulk: Policy Proposals Deleted
+        single: The {name} policy proposal has been successfully deleted. Restarting the corresponding workload might take a few minutes to complete.
         bulk: The selected policy proposals ({count}) have been successfully deleted. Restarting the corresponding workloads might take a few minutes to complete.
     promoteDialog:
       title:
@@ -195,10 +195,10 @@ runtimeEnforcer:
       errorTitle: Failed to promote policy proposal
       growl:
         title:
-          single: '{name} has been promoted to active policy'
-          bulk: Selected policy proposals ({count}) have been promoted to active policies
+          single: Policy Proposal Promoted
+          bulk: Policy Proposals Promoted
         base:
-          single: The policy proposal has been successfully promoted to an active policy.
+          single: The {name} policy proposal has been successfully promoted to an active policy.
           bulk: The selected policy proposals ({count}) have been successfully promoted to active policies.
         manual:
           single: Don't forget to manually apply the active policy on the corresponding workload and redeploy it.
@@ -309,8 +309,8 @@ runtimeEnforcer:
         bulk: Restart Workloads
       growl:
         title:
-          single: '{name} has been deleted'
-          bulk: Selected active policies ({count}) have been deleted
+          single: Active Policy Deleted
+          bulk: Active Policies Deleted
         delete:
           single: The {name} active policy has been successfully deleted.
           bulk: The selected active policies ({count}) have been successfully deleted.

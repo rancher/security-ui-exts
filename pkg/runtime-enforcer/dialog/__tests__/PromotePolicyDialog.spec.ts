@@ -110,10 +110,10 @@ describe('PromotePolicyDialog', () => {
 
       (wrapper.vm as any).applyOption = APPLY_MODE.AUTOMATIC;
       expect((wrapper.vm as any).growlTitle).toBe(
-        'runtimeEnforcer.policyProposal.promoteDialog.growl.title.single {"name":"proposal-a"}'
+        'runtimeEnforcer.policyProposal.promoteDialog.growl.title.single'
       );
       expect((wrapper.vm as any).growlMessage).toBe(
-        'runtimeEnforcer.policyProposal.promoteDialog.growl.base.single {} runtimeEnforcer.policyProposal.promoteDialog.growl.automatic.single {}'
+        'runtimeEnforcer.policyProposal.promoteDialog.growl.base.single {"name":"proposal-a"} runtimeEnforcer.policyProposal.promoteDialog.growl.automatic.single {}'
       );
     });
 
@@ -122,7 +122,7 @@ describe('PromotePolicyDialog', () => {
 
       (wrapper.vm as any).applyOption = APPLY_MODE.MANUAL;
       expect((wrapper.vm as any).growlTitle).toBe(
-        'runtimeEnforcer.policyProposal.promoteDialog.growl.title.bulk {"count":2}'
+        'runtimeEnforcer.policyProposal.promoteDialog.growl.title.bulk'
       );
       expect((wrapper.vm as any).growlMessage).toBe(
         'runtimeEnforcer.policyProposal.promoteDialog.growl.base.bulk {"count":2} runtimeEnforcer.policyProposal.promoteDialog.growl.manual.bulk {}'

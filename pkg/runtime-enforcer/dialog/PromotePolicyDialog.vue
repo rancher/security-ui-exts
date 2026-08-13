@@ -93,14 +93,14 @@ export default {
 
     growlTitle() {
       return this.isBulk
-        ? this.t('runtimeEnforcer.policyProposal.promoteDialog.growl.title.bulk', { count: this.resources.length }, true)
-        : this.t('runtimeEnforcer.policyProposal.promoteDialog.growl.title.single', { name: this.resources[0]?.nameDisplay }, true);
+        ? this.t('runtimeEnforcer.policyProposal.promoteDialog.growl.title.bulk')
+        : this.t('runtimeEnforcer.policyProposal.promoteDialog.growl.title.single');
     },
 
     growlMessage() {
       const base = this.isBulk
         ? this.t('runtimeEnforcer.policyProposal.promoteDialog.growl.base.bulk', { count: this.resources.length }, true)
-        : this.t('runtimeEnforcer.policyProposal.promoteDialog.growl.base.single', {}, true);
+        : this.t('runtimeEnforcer.policyProposal.promoteDialog.growl.base.single', { name: this.resources[0]?.nameDisplay }, true);
 
       const suffixKey = this.applyOption === APPLY_MODE.AUTOMATIC ? 'automatic' : 'manual';
       const suffix = this.t(`runtimeEnforcer.policyProposal.promoteDialog.growl.${ suffixKey }.${ this.isBulk ? 'bulk' : 'single' }`, {}, true);
