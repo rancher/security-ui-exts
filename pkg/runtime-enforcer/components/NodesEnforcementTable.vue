@@ -15,7 +15,11 @@ dayjs.extend(utc);
 interface PolicyStatus {
   code: string;
   message?: string;
-  timestamp?: string | number | Date;
+  since?: string | number | Date;
+}
+
+interface PolicyNodeStatus extends PolicyStatus {
+  nodeName: string;
 }
 
 interface PolicyNodeStatusRow {
@@ -30,7 +34,7 @@ interface PolicyNodeStatusRow {
 const props = defineProps<{
   status?: {
     nodesWithIssues?: Record<string, PolicyStatus>;
-    nodesTransitioning?: string[];
+    nodesTransitioning?: PolicyNodeStatus[];
     totalNodes?: number;
     successfulNodes?: number;
     failedNodes?: number;
@@ -55,13 +59,12 @@ const rows = computed<PolicyNodeStatusRow[]>(() => {
   const items: PolicyNodeStatusRow[] = [];
   const status = props.status || {};
 
-  // 1. Process Failed / Missing Nodes from nodesWithIssues map
   if (status.nodesWithIssues) {
     Object.entries(status.nodesWithIssues).forEach(([nodeName, nodeStatus]) => {
       items.push({
         id:        `failed-${nodeName}`,
         status:    nodeStatus.code || 'Failed',
-        since:     formatDate(nodeStatus.timestamp),
+        since:     formatDate(nodeStatus.since),
         node:      nodeName,
         issueCode: nodeStatus.code || '-',
         message:   nodeStatus.message || '-',
@@ -69,21 +72,22 @@ const rows = computed<PolicyNodeStatusRow[]>(() => {
     });
   }
 
-  // 2. Process Transitioning Nodes
   if (status.nodesTransitioning) {
-    status.nodesTransitioning.forEach((nodeName) => {
+    status.nodesTransitioning.forEach((nodeStatus) => {
+      const nodeName = typeof nodeStatus === 'string' ? nodeStatus : nodeStatus.nodeName;
+      const sinceVal = typeof nodeStatus === 'string' ? undefined : nodeStatus.since;
+
       items.push({
         id:        `transitioning-${nodeName}`,
         status:    'Transitioning',
-        since:     '-',
+        since:     formatDate(sinceVal),
         node:      nodeName,
         issueCode: '-',
-        message:   '-',
+        message:   nodeStatus.message || '-',
       });
     });
   }
 
-  // 3. Fallback/Synthetic rows for Ready Nodes
   const knownIssueCount = items.length;
   const total = status.totalNodes || 0;
   const readyCount = status.successfulNodes ?? Math.max(0, total - knownIssueCount);

@@ -376,7 +376,7 @@ runtimeEnforcer:
         status: Status
         since: Since
         node: Node
-        issueCode: Issue Code
+        issueCode: Issue code
         message: Message
     allowedExecutables:
       table:

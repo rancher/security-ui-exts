@@ -82,7 +82,7 @@ describe('NodesEnforcementTable.vue', () => {
         'node-prod-eu-12': {
           code: 'EBPFVerifierRejected',
           message: 'verifier rejected program: unknown helper id 188',
-          timestamp: '2026-06-15T09:45:00Z',
+          since: '2026-06-15T09:45:00Z', // Updated to 'since' based on latest struct changes
         },
       },
       totalNodes: 1,
@@ -106,7 +106,12 @@ describe('NodesEnforcementTable.vue', () => {
 
   it('maps transitioning and ready nodes gracefully', () => {
     const status = {
-      nodesTransitioning: ['node-prod-eu-23'],
+      nodesTransitioning: [{
+        nodeName: 'node-prod-eu-23',
+        code: 'Transitioning',
+        since: '2026-06-15T10:00:00Z', // Updated array items from string to PolicyNodeStatus objects
+        message: 'Pulling latest image',
+      }],
       totalNodes: 3,
       successfulNodes: 2,
     };
@@ -121,10 +126,10 @@ describe('NodesEnforcementTable.vue', () => {
     expect(rows[0]).toEqual({
       id: 'transitioning-node-prod-eu-23',
       status: 'Transitioning',
-      since: '-',
+      since: 'Jun 15, 2026 10:00 AM',
       node: 'node-prod-eu-23',
       issueCode: '-',
-      message: '-',
+      message: 'Pulling latest image',
     });
 
     // Synthetic Ready rows
