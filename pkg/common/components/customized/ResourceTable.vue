@@ -482,7 +482,7 @@ export default {
 
     // The group stored in the preference (above) might not be valid for this resource table - so ensure we
     // choose a group that is applicable (the default)
-    // This saves us from having to store a group preference per resource type - given that custom groupings aer not used much
+    // This saves us from having to store a group preference per resource type - given that custom groupings are not used much
     // and it feels like a good UX to be able to keep the namespace/flat grouping across tables
     group: {
       get() {

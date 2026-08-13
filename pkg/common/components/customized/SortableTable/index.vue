@@ -355,7 +355,7 @@ export default {
       default: false
     },
     /**
-     * Manaul force the update of live and delayed cells. Change this number to kick off the update
+     * Manual force the update of live and delayed cells. Change this number to kick off the update
      */
     forceUpdateLiveAndDelayed: {
       type:    Number,
@@ -499,7 +499,7 @@ export default {
     },
 
     // Ensure we update live and delayed columns on first load
-    initalLoad: {
+    initialLoad: {
       handler(neu) {
         if (neu) {
           this._didinit = true;
@@ -585,7 +585,7 @@ export default {
       return this.$store.getters['activeNamespaceCache'];
     },
 
-    initalLoad() {
+    initialLoad() {
       return !!(!this.isLoading && !this._didinit && this.rows?.length);
     },
 
@@ -666,7 +666,7 @@ export default {
 
       // handle cols visibility and filtering if there is advanced filtering
       if (this.hasAdvancedFiltering) {
-        const cols = this.handleColsVisibilyAndFiltering(out);
+        const cols = this.handleColsVisibilityAndFiltering(out);
 
         return cols;
       }
@@ -711,7 +711,7 @@ export default {
       return !!delaeydColumns;
     },
 
-    columnFormmatterIDs() {
+    columnFormatterIDs() {
       const columnsIds = {};
 
       this.columns.forEach((c) => {
@@ -727,7 +727,7 @@ export default {
     // ensures we only call methods like `valueFor` once
     displayRows() {
       const rows = [];
-      const columnFormmatterIDs = this.columnFormmatterIDs;
+      const columnFormatterIDs = this.columnFormatterIDs;
 
       this.groupedRows.forEach((grp) => {
         const group = {
@@ -784,7 +784,7 @@ export default {
               delayed:   c.delayLoading,
               live:      c.formatter?.startsWith('Live') || c.liveUpdates,
               label:     this.labelFor(c),
-              dasherize: columnFormmatterIDs[c.formatter] || '',
+              dasherize: columnFormatterIDs[c.formatter] || '',
             });
           });
         });

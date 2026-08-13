@@ -28,7 +28,7 @@ export default {
       default: false
     },
     /**
-     * Flag that controls visibility of labels as possibe toggable cols to be displayed on the Sortable Table
+     * Flag that controls visibility of labels as possible toggable cols to be displayed on the Sortable Table
      */
     advFilterHideLabelsAsCols: {
       type:    Boolean,
@@ -97,7 +97,7 @@ export default {
   },
 
   methods: {
-    handleColsVisibilyAndFiltering(cols) {
+    handleColsVisibilityAndFiltering(cols) {
       const allCols = cols;
 
       this.columnOptions.forEach((advCol) => {
