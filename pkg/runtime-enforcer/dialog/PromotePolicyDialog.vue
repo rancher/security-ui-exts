@@ -4,10 +4,9 @@ import { Banner } from '@components/Banner';
 import RcButton from '@components/RcButton/RcButton.vue';
 import LabeledSelect from '@shell/components/form/LabeledSelect';
 import RadioButton from '@components/Form/Radio/RadioButton.vue';
-import RcTag from '@components/Pill/RcTag/RcTag.vue';
-import CopyToClipboard from '@shell/components/Resource/Detail/CopyToClipboard.vue';
 import RichTranslation from '@shell/components/RichTranslation.vue';
 import SubtleLink from '@shell/components/SubtleLink.vue';
+import WorkloadTag from '@runtime-enforcer/components/common/WorkloadTag.vue';
 import { _EDIT } from '@shell/config/query-params';
 import {
   PRODUCT_NAME, POLICY_MODE, APPLY_MODE, WORKLOAD_PREFIX, DOCUMENTATION_URL
@@ -23,10 +22,9 @@ export default {
     RcButton,
     LabeledSelect,
     RadioButton,
-    RcTag,
-    CopyToClipboard,
     RichTranslation,
     SubtleLink,
+    WorkloadTag,
   },
 
   props: {
@@ -242,19 +240,12 @@ export default {
                       </template>
                     </RichTranslation>
                   </p>
-                  <div
+                  <WorkloadTag
                     v-for="resource in resources"
                     :key="resource.metadata.uid"
                     class="mt-2"
-                  >
-                    <RcTag
-                      class="tag-row"
-                      :highlight="false"
-                    >
-                      <div class="tag-data">{{ WORKLOAD_PREFIX }} {{ resource.metadata.name }}</div>
-                    </RcTag>
-                    <CopyToClipboard class="cp-board" :value="`${ WORKLOAD_PREFIX } ${ resource.metadata.name }`" />
-                  </div>
+                    :label="`${ WORKLOAD_PREFIX } ${ resource.metadata.name }`"
+                  />
                 </template>
               </template>
             </RadioButton>
@@ -334,29 +325,5 @@ export default {
     }
   }
 
-  .tag-row {
-    display: inline-flex;
-    align-items: center;
-    background-color: var(--rc-active-disabled-background);
-    border: 1px solid var(--rc-active-disabled-background);
-    border-radius: 4px;
-    margin: 6px 0;
-  }
-
-  .cp-board {
-    margin-left: -4px;
-  }
-
-  .tag-data {
-    display: inline-flex;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: calc(100%);
-    line-height: 21px;
-    font-size: 13px;
-    font-weight: 400;
-    align-items: center;
-  }
 }
 </style>

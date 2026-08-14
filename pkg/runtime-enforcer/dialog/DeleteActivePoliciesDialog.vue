@@ -8,10 +8,9 @@ import { TIMESTAMP } from '@shell/config/labels-annotations';
 import RadioButton from '@components/Form/Radio/RadioButton.vue';
 import { _EDIT } from '@shell/config/query-params';
 import { DOCUMENTATION_URL, WORKLOAD_PREFIX, POLICY_LABEL_KEY } from '@runtime-enforcer/types';
-import RcTag from '@components/Pill/RcTag/RcTag.vue';
-import CopyToClipboard from '@shell/components/Resource/Detail/CopyToClipboard.vue';
 import RichTranslation from '@shell/components/RichTranslation.vue';
 import SubtleLink from '@shell/components/SubtleLink.vue';
+import WorkloadTag from '@runtime-enforcer/components/common/WorkloadTag.vue';
 import { WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
 
 export default {
@@ -22,10 +21,9 @@ export default {
     Banner,
     RcButton,
     RadioButton,
-    RcTag,
-    CopyToClipboard,
     RichTranslation,
     SubtleLink,
+    WorkloadTag,
   },
 
   props: {
@@ -284,19 +282,12 @@ export default {
                     </template>
                   </RichTranslation>
                 </p>
-                <div
-                  v-for="resource in resources"
-                  :key="resource.metadata.uid"
-                  class="mt-2"
-                >
-                  <RcTag
-                    class="tag-row"
-                    :highlight="false"
-                  >
-                    <div class="tag-data">{{ WORKLOAD_PREFIX }} {{ resource.metadata.name }}</div>
-                  </RcTag>
-                  <CopyToClipboard class="cp-board" :value="`${ WORKLOAD_PREFIX } ${ resource.metadata.name }`" />
-                </div>
+                  <WorkloadTag
+                    v-for="resource in resources"
+                    :key="resource.metadata.uid"
+                    class="mt-2"
+                    :label="`${ WORKLOAD_PREFIX } ${ resource.metadata.name }`"
+                  />
               </template>
             </template>
           </RadioButton>
@@ -368,32 +359,6 @@ export default {
     .option-tooltip-icon {
       margin-left: 8px;
     }
-  }
-
-  .cp-board {
-    margin-left: -8px;
-    right: 0;
-    top: 0;
-  }
-  .tag-row {
-    display: inline-flex;
-    align-items: center;
-    background-color: var(--rc-active-disabled-background);
-    border: 1px solid var(--rc-active-disabled-background);
-    border-radius: 4px;
-    margin: 6px 0;
-    cursor: default;
-  }
-  .tag-data {
-    display: inline-flex;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: calc(100%);
-    line-height: 21px;
-    font-size: 13px;
-    font-weight: 400;
-    align-items: center;
   }
 }
 </style>
