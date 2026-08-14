@@ -27,7 +27,6 @@ interface PolicyNodeStatusRow {
   status: string;
   since: string;
   node: string;
-  issueCode: string;
   message: string;
 }
 
@@ -62,12 +61,11 @@ const rows = computed<PolicyNodeStatusRow[]>(() => {
   if (status.nodesWithIssues) {
     Object.entries(status.nodesWithIssues).forEach(([nodeName, nodeStatus]) => {
       items.push({
-        id:        `failed-${nodeName}`,
-        status:    nodeStatus.code || 'Failed',
-        since:     formatDate(nodeStatus.since),
-        node:      nodeName,
-        issueCode: nodeStatus.code || '-',
-        message:   nodeStatus.message || '-',
+        id:      `failed-${nodeName}`,
+        status:  nodeStatus.code || 'Failed',
+        since:   formatDate(nodeStatus.since),
+        node:    nodeName,
+        message: nodeStatus.message || '-',
       });
     });
   }
@@ -78,12 +76,11 @@ const rows = computed<PolicyNodeStatusRow[]>(() => {
       const sinceVal = typeof nodeStatus === 'string' ? undefined : nodeStatus.since;
 
       items.push({
-        id:        `transitioning-${nodeName}`,
-        status:    'Transitioning',
-        since:     formatDate(sinceVal),
-        node:      nodeName,
-        issueCode: '-',
-        message:   nodeStatus.message || '-',
+        id:      `transitioning-${nodeName}`,
+        status:  'Transitioning',
+        since:   formatDate(sinceVal),
+        node:    nodeName,
+        message: nodeStatus.message || '-',
       });
     });
   }
@@ -94,12 +91,11 @@ const rows = computed<PolicyNodeStatusRow[]>(() => {
 
   for (let i = 0; i < readyCount; i++) {
     items.push({
-      id:        `ready-node-${i}`,
-      status:    'Ready',
-      since:     '-',
-      node:      `node-${i + 1}`,
-      issueCode: '-',
-      message:   '-',
+      id:      `ready-node-${i}`,
+      status:  'Ready',
+      since:   '-',
+      node:    `node-${i + 1}`,
+      message: '-',
     });
   }
 
@@ -112,7 +108,7 @@ const headers = computed(() => [
     value: 'status',
     label: t('runtimeEnforcer.activePolicy.nodesEnforcement.table.status'),
     sort:  'status',
-    width: 120,
+    width: 140,
   },
   {
     name:  'since',
@@ -126,13 +122,6 @@ const headers = computed(() => [
     value: 'node',
     label: t('runtimeEnforcer.activePolicy.nodesEnforcement.table.node'),
     sort:  'node',
-    width: 180,
-  },
-  {
-    name:  'issueCode',
-    value: 'issueCode',
-    label: t('runtimeEnforcer.activePolicy.nodesEnforcement.table.issueCode'),
-    sort:  'issueCode',
     width: 200,
   },
   {
@@ -169,14 +158,6 @@ const headers = computed(() => [
       </td>
     </template>
 
-    <template #col:issueCode="{ row }">
-      <td>
-        <span :class="{ 'text-error font-mono': row.issueCode !== '-' }">
-          {{ row.issueCode }}
-        </span>
-      </td>
-    </template>
-
     <template #col:message="{ row }">
       <td>
         <span
@@ -193,14 +174,6 @@ const headers = computed(() => [
 </template>
 
 <style lang="scss" scoped>
-.font-mono {
-  font-family: monospace;
-}
-
-.text-error {
-  color: var(--error);
-}
-
 .message-text {
   display: inline-block;
   max-width: 450px;

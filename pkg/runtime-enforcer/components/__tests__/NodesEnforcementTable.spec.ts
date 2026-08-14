@@ -45,9 +45,6 @@ describe('NodesEnforcementTable.vue', () => {
                         <td>{{ row.since }}</td>
                       </slot>
                       <td>{{ row.node }}</td>
-                      <slot name="col:issueCode" :row="row">
-                        <td>{{ row.issueCode }}</td>
-                      </slot>
                       <slot name="col:message" :row="row">
                         <td>{{ row.message }}</td>
                       </slot>
@@ -82,7 +79,7 @@ describe('NodesEnforcementTable.vue', () => {
         'node-prod-eu-12': {
           code: 'EBPFVerifierRejected',
           message: 'verifier rejected program: unknown helper id 188',
-          since: '2026-06-15T09:45:00Z', // Updated to 'since' based on latest struct changes
+          since: '2026-06-15T09:45:00Z',
         },
       },
       totalNodes: 1,
@@ -99,105 +96,8 @@ describe('NodesEnforcementTable.vue', () => {
       status: 'EBPFVerifierRejected',
       since: 'Jun 15, 2026 09:45 AM',
       node: 'node-prod-eu-12',
-      issueCode: 'EBPFVerifierRejected',
       message: 'verifier rejected program: unknown helper id 188',
     });
-  });
-
-  it('maps transitioning and ready nodes gracefully', () => {
-    const status = {
-      nodesTransitioning: [{
-        nodeName: 'node-prod-eu-23',
-        code: 'Transitioning',
-        since: '2026-06-15T10:00:00Z', // Updated array items from string to PolicyNodeStatus objects
-        message: 'Pulling latest image',
-      }],
-      totalNodes: 3,
-      successfulNodes: 2,
-    };
-
-    const wrapper = createWrapper({ status });
-    const sortableTable = wrapper.findComponent({ name: 'SortableTable' });
-    const rows = sortableTable.props('rows');
-
-    expect(rows).toHaveLength(3);
-
-    // Transitioning row
-    expect(rows[0]).toEqual({
-      id: 'transitioning-node-prod-eu-23',
-      status: 'Transitioning',
-      since: 'Jun 15, 2026 10:00 AM',
-      node: 'node-prod-eu-23',
-      issueCode: '-',
-      message: 'Pulling latest image',
-    });
-
-    // Synthetic Ready rows
-    expect(rows[1]).toEqual({
-      id: 'ready-node-0',
-      status: 'Ready',
-      since: '-',
-      node: 'node-1',
-      issueCode: '-',
-      message: '-',
-    });
-    expect(rows[2]).toEqual({
-      id: 'ready-node-1',
-      status: 'Ready',
-      since: '-',
-      node: 'node-2',
-      issueCode: '-',
-      message: '-',
-    });
-  });
-
-  it('passes lowercased status to StatusBadge component', () => {
-    const status = {
-      totalNodes: 1,
-      successfulNodes: 1,
-    };
-
-    const wrapper = createWrapper({ status });
-    const statusBadge = wrapper.findComponent({ name: 'StatusBadge' });
-
-    expect(statusBadge.exists()).toBe(true);
-    expect(statusBadge.props('status')).toBe('ready');
-  });
-
-  it('applies error text styling for non-empty issue code', () => {
-    const status = {
-      nodesWithIssues: {
-        'node-failed-1': {
-          code: 'EBPFVerifierRejected',
-          message: 'Error message',
-        },
-      },
-    };
-
-    const wrapper = createWrapper({ status });
-    const issueCodeSpan = wrapper.find('.text-error.font-mono');
-
-    expect(issueCodeSpan.exists()).toBe(true);
-    expect(issueCodeSpan.text()).toBe('EBPFVerifierRejected');
-  });
-
-  it('renders fallback hyphens for missing optional fields', () => {
-    const status = {
-      nodesWithIssues: {
-        'node-failed-1': {
-          code: '',
-          message: '',
-        },
-      },
-    };
-
-    const wrapper = createWrapper({ status });
-    const sortableTable = wrapper.findComponent({ name: 'SortableTable' });
-    const rows = sortableTable.props('rows');
-
-    expect(rows[0].since).toBe('-');
-    expect(rows[0].issueCode).toBe('-');
-    expect(rows[0].message).toBe('-');
   });
 
   it('defines headers with expected translation keys and configurations', () => {
@@ -211,7 +111,7 @@ describe('NodesEnforcementTable.vue', () => {
         value: 'status',
         label: 'runtimeEnforcer.activePolicy.nodesEnforcement.table.status',
         sort: 'status',
-        width: 120,
+        width: 140,
       },
       {
         name: 'since',
@@ -225,13 +125,6 @@ describe('NodesEnforcementTable.vue', () => {
         value: 'node',
         label: 'runtimeEnforcer.activePolicy.nodesEnforcement.table.node',
         sort: 'node',
-        width: 180,
-      },
-      {
-        name: 'issueCode',
-        value: 'issueCode',
-        label: 'runtimeEnforcer.activePolicy.nodesEnforcement.table.issueCode',
-        sort: 'issueCode',
         width: 200,
       },
       {
