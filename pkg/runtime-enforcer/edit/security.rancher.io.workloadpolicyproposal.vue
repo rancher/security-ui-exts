@@ -1,4 +1,28 @@
 <template>
+  <teleport to=".masthead .title">
+    <div class="custom-masthead-subheader">
+      <span v-if="namespace" class="meta-item">
+        <span class="meta-label">{{ t("resourceDetail.masthead.namespace") }}:</span>
+        <router-link :to="namespaceLocation" class="meta-value">
+          {{ namespace }}
+        </router-link>
+      </span>
+
+      <span v-if="workloadName" class="meta-item">
+        <span class="meta-label">{{ t("runtimeEnforcer.policyProposal.masthead.workload") }}:</span>
+        <router-link v-if="ownerWorkload?.detailLocation" :to="ownerWorkload.detailLocation" class="meta-value">
+          {{ workloadName }}
+        </router-link>
+        <span v-else class="meta-value">{{ workloadName }}</span>
+      </span>
+
+      <span v-if="creationTimestamp" class="meta-item">
+        <span class="meta-label">{{ t("resourceDetail.masthead.age") }}:</span>
+        <LiveDate class="live-date meta-value" :value="creationTimestamp" />
+      </span>
+    </div>
+  </teleport>
+
   <CruResource
       :mode="mode"
       :resource="value"
@@ -103,12 +127,12 @@
                   >
 
                     <div class="col span-6">
-                        <LabeledInput
-                            :value="exec.path"
-                            :placeholder="t('runtimeEnforcer.policyProposal.executablePlaceholder')"
-                            :mode="mode"
-                            @update:value="updateExecutablePath(c.name, eIdx, $event)"
-                        />
+                      <LabeledInput
+                          :value="exec.path"
+                          :placeholder="t('runtimeEnforcer.policyProposal.executablePlaceholder')"
+                          :mode="mode"
+                          @update:value="updateExecutablePath(c.name, eIdx, $event)"
+                      />
                     </div>
 
                     <div class="col span-6 align-vertical-center">
@@ -149,6 +173,7 @@ import Tabbed from '@shell/components/Tabbed';
 import Tab from '@shell/components/Tabbed/Tab';
 import CreateEditView from '@shell/mixins/create-edit-view';
 import Banner from '@components/Banner/Banner';
+import { NAMESPACE } from '@shell/config/types';
 
 export default {
   name: 'WorkloadPolicyProposalEdit',
@@ -196,16 +221,30 @@ export default {
       await this.$store.dispatch('growl/fromError', { err }, { root: true });
     }
   },
-
+  mounted() {
+    document.body.classList.add('re-custom-policy-edit');
+  },
+  beforeUnmount() {
+    document.body.classList.remove('re-custom-policy-edit');
+  },
   computed: {
-    spec() {
-      if (!this.value.spec) {
-        this.value.spec = {};
-      }
-
-      return this.value.spec;
+    namespace() {
+      return this.value?.metadata?.namespace || null;
     },
-
+    creationTimestamp() {
+      return this.value?.metadata?.creationTimestamp || null;
+    },
+    namespaceLocation() {
+      return {
+        name: 'c-cluster-product-resource-id',
+        params: {
+          cluster: this.$route.params.cluster,
+          product: this.$store.getters['productId'],
+          resource: NAMESPACE,
+          id: this.namespace,
+        },
+      };
+    },
     ownerRef() {
       return this.value.metadata?.ownerReferences?.[0] || {};
     },
@@ -217,12 +256,17 @@ export default {
     workloadType() {
       return this.ownerRef.kind || this.spec.workloadType || '';
     },
-
+    spec() {
+      if (!this.value.spec) {
+        this.value.spec = {};
+      }
+      return this.value.spec;
+    },
     containerImages() {
-      const containers = this.ownerWorkload?.spec?.template?.spec?.containers
-          || this.ownerWorkload?.spec?.jobTemplate?.spec?.template?.spec?.containers
-          || [];
-
+      const containers =
+          this.ownerWorkload?.spec?.template?.spec?.containers ||
+          this.ownerWorkload?.spec?.jobTemplate?.spec?.template?.spec?.containers ||
+          [];
       return containers.reduce((acc, container) => {
         acc[container.name] = container.image;
 
@@ -355,9 +399,50 @@ export default {
 </script>
 
 <style lang="scss">
-/* Unscoped style to target the parent layout's masthead badge */
-.masthead .badge-state {
-  display: none !important;
+/* Hide native shell subheader only on this edit page */
+body.re-custom-policy-edit {
+  .masthead .subheader:not(.custom-masthead-subheader),
+  .masthead .badge-state {
+    display: none !important;
+  }
+}
+
+/* Replicate exact Rancher Masthead subheader CSS + Long Text Truncation */
+.custom-masthead-subheader {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 6px 20px !important;
+  color: var(--input-label, rgb(108, 111, 118)) !important;
+  font-family: Lato, arial, helvetica, sans-serif !important;
+  font-size: 14px !important;
+  line-height: 16.1px !important;
+  margin: 5px 0 !important;
+
+  .meta-item {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    white-space: nowrap !important;
+    max-width: 450px !important;
+  }
+
+  .meta-label {
+    color: var(--input-label, rgb(108, 111, 118)) !important;
+    font-weight: 400 !important;
+  }
+
+  .meta-value {
+    color: var(--link, #3d98d3) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+
+    &.live-date {
+      color: var(--body-text, #141419) !important;
+    }
+  }
 }
 </style>
 

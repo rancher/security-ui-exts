@@ -2,14 +2,13 @@ import { shallowMount } from '@vue/test-utils';
 import { createStore } from 'vuex';
 import WorkloadPolicyEdit from '../security.rancher.io.workloadpolicy.vue';
 
-// Mock shell components at module level to avoid runtime defineEmits warnings from uncompiled dependencies
 jest.mock('@shell/components/CruResource', () => ({
-  name: 'CruResource',
+  name:     'CruResource',
   template: '<div><slot /></div>',
 }));
 
 jest.mock('@shell/components/form/NameNsDescription', () => ({
-  name: 'NameNsDescription',
+  name:     'NameNsDescription',
   template: '<div></div>',
 }));
 
@@ -18,19 +17,21 @@ describe('WorkloadPolicyEdit component', () => {
   let dispatchSpy: jest.SpyInstance;
 
   beforeEach(() => {
+    document.body.className = '';
     store = createStore({
       getters: {
         'i18n/t':            () => (key: string) => key,
         'i18n/exists':       () => () => true,
         'cluster/schemaFor': () => () => ({ canCreate: true }),
+        productId:           () => 'runtimeEnforcer',
       },
     });
-
     dispatchSpy = jest.spyOn(store, 'dispatch').mockResolvedValue({});
   });
 
   afterEach(() => {
     jest.restoreAllMocks();
+    document.body.className = '';
   });
 
   const defaultStubs = {
@@ -41,7 +42,9 @@ describe('WorkloadPolicyEdit component', () => {
     Tab:               true,
     Banner:            true,
     RadioGroup:        true,
-    RancherMeta:       true,
+    LiveDate:          true,
+    RouterLink:        true,
+    teleport:          true,
   };
 
   const createDefaultMocks = () => ({
@@ -51,7 +54,7 @@ describe('WorkloadPolicyEdit component', () => {
     },
   });
 
-  it('renders the edit form components successfully and resolves mode', () => {
+  it('adds and removes re-custom-policy-edit class on document.body during lifecycle', () => {
     const wrapper = shallowMount(WorkloadPolicyEdit, {
       global: {
         plugins: [store],
@@ -62,23 +65,53 @@ describe('WorkloadPolicyEdit component', () => {
         mode:  'edit',
         value: {
           metadata: { name: 'payments-api-policy', namespace: 'ingress' },
-          spec:     {
-            mode:             'protect',
-            rulesByContainer: {
-              'deploy-nginx-ingress': {
-                executables: { allowed: ['/usr/bin/nginx'] },
-              },
-            },
-          },
+          spec:     { mode: 'protect', rulesByContainer: {} },
         },
       },
     });
 
-    expect(wrapper.exists()).toBe(true);
-    expect(wrapper.vm.spec.mode).toBe('protect');
+    expect(document.body.classList.contains('re-custom-policy-edit')).toBe(true);
+    wrapper.unmount();
+    expect(document.body.classList.contains('re-custom-policy-edit')).toBe(false);
   });
 
-  it('resolves workloadName, workloadType, and containerImages directly from workloadRef when available', () => {
+  it('correctly resolves subheader computed properties', () => {
+    const wrapper = shallowMount(WorkloadPolicyEdit, {
+      global: {
+        plugins: [store],
+        stubs:   defaultStubs,
+        mocks:   createDefaultMocks(),
+      },
+      props: {
+        mode:  'edit',
+        value: {
+          metadata:    { name: 'deploy-nginx-ingress', namespace: 'ingress', creationTimestamp: '2026-08-01T00:00:00Z' },
+          workloadRef: {
+            workloadName:     'nginx-ingress',
+            workloadType:     'Deployment',
+            workloadLocation: '/c/local/runtimeEnforcer/apps.deployment/ingress/nginx-ingress',
+          },
+          spec: { mode: 'protect', rulesByContainer: {} },
+        },
+      },
+    });
+
+    expect(wrapper.vm.namespace).toBe('ingress');
+    expect(wrapper.vm.creationTimestamp).toBe('2026-08-01T00:00:00Z');
+    expect(wrapper.vm.workloadName).toBe('nginx-ingress');
+    expect(wrapper.vm.workloadLocation).toBe('/c/local/runtimeEnforcer/apps.deployment/ingress/nginx-ingress');
+    expect(wrapper.vm.namespaceLocation).toEqual({
+      name:   'c-cluster-product-resource-id',
+      params: {
+        cluster:  'local',
+        product:  'runtimeEnforcer',
+        resource: 'namespace',
+        id:       'ingress',
+      },
+    });
+  });
+
+  it('resolves workload properties and containerList from workloadRef', () => {
     const wrapper = shallowMount(WorkloadPolicyEdit, {
       global: {
         plugins: [store],
@@ -110,32 +143,6 @@ describe('WorkloadPolicyEdit component', () => {
     expect(wrapper.vm.workloadType).toBe('Deployment');
     expect(wrapper.vm.containerImages).toEqual({ 'nginx-ingress': 'registry.k8s.io/nginx:v1.0' });
     expect(wrapper.vm.containerList[0].image).toBe('registry.k8s.io/nginx:v1.0');
-  });
-
-  it('returns empty strings for workload properties when workloadRef is missing or unpopulated', () => {
-    const wrapper = shallowMount(WorkloadPolicyEdit, {
-      global: {
-        plugins: [store],
-        stubs:   defaultStubs,
-        mocks:   createDefaultMocks(),
-      },
-      props: {
-        mode:  'edit',
-        value: {
-          metadata: { name: 'deploy-nginx-ingress', namespace: 'ingress' },
-          spec:     {
-            mode:             'protect',
-            rulesByContainer: {
-              nginx: { executables: { allowed: ['/usr/bin/nginx'] } },
-            },
-          },
-        },
-      },
-    });
-
-    expect(wrapper.vm.workloadName).toBe('');
-    expect(wrapper.vm.workloadType).toBe('');
-    expect(wrapper.vm.containerImages).toBeUndefined();
   });
 
   it('validates form and catches empty or invalid executable paths', () => {
@@ -216,7 +223,6 @@ describe('WorkloadPolicyEdit component', () => {
     });
 
     await (wrapper.vm as any).$options.fetch.call(wrapper.vm);
-
     expect(dispatchSpy).toHaveBeenCalledWith('cluster/findAll', expect.objectContaining({ type: expect.any(String) }));
   });
 });

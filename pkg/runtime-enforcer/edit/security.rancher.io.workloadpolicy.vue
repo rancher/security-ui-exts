@@ -1,4 +1,28 @@
 <template>
+  <teleport to=".masthead .title">
+    <div class="custom-masthead-subheader">
+      <span v-if="namespace" class="meta-item">
+        <span class="meta-label">{{ t("resourceDetail.masthead.namespace") }}:</span>
+        <router-link :to="namespaceLocation" class="meta-value">
+          {{ namespace }}
+        </router-link>
+      </span>
+
+      <span v-if="workloadName" class="meta-item">
+        <span class="meta-label">{{ t("runtimeEnforcer.policyProposal.masthead.workload") }}:</span>
+        <router-link v-if="workloadLocation" :to="workloadLocation" class="meta-value">
+          {{ workloadName }}
+        </router-link>
+        <span v-else class="meta-value">{{ workloadName }}</span>
+      </span>
+
+      <span v-if="creationTimestamp" class="meta-item">
+        <span class="meta-label">{{ t("resourceDetail.masthead.age") }}:</span>
+        <LiveDate class="live-date meta-value" :value="creationTimestamp" />
+      </span>
+    </div>
+  </teleport>
+
   <CruResource
       :mode="mode"
       :resource="value"
@@ -159,7 +183,8 @@ import CreateEditView from '@shell/mixins/create-edit-view';
 import Banner from '@components/Banner/Banner';
 import RadioGroup from '@components/Form/Radio/RadioGroup';
 import { POLICY_MODE } from '@runtime-enforcer/types';
-import { WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
+import { NAMESPACE, WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
+
 export default {
   name: 'WorkloadPolicyEdit',
 
@@ -200,8 +225,39 @@ export default {
 
     await Promise.allSettled(loadPromises);
   },
-
+  mounted() {
+    document.body.classList.add('re-custom-policy-edit');
+  },
+  beforeUnmount() {
+    document.body.classList.remove('re-custom-policy-edit');
+  },
   computed: {
+    namespace() {
+      return this.value?.metadata?.namespace || null;
+    },
+    creationTimestamp() {
+      return this.value?.metadata?.creationTimestamp || null;
+    },
+    namespaceLocation() {
+      return {
+        name: 'c-cluster-product-resource-id',
+        params: {
+          cluster: this.$route.params.cluster,
+          product: this.$store.getters['productId'],
+          resource: NAMESPACE,
+          id: this.namespace,
+        },
+      };
+    },
+    workloadName() {
+      return this.value.workloadRef?.workloadName || '';
+    },
+    workloadType() {
+      return this.value.workloadRef?.workloadType || '';
+    },
+    workloadLocation() {
+      return this.value.workloadRef?.workloadLocation || null;
+    },
     spec() {
       if (!this.value.spec) {
         this.value.spec = {};
@@ -212,19 +268,6 @@ export default {
 
       return this.value.spec;
     },
-
-    workloadName() {
-      return this.value.workloadRef?.workloadName || '';
-    },
-
-    workloadType() {
-      return this.value.workloadRef?.workloadType || '';
-    },
-
-    ownerWorkloadSteveType() {
-      return WORKLOAD_KIND_TO_TYPE_MAPPING[this.workloadType] || 'apps.deployment';
-    },
-
     modeRadioOptions() {
       return [
         {
@@ -368,8 +411,49 @@ export default {
 </script>
 
 <style lang="scss">
-.masthead .badge-state {
-  display: none !important;
+/* Hide native shell subheader only on this edit page */
+body.re-custom-policy-edit {
+  .masthead .subheader:not(.custom-masthead-subheader),
+  .masthead .badge-state {
+    display: none !important;
+  }
+}
+
+.custom-masthead-subheader {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 6px 20px !important;
+  color: var(--input-label, rgb(108, 111, 118)) !important;
+  font-family: Lato, arial, helvetica, sans-serif !important;
+  font-size: 14px !important;
+  line-height: 16.1px !important;
+  margin: 5px 0 !important;
+
+  .meta-item {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    white-space: nowrap !important;
+    max-width: 450px !important;
+  }
+
+  .meta-label {
+    color: var(--input-label, rgb(108, 111, 118)) !important;
+    font-weight: 400 !important;
+  }
+
+  .meta-value {
+    color: var(--link, #3d98d3) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+
+    &.live-date {
+      color: var(--body-text, #141419) !important;
+    }
+  }
 }
 </style>
 
