@@ -74,7 +74,7 @@ describe('WorkloadPolicyProposalEdit component', () => {
     expect(document.body.classList.contains('re-custom-policy-edit')).toBe(false);
   });
 
-  it('correctly derives subheader and workload metadata', () => {
+  it('correctly derives subheader and workload metadata with explorer routes', () => {
     const wrapper = shallowMount(WorkloadPolicyProposalEdit, {
       global: {
         plugins: [store],
@@ -90,7 +90,8 @@ describe('WorkloadPolicyProposalEdit component', () => {
             creationTimestamp: '2026-08-10T12:00:00Z',
             ownerReferences:   [{ name: 'nginx-deployment', kind: 'Deployment' }],
           },
-          spec: { rulesByContainer: {} },
+          ownerWorkloadSteveType: 'apps.deployment',
+          spec:                   { rulesByContainer: {} },
         },
       },
     });
@@ -103,9 +104,18 @@ describe('WorkloadPolicyProposalEdit component', () => {
       name:   'c-cluster-product-resource-id',
       params: {
         cluster:  'local',
-        product:  'runtimeEnforcer',
+        product:  'explorer',
         resource: 'namespace',
         id:       'prod',
+      },
+    });
+    expect(wrapper.vm.workloadLocation).toEqual({
+      name:   'c-cluster-product-resource-id',
+      params: {
+        cluster:  'local',
+        product:  'explorer',
+        resource: 'apps.deployment',
+        id:       'prod/nginx-deployment',
       },
     });
   });

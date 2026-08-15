@@ -10,7 +10,7 @@
 
       <span v-if="workloadName" class="meta-item">
         <span class="meta-label">{{ t("runtimeEnforcer.policyProposal.masthead.workload") }}:</span>
-        <router-link v-if="ownerWorkload?.detailLocation" :to="ownerWorkload.detailLocation" class="meta-value">
+        <router-link v-if="workloadLocation" :to="workloadLocation" class="meta-value">
           {{ workloadName }}
         </router-link>
         <span v-else class="meta-value">{{ workloadName }}</span>
@@ -173,7 +173,7 @@ import Tabbed from '@shell/components/Tabbed';
 import Tab from '@shell/components/Tabbed/Tab';
 import CreateEditView from '@shell/mixins/create-edit-view';
 import Banner from '@components/Banner/Banner';
-import { NAMESPACE } from '@shell/config/types';
+import { NAMESPACE, WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
 
 export default {
   name: 'WorkloadPolicyProposalEdit',
@@ -239,7 +239,7 @@ export default {
         name: 'c-cluster-product-resource-id',
         params: {
           cluster: this.$route.params.cluster,
-          product: this.$store.getters['productId'],
+          product: 'explorer',
           resource: NAMESPACE,
           id: this.namespace,
         },
@@ -256,6 +256,31 @@ export default {
     workloadType() {
       return this.ownerRef.kind || this.spec.workloadType || '';
     },
+
+    ownerWorkloadSteveType() {
+      return WORKLOAD_KIND_TO_TYPE_MAPPING[this.workloadType] || (this.workloadType ? `apps.${ this.workloadType.toLowerCase() }` : 'apps.deployment');
+    },
+
+    workloadLocation() {
+      if (this.value.workloadRef?.workloadLocation) {
+        return this.value.workloadRef.workloadLocation;
+      }
+
+      if (!this.workloadName || !this.namespace) {
+        return null;
+      }
+
+      return {
+        name:   'c-cluster-product-resource-id',
+        params: {
+          cluster:  this.$route.params.cluster,
+          product:  'explorer',
+          resource: this.ownerWorkloadSteveType,
+          id:       `${ this.namespace }/${ this.workloadName }`,
+        },
+      };
+    },
+
     spec() {
       if (!this.value.spec) {
         this.value.spec = {};

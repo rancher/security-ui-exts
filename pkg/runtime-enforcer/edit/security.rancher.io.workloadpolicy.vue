@@ -243,7 +243,7 @@ export default {
         name: 'c-cluster-product-resource-id',
         params: {
           cluster: this.$route.params.cluster,
-          product: this.$store.getters['productId'],
+          product: 'explorer',
           resource: NAMESPACE,
           id: this.namespace,
         },
@@ -255,8 +255,27 @@ export default {
     workloadType() {
       return this.value.workloadRef?.workloadType || '';
     },
+    ownerWorkloadSteveType() {
+      return WORKLOAD_KIND_TO_TYPE_MAPPING[this.workloadType] || (this.workloadType ? `apps.${ this.workloadType.toLowerCase() }` : 'apps.deployment');
+    },
     workloadLocation() {
-      return this.value.workloadRef?.workloadLocation || null;
+      if (this.value.workloadRef?.workloadLocation) {
+        return this.value.workloadRef.workloadLocation;
+      }
+
+      if (!this.workloadName || !this.namespace) {
+        return null;
+      }
+
+      return {
+        name:   'c-cluster-product-resource-id',
+        params: {
+          cluster:  this.$route.params.cluster,
+          product:  'explorer',
+          resource: this.ownerWorkloadSteveType,
+          id:       `${ this.namespace }/${ this.workloadName }`,
+        },
+      };
     },
     spec() {
       if (!this.value.spec) {

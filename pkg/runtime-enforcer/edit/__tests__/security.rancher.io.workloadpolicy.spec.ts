@@ -1,6 +1,5 @@
 import { shallowMount } from '@vue/test-utils';
 import { createStore } from 'vuex';
-import WorkloadPolicyEdit from '../security.rancher.io.workloadpolicy.vue';
 
 jest.mock('@shell/components/CruResource', () => ({
   name:     'CruResource',
@@ -11,6 +10,24 @@ jest.mock('@shell/components/form/NameNsDescription', () => ({
   name:     'NameNsDescription',
   template: '<div></div>',
 }));
+
+jest.mock('@components/Form/LabeledInput', () => ({
+  LabeledInput: {
+    name:     'LabeledInput',
+    template: '<div></div>',
+    props:    ['value', 'label', 'mode', 'disabled', 'required', 'placeholder'],
+  },
+}));
+
+jest.mock('@components/Form/Radio/RadioGroup', () => ({
+  RadioGroup: {
+    name:     'RadioGroup',
+    template: '<div></div>',
+    props:    ['value', 'name', 'mode', 'options', 'row'],
+  },
+}));
+
+import WorkloadPolicyEdit from '../security.rancher.io.workloadpolicy.vue';
 
 describe('WorkloadPolicyEdit component', () => {
   let store: any;
@@ -75,7 +92,7 @@ describe('WorkloadPolicyEdit component', () => {
     expect(document.body.classList.contains('re-custom-policy-edit')).toBe(false);
   });
 
-  it('correctly resolves subheader computed properties', () => {
+  it('correctly resolves subheader computed properties with explorer product routes', () => {
     const wrapper = shallowMount(WorkloadPolicyEdit, {
       global: {
         plugins: [store],
@@ -87,9 +104,8 @@ describe('WorkloadPolicyEdit component', () => {
         value: {
           metadata:    { name: 'deploy-nginx-ingress', namespace: 'ingress', creationTimestamp: '2026-08-01T00:00:00Z' },
           workloadRef: {
-            workloadName:     'nginx-ingress',
-            workloadType:     'Deployment',
-            workloadLocation: '/c/local/runtimeEnforcer/apps.deployment/ingress/nginx-ingress',
+            workloadName: 'nginx-ingress',
+            workloadType: 'Deployment',
           },
           spec: { mode: 'protect', rulesByContainer: {} },
         },
@@ -99,14 +115,22 @@ describe('WorkloadPolicyEdit component', () => {
     expect(wrapper.vm.namespace).toBe('ingress');
     expect(wrapper.vm.creationTimestamp).toBe('2026-08-01T00:00:00Z');
     expect(wrapper.vm.workloadName).toBe('nginx-ingress');
-    expect(wrapper.vm.workloadLocation).toBe('/c/local/runtimeEnforcer/apps.deployment/ingress/nginx-ingress');
     expect(wrapper.vm.namespaceLocation).toEqual({
       name:   'c-cluster-product-resource-id',
       params: {
         cluster:  'local',
-        product:  'runtimeEnforcer',
+        product:  'explorer',
         resource: 'namespace',
         id:       'ingress',
+      },
+    });
+    expect(wrapper.vm.workloadLocation).toEqual({
+      name:   'c-cluster-product-resource-id',
+      params: {
+        cluster:  'local',
+        product:  'explorer',
+        resource: 'apps.deployment',
+        id:       'ingress/nginx-ingress',
       },
     });
   });

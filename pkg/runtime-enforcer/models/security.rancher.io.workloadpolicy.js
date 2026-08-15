@@ -104,7 +104,7 @@ export default class WorkloadPolicyProposal extends SteveModel {
           return {
             workloadName:     workload.metadata?.name || '',
             workloadType:     workload.kind || '',
-            workloadLocation: `/c/${ cluster }/${ PRODUCT_NAME }/${ WORKLOAD_KIND_TO_TYPE_MAPPING[workload.kind] || '' }/${ workload.metadata?.namespace || '' }/${ workload.metadata?.name || '' }`,
+            workloadLocation: `/c/${ cluster }/explorer/${ WORKLOAD_KIND_TO_TYPE_MAPPING[workload.kind] || '' }/${ workload.metadata?.namespace || '' }/${ workload.metadata?.name || '' }`,
             imageMap,
           };
         }
