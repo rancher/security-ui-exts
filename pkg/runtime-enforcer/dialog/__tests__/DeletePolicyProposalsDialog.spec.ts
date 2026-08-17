@@ -184,7 +184,7 @@ describe('DeletePolicyProposalsDialog', () => {
       expect((wrapper.vm as any).deleteInProgress).toBe(false);
     });
 
-    it('rejects when a remove call fails and keeps deleteInProgress true', async() => {
+    it('dispatches growl error when a remove call fails and keeps deleteInProgress true', async() => {
       const failing = createResource('policy-a', 'wk-a');
       const error = new Error('remove failed');
       const dispatch = jest.fn();
@@ -194,10 +194,14 @@ describe('DeletePolicyProposalsDialog', () => {
       const wrapper = mountDialog({ resources: [failing], dispatch });
       const redeploySpy = jest.spyOn(wrapper.vm as any, 'redeployWorkload').mockResolvedValue(undefined);
 
-      await expect((wrapper.vm as any).deletePolicies()).rejects.toThrow('remove failed');
+      await expect((wrapper.vm as any).deletePolicies()).resolves.toBeUndefined();
       expect(redeploySpy).not.toHaveBeenCalled();
       expect((wrapper.vm as any).deleteInProgress).toBe(true);
       expect(dispatch).not.toHaveBeenCalledWith('growl/success', expect.anything());
+      expect(dispatch).toHaveBeenCalledWith('growl/error', {
+        title:   'runtimeEnforcer.policyProposal.deleteDialog.growl.title.error',
+        message: 'remove failed',
+      });
     });
   });
 });

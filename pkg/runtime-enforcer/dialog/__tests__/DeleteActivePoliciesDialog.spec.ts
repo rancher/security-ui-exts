@@ -22,8 +22,26 @@ const createResource = (name = 'policy-a', workloadName = 'wk-a') => ({
     namespace:       'runtime-enforcer',
     ownerReferences: [{ name: workloadName }],
   },
-  ownerWorkloadSteveType: 'apps.deployment',
-  remove:                 jest.fn().mockResolvedValue(undefined),
+  workloadRef: {
+    workloadType: 'Deployment',
+    workloadName,
+  },
+  remove: jest.fn().mockResolvedValue(undefined),
+});
+
+const createWorkload = (name = 'wk-a', withPolicyLabel = true) => ({
+  kind: 'Deployment',
+  name,
+  metadata: { namespace: 'runtime-enforcer' },
+  spec: {
+    template: {
+      metadata: {
+        labels: withPolicyLabel ? { io_rancher_workload_policy: 'policy-a' } : {},
+        annotations: {},
+      },
+    },
+  },
+  save: jest.fn().mockResolvedValue(undefined),
 });
 
 const mountDialog = ({
@@ -159,7 +177,7 @@ describe('DeleteActivePoliciesDialog', () => {
       const { wrapper } = mountDialog({ resources: [createResource('a'), createResource('b')] });
 
       (wrapper.vm as any).workloadRemovalOption = 'keep';
-      expect((wrapper.vm as any).growlMessage).toBe('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk');
+      expect((wrapper.vm as any).growlMessage).toBe('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk:{"count":2}');
     });
 
     it('returns auto single growl message', () => {
@@ -176,7 +194,7 @@ describe('DeleteActivePoliciesDialog', () => {
 
       (wrapper.vm as any).workloadRemovalOption = 'auto';
       expect((wrapper.vm as any).growlMessage).toBe(
-        'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.bulk'
+        'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk:{"count":2} runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.bulk'
       );
     });
 
@@ -194,7 +212,7 @@ describe('DeleteActivePoliciesDialog', () => {
 
       (wrapper.vm as any).workloadRemovalOption = 'manual';
       expect((wrapper.vm as any).growlMessage).toBe(
-        'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk runtimeEnforcer.activePolicies.deleteDialog.growl.manualRemoval.bulk'
+        'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk:{"count":2} runtimeEnforcer.activePolicies.deleteDialog.growl.manualRemoval.bulk'
       );
     });
 
@@ -245,21 +263,18 @@ describe('DeleteActivePoliciesDialog', () => {
 
     it('stores formatted errors when an internal error occurs', async() => {
       const err = new Error('boom');
-      const dateSpy = jest.spyOn(Date.prototype, 'toISOString').mockImplementation(() => {
-        throw err;
-      });
-
       const dispatch = jest.fn();
       const { wrapper } = mountDialog({ dispatch });
       const mockedExceptionToErrorsArray = exceptionToErrorsArray as jest.Mock;
+      const workload = createWorkload('deploy-a');
 
       mockedExceptionToErrorsArray.mockReturnValueOnce(['formatted-error']);
+      workload.save.mockRejectedValueOnce(err);
 
-      await (wrapper.vm as any).unlabelAndRedeployWorkload(createResource('policy-a', 'deploy-a'));
+      await (wrapper.vm as any).unlabelAndRedeployWorkload(workload, '2026-08-17T00:00:00Z');
 
       expect(mockedExceptionToErrorsArray).toHaveBeenCalledWith(err);
       expect((wrapper.vm as any).errors).toEqual(['formatted-error']);
-      dateSpy.mockRestore();
     });
   });
 
@@ -279,7 +294,7 @@ describe('DeleteActivePoliciesDialog', () => {
       expect(redeploySpy).not.toHaveBeenCalled();
       expect(dispatch).toHaveBeenCalledWith('growl/success', {
         title:   'runtimeEnforcer.activePolicies.deleteDialog.growl.title.bulk',
-        message: 'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk',
+        message: 'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk:{"count":2}',
       });
       expect(push).toHaveBeenCalledWith({
         name:   `c-cluster-${ PRODUCT_NAME }-resource`,
@@ -291,9 +306,28 @@ describe('DeleteActivePoliciesDialog', () => {
 
     it('removes resources, redeploys each for auto, and uses auto growl', async() => {
       const resources = [createResource('a', 'wk-a'), createResource('b', 'wk-b')];
-      const dispatch = jest.fn();
+      const clusterFindResults = [
+        createWorkload('wk-a'),
+        createWorkload('wk-b'),
+        undefined,
+        undefined,
+      ];
+      const dispatch = jest.fn((action) => {
+        if (action === 'cluster/find') {
+          return Promise.resolve(clusterFindResults.shift());
+        }
+
+        return Promise.resolve(undefined);
+      });
       const { wrapper } = mountDialog({ resources, dispatch });
       const redeploySpy = jest.spyOn(wrapper.vm as any, 'unlabelAndRedeployWorkload').mockResolvedValue(undefined);
+      const setTimeoutSpy = jest.spyOn(global, 'setTimeout').mockImplementation((callback: any) => {
+        if (typeof callback === 'function') {
+          callback();
+        }
+
+        return 0 as any;
+      });
 
       (wrapper.vm as any).workloadRemovalOption = 'auto';
       await (wrapper.vm as any).deletePolicies();
@@ -301,12 +335,17 @@ describe('DeleteActivePoliciesDialog', () => {
       expect(resources[0].remove).toHaveBeenCalledTimes(1);
       expect(resources[1].remove).toHaveBeenCalledTimes(1);
       expect(redeploySpy).toHaveBeenCalledTimes(2);
+      expect(dispatch).toHaveBeenCalledWith('cluster/find', {
+        type: 'apps.deployment',
+        id:   'runtime-enforcer/wk-a',
+      });
       expect(dispatch).toHaveBeenCalledWith('growl/success', {
         title:   'runtimeEnforcer.activePolicies.deleteDialog.growl.title.bulk',
-        message: 'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.bulk',
+        message: 'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk:{"count":2} runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.bulk',
       });
       expect((wrapper.vm as any).deleteInProgress).toBe(false);
       expect(wrapper.emitted('close')).toHaveLength(1);
+      setTimeoutSpy.mockRestore();
     });
 
     it('uses manual growl message when manual option is selected', async() => {
@@ -337,9 +376,13 @@ describe('DeleteActivePoliciesDialog', () => {
       const { wrapper } = mountDialog({ resources: [failing], dispatch, push });
       const redeploySpy = jest.spyOn(wrapper.vm as any, 'unlabelAndRedeployWorkload').mockResolvedValue(undefined);
 
-      await expect((wrapper.vm as any).deletePolicies()).rejects.toThrow('remove failed');
+      await expect((wrapper.vm as any).deletePolicies()).resolves.toBeUndefined();
       expect(redeploySpy).not.toHaveBeenCalled();
       expect(dispatch).not.toHaveBeenCalledWith('growl/success', expect.anything());
+      expect(dispatch).toHaveBeenCalledWith('growl/error', {
+        title:   'runtimeEnforcer.activePolicies.deleteDialog.growl.title.error',
+        message: 'remove failed',
+      });
       expect(push).not.toHaveBeenCalled();
       expect((wrapper.vm as any).deleteInProgress).toBe(true);
     });

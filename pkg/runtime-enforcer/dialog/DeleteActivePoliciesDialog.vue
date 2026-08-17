@@ -7,7 +7,7 @@ import { exceptionToErrorsArray } from '@shell/utils/error';
 import { TIMESTAMP } from '@shell/config/labels-annotations';
 import RadioButton from '@components/Form/Radio/RadioButton.vue';
 import { _EDIT } from '@shell/config/query-params';
-import { DOCUMENTATION_URL, WORKLOAD_PREFIX, POLICY_LABEL_KEY } from '@runtime-enforcer/types';
+import { DOCUMENTATION_URL, WORKLOAD_PREFIX, POLICY_LABEL_KEY, WORKLOAD_RESTART_TS_LABEL_KEY } from '@runtime-enforcer/types';
 import RichTranslation from '@shell/components/RichTranslation.vue';
 import SubtleLink from '@shell/components/SubtleLink.vue';
 import WorkloadTag from '@runtime-enforcer/components/common/WorkloadTag.vue';
@@ -96,15 +96,15 @@ export default {
       switch (this.workloadRemovalOption) {
       case 'keep':
         return this.isBulk
-          ? this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk')
+          ? this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk', { count: this.resources.length }, true)
           : this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single', { name: this.resources[0]?.nameDisplay });
       case 'auto':
         return this.isBulk
-          ? `${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk')} ${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.bulk')}`
+          ? `${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk', { count: this.resources.length }, true )} ${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.bulk')}`
           : `${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single', { name: this.resources[0]?.nameDisplay })} ${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.single')}`;
       case 'manual':
         return this.isBulk
-          ? `${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk')} ${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.manualRemoval.bulk')}`
+          ? `${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk', { count: this.resources.length }, true )} ${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.manualRemoval.bulk')}`
           : `${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single', { name: this.resources[0]?.nameDisplay })} ${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.manualRemoval.single')}`;
       }
     },
@@ -117,41 +117,36 @@ export default {
 
   methods: {
     close() {
+      // Reset the workloadRemovalOption to break from the loop for getting the updated workload in case of auto removal option.
+      this.workloadRemovalOption = 'keep';
       this.$emit('close');
     },
 
-    async unlabelAndRedeployWorkload(resource) {
+    async unlabelAndRedeployWorkload(workload, now) {
       try {
-        const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
 
-        //Todo: Keep this block as place holder until the workload type and workload name are got in active policy data
-        // const workload = await this.$store.dispatch('cluster/find', {
-        //   type: WORKLOAD_KIND_TO_TYPE_MAPPING[resource.metadata?.ownerReferences?.[0]?.kind],
-        //   id:   `${ resource.metadata.namespace }/${ resource.metadata.ownerReferences?.[0]?.name }`,
-        // });
+        if (!workload) {
+          return;
+        }
+        const podTemplate = workload.spec?.jobTemplate?.spec?.template ?? workload.spec?.template ?? workload;
 
-        // if (!workload) {
-        //   return;
-        // }
-        // const podTemplate = workload.spec?.jobTemplate?.spec?.template ?? workload.spec?.template;
+        if (!podTemplate) {
+          return;
+        }
 
-        // if (!podTemplate) {
-        //   return;
-        // }
+        const templateMetadata = podTemplate.metadata ??= {};
+        const labels = templateMetadata.labels ??= {};
 
-        // const templateMetadata = podTemplate.metadata ??= {};
-        // const labels = templateMetadata.labels ??= {};
+        delete labels[POLICY_LABEL_KEY];
 
-        // delete labels[POLICY_LABEL_KEY];
+        if (workload.kind !== 'CronJob' && workload.kind !== 'Job') {
+          const metadata = workload.spec.template.metadata ??= {};
+          const annotations = metadata.annotations ??= {};
 
-        // const metadata = workload.spec.template.metadata ??= {};
-        // const annotations = metadata.annotations ??= {};
+          annotations[TIMESTAMP] = now;
+        }
 
-        // annotations[TIMESTAMP] = now;
-
-        // await workload.save();
-
-        //Todo-end
+        await workload.save({ force: true });
 
       } catch (err) {
         this.errors = exceptionToErrorsArray(err);
@@ -161,24 +156,70 @@ export default {
     async deletePolicies() {
       this.deleteInProgress = true;
       await Promise.all((this.resources || []).map(async (resource) => {
-        const resourceBackup = { ...resource };
 
-        await resource?.remove?.();
+        const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+
+
         if (this.workloadRemovalOption === 'auto') {
-          await this.unlabelAndRedeployWorkload(resourceBackup);
+          const workload = await this.$store.dispatch('cluster/find', {
+            type: WORKLOAD_KIND_TO_TYPE_MAPPING[resource.workloadRef?.workloadType],
+            id:   `${ resource.metadata.namespace }/${ resource.workloadRef?.workloadName }`,
+          });
+
+          await this.unlabelAndRedeployWorkload(workload, now);
+
+          // Remove the policy once the workload has been redeployed or if the user chose to keep the workload
+          // use a loop to wait for the workload to be redeployed before removing the policy
+          while (this.workloadRemovalOption === 'auto') {
+            const updatedWorkload = await this.$store.dispatch('cluster/find', {
+              type: WORKLOAD_KIND_TO_TYPE_MAPPING[workload?.kind],
+              id:   `${ workload.metadata.namespace }/${ workload.name }`,
+              opt:  { force: true },
+            });
+
+            if (!updatedWorkload) {
+              break;
+            }
+
+            const podTemplate = updatedWorkload.spec?.jobTemplate?.spec?.template ?? updatedWorkload.spec?.template;
+
+            if (!podTemplate) {
+              break;
+            }
+
+            const templateMetadata = podTemplate.metadata ??= {};
+            const labels = templateMetadata.labels ??= {};
+
+            if (!labels[POLICY_LABEL_KEY]) {
+              break;
+            }
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        }
+        // For the case of auto removing labels from workloads, wait for 5 seconds before removing the policy to ensure that the workload has been redeployed
+        // and ReplicaSet has been synced for the policy label removal. The timing is not predictable. (5 seconds is a safe bet for now according to testing)
+        // The sync up latency could cause the removal failure as the policy label is still present on the replicaSet.
+        if (this.workloadRemovalOption === 'auto') {
+          await new Promise(resolve => setTimeout(resolve, 5000));
+        }
+        try {
+          await resource?.remove?.();
+          this.deleteInProgress = false;
+        } catch (err) {
+          this.$store.dispatch('growl/error', { title: this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.title.error'), message: err.message });
         }
       }));
-
-      this.deleteInProgress = false;
-      this.$store.dispatch('growl/success', { title: this.growlTitle, message: this.growlMessage });
-      this.$router.push({
-        name:   `c-cluster-${ PRODUCT_NAME }-resource`,
-        params: {
-          cluster: this.$route.params.cluster,
-          product: PRODUCT_NAME
-        }
-      });
-      this.close();
+      if (!this.deleteInProgress) {
+        this.$store.dispatch('growl/success', { title: this.growlTitle, message: this.growlMessage });
+        this.$router.push({
+          name:   `c-cluster-${ PRODUCT_NAME }-resource`,
+          params: {
+            cluster: this.$route.params.cluster,
+            product: PRODUCT_NAME
+          }
+        });
+        this.close();
+      }
     },
   },
 };

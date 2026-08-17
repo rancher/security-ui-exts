@@ -163,3 +163,5 @@ export const APPLY_MODE = {
 } as const;
 
 export type ApplyMode = typeof APPLY_MODE[keyof typeof APPLY_MODE];
+
+export const WORKLOAD_RESTART_TS_LABEL_KEY = 'kubectl.kubernetes.io/restartedAt';

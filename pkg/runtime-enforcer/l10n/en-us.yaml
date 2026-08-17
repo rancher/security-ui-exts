@@ -155,6 +155,7 @@ runtimeEnforcer:
         title:
           single: Policy Proposal Deleted
           bulk: Policy Proposals Deleted
+          error: Failed to delete
         single: The {name} policy proposal has been successfully deleted. Restarting the corresponding workload might take a few minutes to complete.
         bulk: The selected policy proposals ({count}) have been successfully deleted. Restarting the corresponding workloads might take a few minutes to complete.
     promoteDialog:
@@ -311,6 +312,7 @@ runtimeEnforcer:
         title:
           single: Active Policy Deleted
           bulk: Active Policies Deleted
+          error: Failed to delete
         delete:
           single: The {name} active policy has been successfully deleted.
           bulk: The selected active policies ({count}) have been successfully deleted.

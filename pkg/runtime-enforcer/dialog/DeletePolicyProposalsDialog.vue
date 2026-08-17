@@ -115,25 +115,30 @@ export default {
     },
 
     async deletePolicies() {
-      this.deleteInProgress = true;
-      await Promise.all((this.resources || []).map(async (resource) => {
-        const resourceBackup = { ...resource };
-        await resource?.remove?.();
-        await this.redeployWorkload(resourceBackup);
-      }));
+      try {
+        this.deleteInProgress = true;
+        await Promise.all((this.resources || []).map(async (resource) => {
+          const resourceBackup = { ...resource };
 
-      this.deleteInProgress = false;
+          await resource?.remove?.();
+          await this.redeployWorkload(resourceBackup);
+        }));
 
-      this.$store.dispatch('growl/success', { title: this.growlTitle, message: this.growlMessage });
+        this.deleteInProgress = false;
 
-      this.$router.push({
-        name:   `c-cluster-${ PRODUCT_NAME }-resource`,
-        params: {
-          cluster: this.$route.params.cluster,
-          product: PRODUCT_NAME
-        }
-      });
-      this.close();
+        this.$store.dispatch('growl/success', { title: this.growlTitle, message: this.growlMessage });
+
+        this.$router.push({
+          name:   `c-cluster-${ PRODUCT_NAME }-resource`,
+          params: {
+            cluster: this.$route.params.cluster,
+            product: PRODUCT_NAME
+          }
+        });
+        this.close();
+      } catch (err) {
+        this.$store.dispatch('growl/error', { title: this.t('runtimeEnforcer.policyProposal.deleteDialog.growl.title.error'), message: err.message });
+      }
     },
   },
 };
