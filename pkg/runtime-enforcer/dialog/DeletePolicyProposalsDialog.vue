@@ -82,16 +82,10 @@ export default {
       try {
         const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
 
-        //Keep this log for debugging some special workload type, like CronJob
-        console.log('Fetch the workload based on type:', resource);
-
         const workload = await this.$store.dispatch('cluster/find', {
           type: WORKLOAD_KIND_TO_TYPE_MAPPING[resource.metadata?.ownerReferences?.[0]?.kind],
           id:   `${ resource.metadata.namespace }/${ resource.metadata.ownerReferences?.[0]?.name }`,
         });
-
-        //Keep this log for debugging some special workload type, like CronJob
-        console.log('After fetching, the workload is:', workload);
 
         if (!workload) {
           return;

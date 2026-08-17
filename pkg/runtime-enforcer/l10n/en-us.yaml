@@ -322,6 +322,7 @@ runtimeEnforcer:
         manualRemoval:
           single: Don't forget to manually remove the labels of the active policy from the workload and redeploy it.
           bulk: Don't forget to manually remove the labels of the active policies from the workloads and redeploy them.
+        workloadNotFound: The workload for the {name} active policy was not found.
     changeModeDialog:
       title:
         single: Change mode for active policy

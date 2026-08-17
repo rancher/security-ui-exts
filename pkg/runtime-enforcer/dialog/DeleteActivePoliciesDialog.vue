@@ -36,6 +36,7 @@ export default {
   data() {
     return {
       deleteInProgress:      false,
+      errors:                [],
       workloadRemovalOption: 'keep',
       _EDIT:                 _EDIT,
       DOCUMENTATION_URL,
@@ -124,11 +125,11 @@ export default {
 
     async unlabelAndRedeployWorkload(workload, now) {
       try {
-
         if (!workload) {
           return;
         }
-        const podTemplate = workload.spec?.jobTemplate?.spec?.template ?? workload.spec?.template ?? workload;
+
+        const podTemplate = workload.spec?.jobTemplate?.spec?.template ?? workload.spec?.template;
 
         if (!podTemplate) {
           return;
@@ -139,7 +140,7 @@ export default {
 
         delete labels[POLICY_LABEL_KEY];
 
-        if (workload.kind !== 'CronJob' && workload.kind !== 'Job') {
+        if (workload.kind !== 'CronJob' && workload.kind !== 'Job' && workload.spec?.template) {
           const metadata = workload.spec.template.metadata ??= {};
           const annotations = metadata.annotations ??= {};
 
@@ -147,7 +148,6 @@ export default {
         }
 
         await workload.save({ force: true });
-
       } catch (err) {
         this.errors = exceptionToErrorsArray(err);
       }
@@ -155,61 +155,63 @@ export default {
 
     async deletePolicies() {
       this.deleteInProgress = true;
-      await Promise.all((this.resources || []).map(async (resource) => {
+      try {
+        await Promise.all((this.resources || []).map(async (resource, index) => {
 
-        const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+          const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
 
 
-        if (this.workloadRemovalOption === 'auto') {
-          const workload = await this.$store.dispatch('cluster/find', {
-            type: WORKLOAD_KIND_TO_TYPE_MAPPING[resource.workloadRef?.workloadType],
-            id:   `${ resource.metadata.namespace }/${ resource.workloadRef?.workloadName }`,
-          });
-
-          await this.unlabelAndRedeployWorkload(workload, now);
-
-          // Remove the policy once the workload has been redeployed or if the user chose to keep the workload
-          // use a loop to wait for the workload to be redeployed before removing the policy
-          while (this.workloadRemovalOption === 'auto') {
-            const updatedWorkload = await this.$store.dispatch('cluster/find', {
-              type: WORKLOAD_KIND_TO_TYPE_MAPPING[workload?.kind],
-              id:   `${ workload.metadata.namespace }/${ workload.name }`,
-              opt:  { force: true },
+          if (this.workloadRemovalOption === 'auto') {
+            const workload = await this.$store.dispatch('cluster/find', {
+              type: WORKLOAD_KIND_TO_TYPE_MAPPING[resource.workloadRef?.workloadType],
+              id:   `${ resource.metadata.namespace }/${ resource.workloadRef?.workloadName }`,
             });
 
-            if (!updatedWorkload) {
-              break;
+            if (!workload) {
+              this.$store.dispatch('growl/error', { title: this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.title.error'), message: this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.workloadNotFound', { name: resource.workloadRef?.workloadName })  });
+
+              return;
             }
 
-            const podTemplate = updatedWorkload.spec?.jobTemplate?.spec?.template ?? updatedWorkload.spec?.template;
+            await this.unlabelAndRedeployWorkload(workload, now);
 
-            if (!podTemplate) {
-              break;
+            // Remove the policy once the workload has been redeployed or if the user chose to keep the workload
+            // use a loop to wait for the workload to be redeployed before removing the policy
+            while (this.workloadRemovalOption === 'auto') {
+              const updatedWorkload = await this.$store.dispatch('cluster/find', {
+                type: WORKLOAD_KIND_TO_TYPE_MAPPING[workload?.kind],
+                id:   `${ workload.metadata.namespace }/${ workload.name }`,
+                opt:  { force: true },
+              });
+
+              if (!updatedWorkload) {
+                break;
+              }
+
+              const podTemplate = updatedWorkload.spec?.jobTemplate?.spec?.template ?? updatedWorkload.spec?.template;
+
+              if (!podTemplate) {
+                break;
+              }
+
+              const templateMetadata = podTemplate.metadata ??= {};
+              const labels = templateMetadata.labels ??= {};
+
+              if (!labels[POLICY_LABEL_KEY]) {
+                break;
+              }
+              await new Promise(resolve => setTimeout(resolve, 2000));
             }
-
-            const templateMetadata = podTemplate.metadata ??= {};
-            const labels = templateMetadata.labels ??= {};
-
-            if (!labels[POLICY_LABEL_KEY]) {
-              break;
-            }
-            await new Promise(resolve => setTimeout(resolve, 2000));
           }
-        }
-        // For the case of auto removing labels from workloads, wait for 5 seconds before removing the policy to ensure that the workload has been redeployed
-        // and ReplicaSet has been synced for the policy label removal. The timing is not predictable. (5 seconds is a safe bet for now according to testing)
-        // The sync up latency could cause the removal failure as the policy label is still present on the replicaSet.
-        if (this.workloadRemovalOption === 'auto') {
-          await new Promise(resolve => setTimeout(resolve, 5000));
-        }
-        try {
+          // For the case of auto removing labels from workloads, wait for 5 seconds before removing the policy to ensure that the workload has been redeployed
+          // and ReplicaSet has been synced for the policy label removal. The timing is not predictable. (5 seconds is a safe bet for now according to testing)
+          // The sync up latency could cause the removal failure as the policy label is still present on the replicaSet.
+          if (this.workloadRemovalOption === 'auto') {
+            await new Promise(resolve => setTimeout(resolve, 5000));
+          }
           await resource?.remove?.();
-          this.deleteInProgress = false;
-        } catch (err) {
-          this.$store.dispatch('growl/error', { title: this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.title.error'), message: err.message });
-        }
-      }));
-      if (!this.deleteInProgress) {
+        }));
+        this.deleteInProgress = false;
         this.$store.dispatch('growl/success', { title: this.growlTitle, message: this.growlMessage });
         this.$router.push({
           name:   `c-cluster-${ PRODUCT_NAME }-resource`,
@@ -219,6 +221,8 @@ export default {
           }
         });
         this.close();
+      } catch (err) {
+        this.$store.dispatch('growl/error', { title: this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.title.error'), message: err.message });
       }
     },
   },
