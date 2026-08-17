@@ -1,10 +1,8 @@
 <script>
-import jsyaml from 'js-yaml';
 import { Card } from '@components/Card';
 import { Banner } from '@components/Banner';
 import RcButton from '@components/RcButton/RcButton.vue';
 import LabeledSelect from '@shell/components/form/LabeledSelect';
-import { downloadFile } from '@shell/utils/download';
 import { POLICY_MODE } from '../types/runtime-enforcer';
 
 export default {
@@ -131,42 +129,50 @@ export default {
       >
         {{ bannerText }}
       </Banner>
-      <p
-        v-clean-html="confirmText"
-      />
-      <LabeledSelect
-        v-if="showModeSelect"
-        class="export-mode-select"
-        v-model:value="targetMode"
-        :options="modeOptions"
-      />
-      <div v-else class="mode-change-direction">
+      <template v-if="showModeSelect">
+        <p
+          class="export-confirm-text"
+          v-clean-html="confirmText"
+        />
+        <LabeledSelect
+          class="export-mode-select"
+          v-model:value="targetMode"
+          :options="modeOptions"
+        />
+      </template>
+      <p v-else class="export-confirm-text confirm-with-direction">
         <span
-          class="text-wrap"
-        ><img
-            :src="modeIconImgSrc(transitionDirection.from)"
+          class="confirm-inline-text"
+          v-clean-html="confirmText"
+        />
+        <span class="mode-change-direction">
+          <span
+            class="text-wrap"
+          ><img
+              :src="modeIconImgSrc(transitionDirection.from)"
+              alt=""
+              width="16"
+              height="16"
+              class="mode-icon"
+            ><span class="mode-text" :class="transitionDirection.from.toLowerCase()">{{ modetext(transitionDirection.from) }}</span></span>
+          <img
+            :src="arrowImgSrc()"
             alt=""
             width="16"
             height="16"
             class="mode-icon"
-          ><span class="mode-text" :class="transitionDirection.from.toLowerCase()">{{ modetext(transitionDirection.from) }}</span></span>
-        <img
-          :src="arrowImgSrc()"
-          alt=""
-          width="16"
-          height="16"
-          class="mode-icon"
-        >
-        <span
-          class="text-wrap"
-        ><img
-            :src="modeIconImgSrc(transitionDirection.to)"
-            alt=""
-            width="16"
-            height="16"
-            class="mode-icon"
-          ><span class="mode-text" :class="transitionDirection.to.toLowerCase()">{{ modetext(transitionDirection.to) }}</span></span>
-      </div>
+          >
+          <span
+            class="text-wrap"
+          ><img
+              :src="modeIconImgSrc(transitionDirection.to)"
+              alt=""
+              width="16"
+              height="16"
+              class="mode-icon"
+            ><span class="mode-text" :class="transitionDirection.to.toLowerCase()">{{ modetext(transitionDirection.to) }}</span></span>
+          </span>
+        </p>
     </template>
     <template #actions>
       <RcButton
@@ -201,13 +207,46 @@ export default {
     margin: 16px 0 24px;
   }
 
+  .export-confirm-text {
+    margin: 0 0 16px;
+  }
+
+  .confirm-with-direction {
+    margin-bottom: 20px;
+
+    .confirm-inline-text {
+      display: inline;
+      line-height: 21px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+
+      :deep(p) {
+        display: inline;
+        margin: 0;
+        line-height: 21px;
+      }
+    }
+
+    .mode-change-direction {
+      display: inline-flex;
+      align-items: center;
+      line-height: 21px;
+      gap: 8px;
+      margin-top: 0;
+      margin-bottom: 0;
+      margin-left: 8px;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+  }
+
   .mode-change-direction {
     margin-top: 8px;
     margin-bottom: 20px;
   }
 
   .export-mode-select {
-    margin-top: 16px;
+    display: inline-block;
     margin-bottom: 20px;
   }
   .text-wrap {

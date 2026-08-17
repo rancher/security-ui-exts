@@ -99,7 +99,7 @@
                   <div
                       v-for="(exec, eIdx) in c.executables"
                       :key="eIdx"
-                      class="executable-row row mb-10"
+                      class="executable-row row mb-11"
                   >
 
                     <div class="col span-6">
@@ -379,7 +379,6 @@ export default {
   .align-vertical-center {
     display: flex;
     align-items: center;
-    height: 54px;
   }
 
   .cursor-pointer {
@@ -389,6 +388,10 @@ export default {
   .px-12 {
     padding-left: 12px;
     padding-right: 12px;
+  }
+
+  .mb-11 {
+    margin-bottom: 11px;
   }
 }
 </style>
