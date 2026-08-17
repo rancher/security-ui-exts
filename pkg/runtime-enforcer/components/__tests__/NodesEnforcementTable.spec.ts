@@ -92,10 +92,10 @@ describe('NodesEnforcementTable.vue', () => {
 
     expect(rows).toHaveLength(1);
     expect(rows[0]).toEqual({
-      id: 'failed-node-prod-eu-12',
-      status: 'EBPFVerifierRejected',
-      since: 'Jun 15, 2026 09:45 AM',
-      node: 'node-prod-eu-12',
+      id:      'failed-node-prod-eu-12',
+      status:  'Failed',
+      since:   'Jun 15, 2026 09:45 AM',
+      node:    'node-prod-eu-12',
       message: 'verifier rejected program: unknown helper id 188',
     });
   });

@@ -62,7 +62,7 @@ const rows = computed<PolicyNodeStatusRow[]>(() => {
     Object.entries(status.nodesWithIssues).forEach(([nodeName, nodeStatus]) => {
       items.push({
         id:      `failed-${nodeName}`,
-        status:  nodeStatus.code || 'Failed',
+        status:  'Failed',
         since:   formatDate(nodeStatus.since),
         node:    nodeName,
         message: nodeStatus.message || '-',
