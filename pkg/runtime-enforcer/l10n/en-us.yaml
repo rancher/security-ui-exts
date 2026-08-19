@@ -2,6 +2,7 @@ product:
   runtimeEnforcer: Runtime Enforcer
 typeLabel:
   security.rancher.io.workloadpolicyproposal: Policy Proposals
+  security.rancher.io.workloadpolicy: Active Policies
 
 runtimeEnforcer:
   policyProposals:
