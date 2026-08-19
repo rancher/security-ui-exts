@@ -1,5 +1,5 @@
 import SteveModel from '@shell/plugins/steve/steve-class';
-import { RESOURCE, POLICY_LABEL_KEY, PRODUCT_NAME } from '../types/runtime-enforcer';
+import { RESOURCE, POLICY_LABEL_KEY } from '../types/runtime-enforcer';
 import { WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
 
 export default class WorkloadPolicyProposal extends SteveModel {
@@ -169,6 +169,15 @@ export default class WorkloadPolicyProposal extends SteveModel {
       component:  'DeleteActivePoliciesDialog',
       resources:  Array.isArray(resources) ? resources : [resources],
       modalWidth: '640',
+    });
+  }
+
+  allowExecutables(targets) {
+    this.$dispatch('promptModal', {
+      component:      'AllowExecutableDialog',
+      resources:      [this],
+      componentProps: { targets },
+      modalWidth:     '640',
     });
   }
 

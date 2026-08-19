@@ -18,6 +18,7 @@ import ExpandableDescription from '@common/components/ExpandableDescription.vue'
 import { WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
 import AllowedExecutablesTable from "@runtime-enforcer/components/AllowedExecutablesTable.vue";
 import NodesEnforcementTable from "@runtime-enforcer/components/NodesEnforcementTable.vue";
+import ViolationsTable from "@runtime-enforcer/components/ViolationsTable.vue";
 
 const props = defineProps<{
   value: any;
@@ -207,6 +208,11 @@ const metaProperties = computed<MetadataProperty[]>(() => [
             :weight="20"
             :label="t('runtimeEnforcer.activePolicy.tabs.violations')"
         >
+          <ViolationsTable
+              :policy="policy"
+              :violations="policy.status?.violations"
+              :image-map="policy.workloadRef?.imageMap"
+          />
         </Tab>
       </ResourceTabs>
     </template>

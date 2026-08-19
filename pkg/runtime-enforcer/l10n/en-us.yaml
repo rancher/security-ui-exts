@@ -390,4 +390,36 @@ runtimeEnforcer:
         executable: Executable
         container: Container
         image: Image
+    violations:
+      filterPlaceholder: Filter
+      allow: Allow
+      selectedCount: selected
+      table:
+        executable: Executable
+        occurrences: Occurrences
+        container: Container
+        image: Image
+        node: Node
+        lastOccurrence: Last Occurrence
+        age: Age
+    allowDialog:
+      title:
+        single: Allow executable
+        bulk: Allow executables
+      banner:
+        single: This will create a new entry in the list of allowed executables, but will not erase the history of violations that happened so far on this executable.
+        bulk: This will create new entries in the list of allowed executables, but will not erase the history of violations that happened so far on these executables.
+      confirm:
+        single: Are you sure you want to add the <b>{path}</b> executable to the list of allowed executables?
+        bulk: Are you sure you want to add the <b>selected executables ({count})</b> to the allowed list?
+      cancel: Cancel
+      allow: Allow
+      errorTitle: Error allowing executable
+      growl:
+        title:
+          single: Executable allowed
+          bulk: Executables allowed
+        message:
+          single: '{path} has been added to the list of allowed executables.'
+          bulk: '{count} executables have been added to the list of allowed executables.'
 
