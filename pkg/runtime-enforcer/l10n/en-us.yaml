@@ -375,6 +375,11 @@ runtimeEnforcer:
       violations: Violations
     nodesEnforcement:
       failedTooltip: Failed to enforce the active policy on this node.
+      readyMessage: |-
+        {count, plural,
+        =1 {node is successfully enforcing this policy}
+        other {nodes are successfully enforcing this policy}
+        }
       table:
         status: Status
         since: Since

@@ -4,6 +4,7 @@ import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import SortableTable from '@shell/components/SortableTable';
 import StatusBadge from '@runtime-enforcer/components/common/StatusBadge.vue';
+import type { PolicyStatus, PolicyNodeStatus } from '@runtime-enforcer/types';
 import * as dayjsImport from 'dayjs';
 import * as utcImport from 'dayjs/plugin/utc';
 
@@ -11,16 +12,6 @@ const dayjs = (dayjsImport as any).default || dayjsImport;
 const utc = (utcImport as any).default || utcImport;
 
 dayjs.extend(utc);
-
-interface PolicyStatus {
-  code: string;
-  message?: string;
-  since?: string | number | Date;
-}
-
-interface PolicyNodeStatus extends PolicyStatus {
-  nodeName: string;
-}
 
 interface PolicyNodeStatusRow {
   id: string;
@@ -72,30 +63,28 @@ const rows = computed<PolicyNodeStatusRow[]>(() => {
 
   if (status.nodesTransitioning) {
     status.nodesTransitioning.forEach((nodeStatus) => {
-      const nodeName = typeof nodeStatus === 'string' ? nodeStatus : nodeStatus.nodeName;
-      const sinceVal = typeof nodeStatus === 'string' ? undefined : nodeStatus.since;
-
       items.push({
-        id:      `transitioning-${nodeName}`,
+        id:      `transitioning-${nodeStatus.nodeName}`,
         status:  'Transitioning',
-        since:   formatDate(sinceVal),
-        node:    nodeName,
+        since:   formatDate(nodeStatus.since),
+        node:    nodeStatus.nodeName || '-',
         message: nodeStatus.message || '-',
       });
     });
   }
 
-  const knownIssueCount = items.length;
-  const total = status.totalNodes || 0;
-  const readyCount = status.successfulNodes ?? Math.max(0, total - knownIssueCount);
+  // Ready nodes are only ever reported as a count by the backend - individual
+  // node names are not tracked for nodes without issues - so we render a
+  // single aggregate row instead of fabricating per-node rows.
+  const readyCount = status.successfulNodes || 0;
 
-  for (let i = 0; i < readyCount; i++) {
+  if (readyCount > 0) {
     items.push({
-      id:      `ready-node-${i}`,
+      id:      'ready-nodes',
       status:  'Ready',
       since:   '-',
-      node:    `node-${i + 1}`,
-      message: '-',
+      node:    '-',
+      message: `${ readyCount } ${ t('runtimeEnforcer.activePolicy.nodesEnforcement.readyMessage', { count: readyCount }, true) }`,
     });
   }
 

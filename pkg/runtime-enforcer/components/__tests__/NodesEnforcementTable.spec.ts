@@ -77,7 +77,7 @@ describe('NodesEnforcementTable.vue', () => {
     const status = {
       nodesWithIssues: {
         'node-prod-eu-12': {
-          code: 'EBPFVerifierRejected',
+          code: 'Failed',
           message: 'verifier rejected program: unknown helper id 188',
           since: '2026-06-15T09:45:00Z',
         },
@@ -98,6 +98,60 @@ describe('NodesEnforcementTable.vue', () => {
       node:    'node-prod-eu-12',
       message: 'verifier rejected program: unknown helper id 188',
     });
+  });
+
+  it('correctly maps nodesTransitioning objects into table rows with a per-node since', () => {
+    const status = {
+      nodesTransitioning: [
+        { nodeName: 'node-prod-eu-23', code: 'Transitioning', since: '2026-06-28T17:00:00Z' },
+      ],
+      totalNodes: 1,
+      successfulNodes: 0,
+    };
+
+    const wrapper = createWrapper({ status });
+    const sortableTable = wrapper.findComponent({ name: 'SortableTable' });
+    const rows = sortableTable.props('rows');
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toEqual({
+      id:      'transitioning-node-prod-eu-23',
+      status:  'Transitioning',
+      since:   'Jun 28, 2026 05:00 PM',
+      node:    'node-prod-eu-23',
+      message: '-',
+    });
+  });
+
+  it('renders a single aggregate row for ready nodes instead of fabricating per-node rows', () => {
+    const status = { totalNodes: 5, successfulNodes: 5 };
+
+    const wrapper = createWrapper({ status });
+    const sortableTable = wrapper.findComponent({ name: 'SortableTable' });
+    const rows = sortableTable.props('rows');
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      id:     'ready-nodes',
+      status: 'Ready',
+      since:  '-',
+      node:   '-',
+    });
+    expect(rows[0].message).toContain('5');
+  });
+
+  it('omits the ready row entirely when there are no successful nodes', () => {
+    const status = {
+      nodesWithIssues: { 'node-1': { code: 'Failed', message: 'boom', since: '2026-06-15T09:45:00Z' } },
+      totalNodes: 1,
+      successfulNodes: 0,
+    };
+
+    const wrapper = createWrapper({ status });
+    const sortableTable = wrapper.findComponent({ name: 'SortableTable' });
+    const rows = sortableTable.props('rows');
+
+    expect(rows.find((row: any) => row.id === 'ready-nodes')).toBeUndefined();
   });
 
   it('defines headers with expected translation keys and configurations', () => {

@@ -66,18 +66,38 @@ export interface WorkloadPolicyProposal {
   spec?: WorkloadPolicyProposalSpec;
 }
 
-export interface WorkloadPolicyIssue {
-  code?: string;
+export const POLICY_CODE = {
+  UNKNOWN:       '',
+  READY:         'Ready',
+  MISSING:       'Missing',
+  FAILED:        'Failed',
+  TRANSITIONING: 'Transitioning',
+} as const;
+
+export type PolicyCode = typeof POLICY_CODE[keyof typeof POLICY_CODE];
+
+export interface PolicyStatus {
+  code?: PolicyCode;
   message?: string;
+  since?: string;
 }
 
-export interface WorkloadPolicyViolation {
-  timestamp?: string;
-  action?: string;
+export interface PolicyNodeStatus extends PolicyStatus {
   nodeName?: string;
+}
+
+export interface ViolationRecord {
+  id?: number;
+  lastObservedTimestamp?: string;
+  firstObservedTimestamp?: string;
+  occurrences?: number;
   podName?: string;
   containerName?: string;
   executablePath?: string;
+  nodeName?: string;
+  action?: string;
+  workloadName?: string;
+  workloadKind?: string;
 }
 
 export interface WorkloadPolicyStatus {
@@ -87,10 +107,11 @@ export interface WorkloadPolicyStatus {
   successfulNodes?: number;
   transitioningNodes?: number;
   failedNodes?: number;
-  nodesTransitioning?: string[];
-  nodesWithIssues?: Record<string, WorkloadPolicyIssue>;
+  nodesTransitioning?: PolicyNodeStatus[];
+  nodesWithIssues?: Record<string, PolicyStatus>;
   violationCount?: number;
-  violations?: WorkloadPolicyViolation[];
+  activeViolationCount?: number;
+  violations?: ViolationRecord[];
 }
 
 export interface WorkloadPolicySpec {
