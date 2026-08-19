@@ -98,8 +98,8 @@
                   :label="`${c.name} (${c.executables.length})`"
                   :show-header="false"
               >
-                <div class="container-content custom-content-bg p-20">
-                  <div class="row mb-20">
+                <div class="container-content p-24">
+                  <div class="row mb-24">
                     <div class="col span-6">
                       <LabeledInput
                           :value="c.name"
@@ -121,8 +121,8 @@
                     </div>
                   </div>
 
-                  <div class="executables-header mb-10 d-flex align-center">
-                    <label class="text-bold m-0">
+                  <div class="executables-header mb-16 d-flex align-center">
+                    <label class="executables-title m-0">
                       {{ t('runtimeEnforcer.policyProposal.allowedExecutables') }}
                     </label>
                     <i class="icon icon-info ml-5 text-muted" />
@@ -478,10 +478,28 @@ body.re-custom-policy-edit {
 
 <style lang="scss" scoped>
 .active-policy-edit {
-  .custom-content-bg {
-    background-color: var(--nav-bg, #f4f5f8);
-    border: 1px solid var(--border);
-    border-radius: var(--border-radius);
+  :deep(.tab-container) {
+    border: none;
+    padding: 0;
+  }
+
+  .container-content {
+    background: transparent;
+    border: none;
+    padding: 24px;
+  }
+
+  .executables-header {
+    display: flex;
+    align-items: center;
+
+    .executables-title {
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 21px;
+      color: var(--body-text);
+      cursor: default;
+    }
   }
 
   .executable-row {
@@ -505,6 +523,15 @@ body.re-custom-policy-edit {
   }
   .mb-11 {
     margin-bottom: 11px;
+  }
+  .p-24 {
+    padding: 24px;
+  }
+  .mb-24 {
+    margin-bottom: 24px;
+  }
+  .mb-16 {
+    margin-bottom: 16px;
   }
 }
 </style>
