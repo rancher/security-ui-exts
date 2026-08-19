@@ -1,5 +1,5 @@
 import SteveModel from '@shell/plugins/steve/steve-class';
-import { RESOURCE, POLICY_LABEL_KEY } from '../types/runtime-enforcer';
+import { POLICY_LABEL_KEY } from '../types/runtime-enforcer';
 import { WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
 
 export default class WorkloadPolicyProposal extends SteveModel {
@@ -181,16 +181,11 @@ export default class WorkloadPolicyProposal extends SteveModel {
     });
   }
 
-  /*
-   ToDo: Need a ExportActivePoliciesDialog component to handle the export of active policies.
-   The current implementation is a placeholder and should be replaced with the actual dialog component when it is available.
-  */
   exportPolicy(resources = this) {
     this.$dispatch('promptModal', {
-      component:      'ExportPolicyDialog',
-      resources:      Array.isArray(resources) ? resources : [resources],
-      componentProps: { type: RESOURCE.ACTIVE_POLICIES },
-      modalWidth:     '640',
+      component:  'ExportActivePoliciesDialog',
+      resources:  Array.isArray(resources) ? resources : [resources],
+      modalWidth: '640',
     });
   }
 

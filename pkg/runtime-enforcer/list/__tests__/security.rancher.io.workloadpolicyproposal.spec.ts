@@ -288,7 +288,7 @@ describe('security.rancher.io.workloadpolicyproposal list', () => {
     (wrapper.vm as any).exportSelected();
 
     expect(mockStoreDispatch).toHaveBeenCalledWith('cluster/promptModal', {
-      component:  'ExportPolicyDialog',
+      component:  'ExportPolicyProposalsDialog',
       resources:  selected,
       modalWidth: '640',
     });
@@ -360,7 +360,11 @@ describe('security.rancher.io.workloadpolicyproposal list', () => {
 
   it('fetches a single page of workload resources for the current owner kind', async() => {
     const wrapper = makeWrapper({ canCreate: false });
-    const page = [{ metadata: { namespace: 'team-a', name: 'nginx', ownerReferences: [{ kind: 'Deployment' }] } }];
+    const page = [{
+      metadata: {
+        namespace: 'team-a', name: 'nginx', ownerReferences: [{ kind: 'Deployment' }]
+      }
+    }];
 
     mockStoreDispatch.mockResolvedValueOnce([{ metadata: { name: 'nginx' } }]);
 
@@ -369,7 +373,7 @@ describe('security.rancher.io.workloadpolicyproposal list', () => {
     expect(mockStoreDispatch).toHaveBeenCalledWith('cluster/findPage', {
       type: 'apps.deployment',
       opt:  expect.objectContaining({
-        force: false,
+        force:      false,
         pagination: expect.anything(),
       }),
     });

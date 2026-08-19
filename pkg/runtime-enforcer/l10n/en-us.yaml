@@ -338,9 +338,14 @@ runtimeEnforcer:
       cancel: Cancel
       changeMode: Change Mode
     exportDialog:
+      title:
+        single: Export active policy
+        bulk: Export active policies
       confirm:
-        single: 'Are you sure you want to export the <b>{name}</b> active policy? If so, please select the target mode below.'
-        bulk: 'Are you sure you want to export the <b>selected active policies ({count})</b>? If so, please select the target mode below.'
+        single: 'Are you sure you want to export the <b>{name}</b> active policy?'
+        bulk: 'Are you sure you want to export the <b>selected active policies ({count})</b>?'
+      cancel: Cancel
+      export: Export
     import:
       instruction: You can import multiple policies at the same time by separating their YAML using `---` as divider.
   activePolicy:
@@ -392,7 +397,6 @@ runtimeEnforcer:
         container: Container
         image: Image
     violations:
-      filterPlaceholder: Filter
       allow: Allow
       selectedCount: selected
       table:

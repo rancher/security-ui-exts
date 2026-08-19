@@ -5,7 +5,7 @@ import { Banner } from '@components/Banner';
 import RcButton from '@components/RcButton/RcButton.vue';
 import LabeledSelect from '@shell/components/form/LabeledSelect';
 import { downloadFile } from '@shell/utils/download';
-import { POLICY_MODE, RESOURCE } from '../types/runtime-enforcer';
+import { POLICY_MODE } from '../types/runtime-enforcer';
 
 export default {
   emits: ['close'],
@@ -22,22 +22,14 @@ export default {
       type:    Array,
       default: () => [],
     },
-    type: {
-      type:    String,
-      default: RESOURCE.POLICY_PROPOSALS,
-    },
   },
 
   data() {
-    return {
-      targetMode: POLICY_MODE.MONITOR,
-      RESOURCE,
-    };
+    return { targetMode: POLICY_MODE.MONITOR };
   },
 
   computed: {
     isBulk() {
-      console.log('type', this.type);
       return this.resources.length > 1;
     },
 
@@ -57,12 +49,9 @@ export default {
     },
 
     confirmText() {
-      return this.type === RESOURCE.POLICY_PROPOSALS ? (this.isBulk
+      return this.isBulk
         ? this.t('runtimeEnforcer.policyProposal.exportDialog.confirm.bulk', { count: this.resources.length }, true)
-        : this.t('runtimeEnforcer.policyProposal.exportDialog.confirm.single', { name: this.resources[0]?.nameDisplay }, true)) : (this.isBulk
-        ? this.t('runtimeEnforcer.activePolicies.exportDialog.confirm.bulk', { count: this.resources.length }, true)
-        : this.t('runtimeEnforcer.activePolicies.exportDialog.confirm.single', { name: this.resources[0]?.nameDisplay }, true)
-      );
+        : this.t('runtimeEnforcer.policyProposal.exportDialog.confirm.single', { name: this.resources[0]?.nameDisplay }, true);
     },
   },
 
@@ -75,7 +64,7 @@ export default {
     // a single YAML file, but with all selected proposals as separate documents joined by '---'.
     async exportPolicies() {
       const yaml = this.resources
-        .map((resource) => jsyaml.dump(this.type === RESOURCE.POLICY_PROPOSALS ? resource.toActivePolicyResource(this.targetMode) : resource))
+        .map((resource) => jsyaml.dump(resource.toActivePolicyResource(this.targetMode)))
         .join('---\n');
 
       const fileName = this.isBulk ? 'active-policies.yaml' : `${ this.resources[0]?.metadata?.name || this.resources[0]?.nameDisplay }.yaml`;
@@ -100,7 +89,6 @@ export default {
     </template>
     <template #body>
       <Banner
-        v-if="type === RESOURCE.POLICY_PROPOSALS"
         class="export-banner"
         color="info"
       >

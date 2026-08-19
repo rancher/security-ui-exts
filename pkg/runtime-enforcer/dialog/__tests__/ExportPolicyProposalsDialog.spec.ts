@@ -1,5 +1,5 @@
 import { shallowMount } from '@vue/test-utils';
-import ExportPolicyDialog from '../ExportPolicyDialog.vue';
+import ExportPolicyProposalsDialog from '../ExportPolicyProposalsDialog.vue';
 import { downloadFile } from '@shell/utils/download';
 
 jest.mock('@shell/utils/download', () => ({ downloadFile: jest.fn() }));
@@ -18,13 +18,13 @@ const createResource = (name: string) => ({
 });
 
 const mountDialog = (resources: any[]) => {
-  return shallowMount(ExportPolicyDialog as any, {
+  return shallowMount(ExportPolicyProposalsDialog as any, {
     props:  { resources },
     global: { mocks: { t } },
   });
 };
 
-describe('ExportPolicyDialog', () => {
+describe('ExportPolicyProposalsDialog', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });

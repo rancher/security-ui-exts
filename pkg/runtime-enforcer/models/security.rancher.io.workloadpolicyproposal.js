@@ -1,5 +1,5 @@
 import SteveModel from '@shell/plugins/steve/steve-class';
-import { WORKLOAD_KIND_TO_TYPE_MAPPING,  } from '@shell/config/types';
+import { WORKLOAD_KIND_TO_TYPE_MAPPING  } from '@shell/config/types';
 import { PRODUCT_NAME, RESOURCE, WORKLOAD_POLICY_KIND } from '../types/runtime-enforcer';
 import { PROMOTE_LABEL_KEY } from '@runtime-enforcer/types';
 
@@ -120,9 +120,7 @@ export default class WorkloadPolicyProposal extends SteveModel {
       metadata:   {
         name:      this.metadata?.name,
         namespace: this.metadata?.namespace,
-        labels: {
-          [PROMOTE_LABEL_KEY]: 'true',
-        }
+        labels:    { [PROMOTE_LABEL_KEY]: 'true' }
       },
       spec: {
         mode,
@@ -175,7 +173,7 @@ export default class WorkloadPolicyProposal extends SteveModel {
 
   exportPolicy(resources = this) {
     this.$dispatch('promptModal', {
-      component:  'ExportPolicyDialog',
+      component:  'ExportPolicyProposalsDialog',
       resources:  Array.isArray(resources) ? resources : [resources],
       modalWidth: '640',
     });

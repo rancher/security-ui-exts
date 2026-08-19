@@ -167,7 +167,7 @@ function exportSelected() {
     return;
   }
   store.dispatch('cluster/promptModal', {
-    component:  'ExportPolicyDialog',
+    component:  'ExportPolicyProposalsDialog',
     resources:  Array.isArray(selectedRows.value) ? selectedRows.value : [selectedRows.value],
     modalWidth: '640',
   });
