@@ -168,6 +168,7 @@ export const POLICY_STATUS = {
   TRANSITIONING: 'transitioning',
   READY:         'ready',
   FAILED:        'failed',
+  MISSING:       'missing',
 };
 
 export const DOCUMENTATION_URL = 'https://github.com/rancher-sandbox/runtime-enforcer/tree/main/docs';

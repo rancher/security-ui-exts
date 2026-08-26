@@ -258,6 +258,7 @@ runtimeEnforcer:
       transitioning: Transitioning
       ready: Ready
       failed: Failed
+      missing: Missing
       popup:
         nodes: |-
           {count, plural,

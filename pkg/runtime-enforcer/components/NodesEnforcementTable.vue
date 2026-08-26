@@ -51,9 +51,11 @@ const rows = computed<PolicyNodeStatusRow[]>(() => {
 
   if (status.nodesWithIssues) {
     Object.entries(status.nodesWithIssues).forEach(([nodeName, nodeStatus]) => {
+      const isMissing = nodeStatus.code?.toLowerCase() === 'missing';
+
       items.push({
-        id:      `failed-${nodeName}`,
-        status:  'Failed',
+        id:      `issue-${ nodeName }`,
+        status:  isMissing ? 'Missing' : 'Failed',
         since:   formatDate(nodeStatus.since),
         node:    nodeName,
         message: nodeStatus.message || '-',

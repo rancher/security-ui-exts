@@ -77,26 +77,37 @@ describe('NodesEnforcementTable.vue', () => {
     const status = {
       nodesWithIssues: {
         'node-prod-eu-12': {
-          code: 'Failed',
+          code:    'EBPFVerifierRejected',
           message: 'verifier rejected program: unknown helper id 188',
-          since: '2026-06-15T09:45:00Z',
+          since:   '2026-06-15T09:45:00Z',
+        },
+        'node-prod-eu-13': {
+          code:    'Missing',
+          message: 'policy not applied to node',
+          since:   '2026-06-23T20:15:00Z',
         },
       },
-      totalNodes: 1,
+      totalNodes:      2,
       successfulNodes: 0,
     };
-
     const wrapper = createWrapper({ status });
     const sortableTable = wrapper.findComponent({ name: 'SortableTable' });
     const rows = sortableTable.props('rows');
 
-    expect(rows).toHaveLength(1);
+    expect(rows).toHaveLength(2);
     expect(rows[0]).toEqual({
-      id:      'failed-node-prod-eu-12',
+      id:      'issue-node-prod-eu-12',
       status:  'Failed',
       since:   'Jun 15, 2026 09:45 AM',
       node:    'node-prod-eu-12',
       message: 'verifier rejected program: unknown helper id 188',
+    });
+    expect(rows[1]).toEqual({
+      id:      'issue-node-prod-eu-13',
+      status:  'Missing',
+      since:   'Jun 23, 2026 08:15 PM',
+      node:    'node-prod-eu-13',
+      message: 'policy not applied to node',
     });
   });
 
