@@ -97,7 +97,7 @@ runtimeEnforcer:
     containerName: Container Name
     allowedExecutables: Allowed Executables
     executablePlaceholder: /usr/bin/executable
-    allowedExecutablesTooltip: runtimeEnforcer.policyProposal.allowedExecutablesTooltip
+    allowedExecutablesTooltip: The set of executables observed during the learning phase, and it becomes the enforced allow-list the moment you promote the policy.
     addExecutable: Add Executable
     action:
       editPolicy: Edit Policy
@@ -185,11 +185,11 @@ runtimeEnforcer:
           automatic:
             single: Automatically apply the active policy and restart the workload
             bulk: Automatically apply the active policies and restart the workloads
-            tooltip: runtimeEnforcer.policyProposal.promoteDialog.applyStep.options.automatic.tooltip
+            tooltip: Applies the new active policy for you - writes the security.rancher.io/policy label onto the workload and restarts it, so enforcement takes effect immediately.
           manual:
             single: Manually apply the active policy <b>(recommended for GitOps)</b>
             bulk: Manually apply the active policies <b>(recommended for GitOps)</b>
-            tooltip: runtimeEnforcer.policyProposal.promoteDialog.applyStep.options.manual.tooltip
+            tooltip: Creates the active policy but leaves the workload untouched. Recommended for GitOps-managed workloads (e.g. Fleet), so your source of truth stays authoritative and the label isn't reverted on the next sync.
         manualDescription:
           single: To manually apply the active policy on the workload, you need to copy the label below on the corresponding workload and redeploy it. <learnMore>Learn more</learnMore>
           bulk: To manually apply the active policies on the workloads, you need to copy the labels below on the corresponding workloads and redeploy them. <learnMore>Learn more</learnMore>
@@ -289,15 +289,15 @@ runtimeEnforcer:
         keep:
           single: Do not remove the label of the active policy from the workload
           bulk: Do not remove the labels of the active policies from the workloads
-          tooltip: runtimeEnforcer.activePolicies.deleteDialog.workloadRemovalOptions.keep.tooltip
+          tooltip: Deletes the active policy but leaves the security.rancher.io/policy label on the workload. Enforcement stops immediately; Choose this if you'll attach a new policy shortly, or if the workload's labels are managed elsewhere.
         remove:
           single: Automatically remove the label of the active policy and restart the workload
           bulk: Automatically remove the labels of the active policies and restart the workloads
-          tooltip: runtimeEnforcer.activePolicies.deleteDialog.workloadRemovalOptions.remove.tooltip
+          tooltip: Deletes the active policy and strips the security.rancher.io/policy label from the workload for you, restarting it.
         manual:
           single: Manually remove the label of the active policy <b>(recommended for GitOps)</b>
           bulk: Manually remove the labels of the active policies <b>(recommended for GitOps)</b>
-          tooltip: runtimeEnforcer.activePolicies.deleteDialog.workloadRemovalOptions.manual.tooltip
+          tooltip: Deletes the active policy but leaves the label for you to remove. Delete the security.rancher.io/policy label from the workload in your source of truth and redeploy. Recommended for GitOps-managed workloads (e.g. Fleet), so the change sticks and isn't reverted on the next sync.
       manualRemoval:
         single: To manually remove the label of the active policy from the workload, you need to remove the label below from the corresponding workload and redeploy it. <learnMore>Learn more</learnMore>
         bulk: To manually remove the labels of the active policies from the workloads, you need to remove the labels below from the corresponding workloads and redeploy them. <learnMore>Learn more</learnMore>
@@ -354,6 +354,7 @@ runtimeEnforcer:
     description: Description
     descriptionPlaceholder: Any text you want that better describes this configuration
     containerName: Container Name
+    allowedExecutablesTooltip: The set of executables permitted to run in this container. In Protect mode, anything not listed is blocked at the kernel boundary; in Monitor mode it's alerted only.
     executablePlaceholder: /usr/bin/executable
     addExecutable: Add Executable
     action:
