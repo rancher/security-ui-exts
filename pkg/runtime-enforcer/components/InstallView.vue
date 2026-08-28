@@ -887,7 +887,6 @@ onMounted(async() => {
     </div>
 
     <div v-else>
-      <template style="display: flex">
         <InstallWizard
           ref="wizard"
           :init-step-index="initStepIndex"
@@ -1082,7 +1081,6 @@ onMounted(async() => {
             </div>
           </template>
         </InstallWizard>
-      </template>
     </div>
   </div>
 </template>

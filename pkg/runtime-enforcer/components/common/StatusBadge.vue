@@ -91,6 +91,8 @@ export default {
           return 'ready';
         case POLICY_STATUS.FAILED:
           return 'failed';
+        case POLICY_STATUS.MISSING:
+          return 'missing';
         default:
           return 'none';
       }
@@ -133,6 +135,20 @@ export default {
       color: white;
     }
 
+    &.missing {
+      background: var(--warning-banner, #FFE47A);
+      color: var(--warning, #473900);
+
+      body.theme-dark & {
+        background: var(--warning-banner, #FFE47A);
+        color: var(--warning, #473900);
+      }
+
+      .text {
+        color: #473900;
+      }
+    }
+
     .text {
       display: -webkit-box;
       -webkit-box-orient: vertical;
@@ -144,6 +160,9 @@ export default {
       font-style: normal;
       font-weight: 400;
       line-height: 19px;
+      &.missing {
+        color: #473900;
+      }
       &.none {
         color: var(--muted);
       }
