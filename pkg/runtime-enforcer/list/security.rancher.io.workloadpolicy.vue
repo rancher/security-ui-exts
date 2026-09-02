@@ -80,15 +80,15 @@ const statusOptions = computed(() => [
 ]);
 
 function getWorkloadOwnerReference(row: WorkloadPolicy) {
-  return row?.metadata?.ownerReferences?.[0];
+  return row?.workloadRef;
 }
 
 function getWorkloadName(row: WorkloadPolicy) {
-  return getWorkloadOwnerReference(row)?.name || t('runtimeEnforcer.activePolicies.fallback.na');
+  return getWorkloadOwnerReference(row)?.workloadName;
 }
 
 function getWorkloadType(row: WorkloadPolicy) {
-  return getWorkloadOwnerReference(row)?.kind || t('runtimeEnforcer.activePolicies.fallback.na');
+  return getWorkloadOwnerReference(row)?.workloadType;
 }
 
 function onSelectionChange(selected: WorkloadPolicy[]) {

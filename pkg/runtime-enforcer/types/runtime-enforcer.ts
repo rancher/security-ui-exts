@@ -126,6 +126,12 @@ export interface WorkloadPolicy {
   metadata?: WorkloadPolicyProposalMetadata;
   spec?: WorkloadPolicySpec;
   status?: WorkloadPolicyStatus;
+  workloadRef?: {
+    workloadName?: string;
+    workloadType?: string;
+    workloadLocation?: string;
+    imageMap?: Record<string, string>;
+  };
 }
 
 export const RUNTIME_ENFORCER = {
