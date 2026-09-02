@@ -361,7 +361,19 @@ async function fetchPageSecondaryResources({ force, page }: { force: any; page: 
               :row-actions="false"
               :table-actions="false"
               :key-field="'id'"
-            />
+            >
+              <template #col:image="{ row }">
+                <td>
+                  <span
+                    v-if="row.image"
+                    class="image-wrap"
+                  >
+                    {{ row.image }}
+                  </span>
+                  <span v-else class="text-muted">-</span>
+                </td>
+              </template>
+            </SortableTable>
           </td>
         </tr>
       </template>
@@ -450,6 +462,11 @@ async function fetchPageSecondaryResources({ force, page }: { force: any; page: 
     color: var(--primary);
     font-size: 14px;
     font-weight: 400;
+  }
+  .image-wrap {
+    display: inline-block;
+    max-width: 100%;
+    overflow-wrap: anywhere;
   }
 
 </style>
