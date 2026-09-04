@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watchEffect } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import SortableTable from '@shell/components/SortableTable';
@@ -20,24 +20,26 @@ const selectedRows = ref<any[]>([]);
 
 const rows = ref<any[]>([]);
 
-const violations = props.violations || [];
+watchEffect(() => {
+  const violations = props.violations || [];
 
-rows.value = violations.map((violation, index) => {
-  const containerName = violation.containerName || '';
-  const executablePath = violation.executablePath || '';
+  rows.value = violations.map((violation, index) => {
+    const containerName = violation.containerName || '';
+    const executablePath = violation.executablePath || '';
 
-  return {
-    id:                     `${ containerName }-${ executablePath }-${ index }`,
-    executable:             executablePath || '-',
-    occurrences:            violation.occurrences ?? '-',
-    container:              containerName || '-',
-    image:                  props.imageMap?.[containerName] || '',
-    node:                   violation.nodeName || '-',
-    lastObservedTimestamp:  violation.lastObservedTimestamp,
-    firstObservedTimestamp: violation.firstObservedTimestamp,
-    containerName,
-    executablePath,
-  };
+    return {
+      id:                     `${ containerName }-${ executablePath }-${ index }`,
+      executable:             executablePath || '-',
+      occurrences:            violation.occurrences ?? '-',
+      container:              containerName || '-',
+      image:                  props.imageMap?.[containerName] || '',
+      node:                   violation.nodeName || '-',
+      lastObservedTimestamp:  violation.lastObservedTimestamp,
+      firstObservedTimestamp: violation.firstObservedTimestamp,
+      containerName,
+      executablePath,
+    };
+  });
 });
 
 const headers = computed(() => [
