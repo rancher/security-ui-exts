@@ -4,10 +4,9 @@
   </span>
   <div
       v-else
-      ref="cellRoot"
+      ref="trigger"
       class="runtime-security-cell"
-      @mouseenter="onCellMouseEnter"
-      @mouseleave="onCellMouseLeave"
+      @mouseenter="checkPosition"
   >
     <div class="cell-content">
       <img
@@ -27,62 +26,60 @@
     </div>
 
     <div
-        v-show="isPopoverVisible"
-        class="message-hover-overlay"
-        :class="{ 'show-top': showOnTop, 'align-right': showOnRight }"
-        @mouseenter="onPopoverMouseEnter"
-        @mouseleave="onPopoverMouseLeave"
+        class="hover-overlay"
+        :class="{ 'show-top': showOnTop }"
     >
-      <div class="popover-title">
-        {{ t('runtimeEnforcer.tableColumns.runtimeSecurity.popover.title') }}
-      </div>
-
-      <div class="popover-grid">
-        <div class="grid-row">
-          <span class="row-label">{{ t('runtimeEnforcer.tableColumns.runtimeSecurity.popover.activePolicy') }}</span>
-          <router-link :to="policyDetailLocation" class="text-link row-value">
-            {{ policyName }}
-          </router-link>
+      <div class="popup-container">
+        <div class="popover-title">
+          {{ t('runtimeEnforcer.tableColumns.runtimeSecurity.popover.title') }}
         </div>
 
-        <div class="grid-row">
-          <span class="row-label">{{ t('runtimeEnforcer.tableColumns.runtimeSecurity.popover.protectionMode') }}</span>
-          <div class="row-value mode-row">
-            <img
-                v-if="modeIconSrc"
-                :src="modeIconSrc"
-                width="14"
-                height="14"
-                class="mode-icon"
-                alt=""
-            />
-            <span class="mode-text" :class="mode">{{ modeLabel }}</span>
+        <div class="popover-grid">
+          <div class="grid-row">
+            <span class="row-label">{{ t('runtimeEnforcer.tableColumns.runtimeSecurity.popover.activePolicy') }}</span>
+            <router-link :to="policyDetailLocation" class="entity-link row-value">
+              {{ policyName }}
+            </router-link>
+          </div>
+
+          <div class="grid-row">
+            <span class="row-label">{{ t('runtimeEnforcer.tableColumns.runtimeSecurity.popover.protectionMode') }}</span>
+            <div class="row-value mode-row">
+              <img
+                  v-if="modeIconSrc"
+                  :src="modeIconSrc"
+                  width="14"
+                  height="14"
+                  class="mode-icon"
+                  alt=""
+              />
+              <span class="mode-text" :class="mode">{{ modeLabel }}</span>
+            </div>
+          </div>
+
+          <div class="grid-row">
+            <span class="row-label">{{ t('runtimeEnforcer.tableColumns.runtimeSecurity.popover.runtimeViolations') }}</span>
+            <router-link
+                :to="deploymentViolationsLocation"
+                class="metric-link row-value"
+                :class="{ 'disabled-link': totalViolationCount === 0 }"
+            >
+              {{ violationsSummaryText }}
+            </router-link>
+          </div>
+
+          <div class="grid-row">
+            <span class="row-label">{{ t('runtimeEnforcer.tableColumns.runtimeSecurity.popover.lastOccurrence') }}</span>
+            <span class="row-value regular-text">{{ lastOccurrenceText }}</span>
           </div>
         </div>
 
-        <div class="grid-row">
-          <span class="row-label">{{ t('runtimeEnforcer.tableColumns.runtimeSecurity.popover.runtimeViolations') }}</span>
-          <router-link :to="deploymentViolationsLocation" class="text-link row-value underline-link">
-            {{ violationsSummaryText }}
+        <div class="popover-footer">
+          <span>{{ t('runtimeEnforcer.tableColumns.runtimeSecurity.popover.providedBy') }}&nbsp;</span>
+          <router-link :to="runtimeEnforcerEntryLocation" class="footer-link">
+            {{ t('runtimeEnforcer.tableColumns.runtimeSecurity.popover.runtimeEnforcer') }}
           </router-link>
         </div>
-
-        <div class="grid-row">
-          <span class="row-label">{{ t('runtimeEnforcer.tableColumns.runtimeSecurity.popover.lastOccurrence') }}</span>
-          <span class="row-value regular-text">{{ lastOccurrenceText }}</span>
-        </div>
-      </div>
-
-      <div class="popover-footer">
-        <span>{{ t('runtimeEnforcer.tableColumns.runtimeSecurity.popover.providedBy') }}&nbsp;</span>
-        <a
-            :href="quickstartDocsUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="footer-link"
-        >
-          {{ t('runtimeEnforcer.tableColumns.runtimeSecurity.popover.runtimeEnforcer') }}
-        </a>
       </div>
     </div>
   </div>
@@ -98,8 +95,6 @@ import utc from 'dayjs/plugin/utc';
 day.extend(relativeTime);
 day.extend(utc);
 
-const QUICKSTART_DOCS_URL = 'https://rancher.github.io/runtime-enforcer-product-docs/runtime-enforcer/latest/en/installation/quickstart.html';
-
 export default {
   name: 'RuntimeSecurityCell',
   props: {
@@ -114,13 +109,9 @@ export default {
   },
   data() {
     return {
-      protectIconSrc:    null,
-      monitorIconSrc:    null,
-      showOnTop:         false,
-      showOnRight:       false,
-      isPopoverVisible:  false,
-      hideTimeout:       null,
-      quickstartDocsUrl: QUICKSTART_DOCS_URL,
+      protectIconSrc: null,
+      monitorIconSrc: null,
+      showOnTop:      false,
     };
   },
   created() {
@@ -131,9 +122,6 @@ export default {
       this.protectIconSrc = null;
       this.monitorIconSrc = null;
     }
-  },
-  beforeUnmount() {
-    this.clearHideTimer();
   },
   async fetch() {
     const existing = this.$store.getters['cluster/all']?.(RESOURCE.ACTIVE_POLICIES);
@@ -251,54 +239,29 @@ export default {
         hash: '#runtime-violations',
       };
     },
+    runtimeEnforcerEntryLocation() {
+      return {
+        name:   `c-cluster-${ PRODUCT_NAME }-entry`,
+        params: { cluster: this.cluster },
+      };
+    },
   },
   methods: {
-    clearHideTimer() {
-      if (this.hideTimeout) {
-        clearTimeout(this.hideTimeout);
-        this.hideTimeout = null;
-      }
-    },
-    startHideTimer() {
-      this.clearHideTimer();
-      this.hideTimeout = setTimeout(() => {
-        this.isPopoverVisible = false;
-      }, 250);
-    },
     checkPosition() {
-      if (!this.$refs.cellRoot) {
+      if (!this.$refs.trigger) {
         return;
       }
-      const trigger = this.$refs.cellRoot.getBoundingClientRect();
+      const trigger = this.$refs.trigger.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
-      const viewportWidth = window.innerWidth;
-
-      // Flip above if cell is within bottom 260px of the viewport
-      this.showOnTop = (viewportHeight - trigger.bottom < 260);
-
-      // Flip to align with right edge of cell if less than 410px space to viewport edge
-      this.showOnRight = (viewportWidth - trigger.left < 410);
-    },
-    onCellMouseEnter() {
-      this.clearHideTimer();
-      this.checkPosition();
-      this.isPopoverVisible = true;
-    },
-    onCellMouseLeave() {
-      this.startHideTimer();
-    },
-    onPopoverMouseEnter() {
-      this.clearHideTimer();
-      this.isPopoverVisible = true;
-    },
-    onPopoverMouseLeave() {
-      this.startHideTimer();
+      this.showOnTop = (viewportHeight - trigger.bottom < 300);
     },
   },
 };
 </script>
 
 <style lang="scss" scoped>
+$gap-size: 10px;
+
 .unprotected-text {
   color: var(--body-text, #141419);
   font-size: 14px;
@@ -310,16 +273,21 @@ export default {
   position: relative;
   display: inline-flex;
   align-items: center;
-  width: 100%;
+  width: fit-content;
   height: 100%;
-  padding: 4px 0;
+  cursor: pointer;
+
+  &:hover .hover-overlay {
+    display: block;
+    visibility: visible;
+    opacity: 1;
+  }
 }
 
 .cell-content {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  cursor: pointer;
   white-space: nowrap;
 }
 
@@ -349,58 +317,52 @@ export default {
   color: #6c6c76;
 }
 
-.message-hover-overlay {
+.hover-overlay {
+  display: none;
   position: absolute;
-  top: 100%;
+  top: calc(100% + #{$gap-size});
   left: 0;
-  right: auto;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  width: max-content;
-  min-width: 320px;
-  max-width: min(396px, 90vw);
-  padding: 16px;
-  background: var(--popover-bg, #ffffff);
-  border: 1px solid var(--popover-border, #dcdee4);
-  border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-  z-index: 1000;
-  font-family: Lato, sans-serif;
-  color: var(--body-text, #141419);
+  z-index: 100;
   pointer-events: auto;
 
-  /* Invisible hover bridge spanning between the trigger and the card */
+  /* Invisible bridge bridging trigger and card */
   &::before {
     content: '';
     position: absolute;
-    top: -12px;
     left: 0;
-    right: 0;
-    height: 12px;
+    width: 100%;
+    height: $gap-size;
+    top: -$gap-size;
+    background: transparent;
   }
 
   &.show-top {
     top: auto;
-    bottom: 100%;
+    bottom: calc(100% + #{$gap-size});
 
     &::before {
       top: auto;
-      bottom: -12px;
-      height: 12px;
+      bottom: -$gap-size;
     }
   }
+}
 
-  &.align-right {
-    left: auto;
-    right: 0;
-  }
+.popup-container {
+  width: 350px;
+  background: var(--popover-bg, #ffffff);
+  border: 1px solid var(--popover-border, #dcdee4);
+  border-radius: 6px;
+  box-shadow: 4px 4px 8px 0 rgba(0, 0, 0, 0.04);
+  padding: 16px;
+  font-family: Lato, sans-serif;
+  color: var(--body-text, #141419);
+  box-sizing: border-box;
 }
 
 .popover-title {
   font-size: 16px;
   font-weight: 600;
-  line-height: 22px;
+  line-height: 24px;
   color: var(--body-text, #141419);
   margin-bottom: 12px;
 }
@@ -450,16 +412,29 @@ export default {
   }
 }
 
-.text-link {
+/* Navigational link to another page (Blue) */
+.entity-link {
   color: var(--link, #3d98d3);
   text-decoration: none;
 
   &:hover {
     text-decoration: underline;
   }
+}
 
-  &.underline-link {
+.metric-link {
+  color: var(--default-text, var(--body-text, #141419));
+  text-decoration: underline;
+
+  &:hover {
+    color: var(--default-text, var(--body-text, #141419));
     text-decoration: underline;
+  }
+
+  &.disabled-link {
+    pointer-events: none;
+    text-decoration: none;
+    color: var(--label-secondary, #6c6c76);
   }
 }
 
@@ -470,10 +445,10 @@ export default {
   margin-top: 14px;
   font-size: 13px;
   line-height: 18px;
-  color: var(--text-muted, #6c6c76);
+  color: var(--label-secondary, #6c6c76);
 
   .footer-link {
-    color: var(--text-muted, #6c6c76);
+    color: var(--label-secondary, #6c6c76);
     text-decoration: underline;
 
     &:hover {
