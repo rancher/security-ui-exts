@@ -168,6 +168,22 @@ describe('WorkloadPolicyProposal model', () => {
       expect(proposal.workload).toBe('my-deploy');
       expect(proposal.workloadType).toBe('Deployment');
     });
+
+    it('falls back to spec.workload/spec.workloadType when ownerReferences is missing', () => {
+      proposal.metadata = {};
+      proposal.spec = { workload: 'my-statefulset', workloadType: 'StatefulSet' };
+
+      expect(proposal.workload).toBe('my-statefulset');
+      expect(proposal.workloadType).toBe('StatefulSet');
+    });
+
+    it('prefers ownerReferences over spec when both are present', () => {
+      proposal.metadata = { ownerReferences: [{ name: 'my-deploy', kind: 'Deployment' }] };
+      proposal.spec = { workload: 'my-statefulset', workloadType: 'StatefulSet' };
+
+      expect(proposal.workload).toBe('my-deploy');
+      expect(proposal.workloadType).toBe('Deployment');
+    });
   });
 
   describe('ownerWorkloadSteveType', () => {
@@ -179,6 +195,25 @@ describe('WorkloadPolicyProposal model', () => {
     it('maps CronJob kind to its Steve resource type', () => {
       proposal.metadata = { ownerReferences: [{ name: 'my-cronjob', kind: 'CronJob' }] };
       expect(proposal.ownerWorkloadSteveType).toBe('batch.cronjob');
+    });
+
+    it('maps StatefulSet kind to its Steve resource type', () => {
+      proposal.metadata = { ownerReferences: [{ name: 'my-statefulset', kind: 'StatefulSet' }] };
+      expect(proposal.ownerWorkloadSteveType).toBe('apps.statefulset');
+    });
+
+    it('resolves the Steve type from spec.workloadType when ownerReferences is missing', () => {
+      proposal.metadata = {};
+      proposal.spec = { workload: 'my-statefulset', workloadType: 'StatefulSet' };
+
+      expect(proposal.ownerWorkloadSteveType).toBe('apps.statefulset');
+    });
+
+    it('returns undefined when there is no workload type to resolve', () => {
+      proposal.metadata = {};
+      proposal.spec = {};
+
+      expect(proposal.ownerWorkloadSteveType).toBeUndefined();
     });
   });
 

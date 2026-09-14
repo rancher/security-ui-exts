@@ -77,11 +77,11 @@ export default class WorkloadPolicyProposal extends SteveModel {
   }
 
   get workload() {
-    return this.ownerReference?.name;
+    return this.ownerReference?.name || this.spec?.workload;
   }
 
   get workloadType() {
-    return this.ownerReference?.kind;
+    return this.ownerReference?.kind || this.spec?.workloadType;
   }
 
   get ownerWorkloadSteveType() {
