@@ -61,10 +61,9 @@ export default {
 
     <span
         v-if="!isExpanded && isTruncatable"
-        class="read-more-btn"
-        @click="expand"
+        class="read-more"
     >
-      {{ t('imageScanner.general.readMore') }}
+      <span class="read-more-btn" @click="expand">{{ t('common.general.readMore') }}</span>
     </span>
   </div>
 </template>
@@ -101,17 +100,25 @@ export default {
   }
 }
 
-.read-more-btn {
+.read-more {
   position: absolute;
   bottom: 2px;
   right: 0;
   color: var(--disabled-text);
-  text-decoration: underline;
-  cursor: pointer;
 
   /* Use a gradient to fade over the text smoothly, hiding the native CSS ellipsis */
   background: linear-gradient(to right, transparent, var(--body-bg) 24px, var(--body-bg) 100%);
   padding-left: 24px;
+
+  /* The ellipsis belongs to the fade, not to the link, so it is not clickable */
+  &::before {
+    content: '... ';
+  }
+}
+
+.read-more-btn {
+  text-decoration: underline;
+  cursor: pointer;
 
   &:hover {
     text-decoration: none;

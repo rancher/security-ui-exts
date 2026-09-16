@@ -67,7 +67,7 @@ describe('ExpandableDescription.vue', () => {
 
       expect(wrapper.vm.isTruncatable).toBe(true);
       expect(wrapper.find('.read-more-btn').exists()).toBe(true);
-      expect(wrapper.find('.read-more-btn').text()).toBe('imageScanner.general.readMore');
+      expect(wrapper.find('.read-more-btn').text()).toBe('common.general.readMore');
     });
 
     it('hides the "read more" button when text fits perfectly', async () => {

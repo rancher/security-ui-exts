@@ -1,4 +1,5 @@
 import { importTypes } from '@rancher/auto-import';
+import { registerCommonL10n } from '@common/config';
 import { IPlugin, TableColumnLocation, PanelLocation, TabLocation } from '@shell/core/types';
 import { POD, WORKLOAD_TYPES } from '@shell/config/types';
 import runtimeEnforcer from './routes/runtime-enforcer';
@@ -16,6 +17,7 @@ const ALL_WORKLOAD_TYPES = [
 
 export default function(plugin: IPlugin): void {
   importTypes(plugin);
+  registerCommonL10n(plugin);
 
   plugin.metadata = require('./package.json');
   plugin.addProduct(require('./config/runtime-enforcer'));
