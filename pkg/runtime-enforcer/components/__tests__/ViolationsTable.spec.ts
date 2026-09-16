@@ -165,6 +165,30 @@ describe('ViolationsTable.vue', () => {
     expect(allowExecutables).toHaveBeenCalledWith(rows);
   });
 
+  it('keeps the selection when SortableTable mutates the array it emitted', async() => {
+    const allowExecutables = jest.fn();
+    const violations = [
+      { containerName: 'nginx', executablePath: '/usr/bin/curl-ext' },
+      { containerName: 'nginx', executablePath: '/usr/sbin/nginx-controller' },
+    ];
+
+    const wrapper = createWrapper({ policy: { allowExecutables }, violations });
+    const sortableTable = wrapper.findComponent({ name: 'SortableTable' });
+    const rows = sortableTable.props('rows');
+    const emitted = [...rows];
+
+    sortableTable.vm.$emit('selection', emitted);
+    await wrapper.vm.$nextTick();
+
+    emitted.length = 0;
+
+    const bulkAllowButton = wrapper.findAllComponents({ name: 'RcButton' })[0];
+
+    await bulkAllowButton.trigger('click');
+
+    expect(allowExecutables).toHaveBeenCalledWith(rows);
+  });
+
   it('disables the bulk Allow button when nothing is selected', () => {
     const wrapper = createWrapper({ violations: [] });
     const bulkAllowButton = wrapper.findAllComponents({ name: 'RcButton' })[0];

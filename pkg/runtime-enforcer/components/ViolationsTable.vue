@@ -102,7 +102,7 @@ const headers = computed(() => [
 ]);
 
 function onSelectionChange(selected: any[]) {
-  selectedRows.value = selected || [];
+  selectedRows.value = [...(selected || [])];
 }
 
 function allowExecutable(row: any) {

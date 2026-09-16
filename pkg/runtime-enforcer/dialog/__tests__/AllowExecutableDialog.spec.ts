@@ -114,6 +114,24 @@ describe('AllowExecutableDialog', () => {
       expect(wrapper.emitted('close')).toHaveLength(1);
     });
 
+    it('names the executable in the growl even when targets is emptied while saving', async() => {
+      const targets = [createTarget('nginx', '/usr/bin/curl')];
+      const dispatch = jest.fn();
+
+      (allowExecutables as jest.Mock).mockImplementationOnce(async() => {
+        targets.length = 0;
+      });
+
+      const { wrapper } = mountDialog({ targets, dispatch });
+
+      await (wrapper.vm as any).finish();
+
+      expect(dispatch).toHaveBeenCalledWith('growl/success', {
+        title:   'runtimeEnforcer.activePolicy.allowDialog.growl.title.single',
+        message: 'runtimeEnforcer.activePolicy.allowDialog.growl.message.single {"path":"/usr/bin/curl"}',
+      });
+    });
+
     it('dispatches growl/fromError and keeps dialog open when allowExecutables fails', async() => {
       const err = new Error('boom');
 

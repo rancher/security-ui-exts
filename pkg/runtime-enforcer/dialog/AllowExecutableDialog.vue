@@ -72,6 +72,9 @@ export default {
     async finish() {
       this.allowInProgress = true;
 
+      const growlTitle = this.growlTitle;
+      const growlMessage = this.growlMessage;
+
       try {
         await allowExecutables(this.policy, this.targets);
       } catch (err) {
@@ -81,7 +84,7 @@ export default {
         return;
       }
 
-      this.$store.dispatch('growl/success', { title: this.growlTitle, message: this.growlMessage });
+      this.$store.dispatch('growl/success', { title: growlTitle, message: growlMessage });
       this.allowInProgress = false;
       this.close();
     },
