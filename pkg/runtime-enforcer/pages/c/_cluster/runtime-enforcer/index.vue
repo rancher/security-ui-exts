@@ -1,22 +1,21 @@
 <script setup>
 import { computed, useStore } from '@runtime-enforcer/utils/vue-imports';
-// import { useRouter } from 'vue-router';
-import { getCurrentInstance } from 'vue';
+import { useRouter } from 'vue-router';
+import { watch } from 'vue';
 import { RESOURCE } from '@runtime-enforcer/types';
 import InstallView from '@runtime-enforcer/components/InstallView';
 import { PRODUCT_NAME } from '@runtime-enforcer/types';
-import { onMounted } from 'vue';
 
 const store = useStore();
-// const router = useRouter();
-const instance = getCurrentInstance();
-const router = instance?.proxy?.$router;
+const router = useRouter();
 
-const hasSchema = computed(() => {
-  const schema = store.getters['cluster/schemaFor'](RESOURCE.POLICY_PROPOSALS);
+const hasSchema = computed(() => !!store.getters['cluster/schemaFor'](RESOURCE.POLICY_PROPOSALS));
 
+// Replace rather than push: this page only exists to forward to Active Policies, so
+// leaving it in the history means going back lands here and forwards again immediately.
+watch(hasSchema, (schema) => {
   if (schema) {
-    router.push({
+    router.replace({
       name:   `c-cluster-${ PRODUCT_NAME }-resource`,
       params: {
         resource: RESOURCE.ACTIVE_POLICIES,
@@ -25,9 +24,7 @@ const hasSchema = computed(() => {
       }
     });
   }
-
-  return !!schema;
-});
+}, { immediate: true });
 </script>
 
 <template>
