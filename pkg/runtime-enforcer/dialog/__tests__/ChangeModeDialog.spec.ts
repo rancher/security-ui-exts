@@ -122,6 +122,32 @@ describe('ChangeModeDialog', () => {
       expect(wrapper.emitted('close')).toHaveLength(1);
     });
 
+    it('toggles every resource to protect when all selected policies are in monitor', () => {
+      const resources = [createResource('monitor', 'a'), createResource('monitor', 'b')];
+      const wrapper = mountDialog(resources);
+
+      (wrapper.vm as any).changeMode();
+
+      resources.forEach((resource) => {
+        expect(resource.spec.mode).toBe('protect');
+        expect(resource.save).toHaveBeenCalledTimes(1);
+      });
+      expect(wrapper.emitted('close')).toHaveLength(1);
+    });
+
+    it('toggles every resource to monitor when all selected policies are in protect', () => {
+      const resources = [createResource('protect', 'a'), createResource('protect', 'b')];
+      const wrapper = mountDialog(resources);
+
+      (wrapper.vm as any).changeMode();
+
+      resources.forEach((resource) => {
+        expect(resource.spec.mode).toBe('monitor');
+        expect(resource.save).toHaveBeenCalledTimes(1);
+      });
+      expect(wrapper.emitted('close')).toHaveLength(1);
+    });
+
     it('applies selected targetMode to all resources in bulk mode', () => {
       const resources = [createResource('monitor', 'a'), createResource('protect', 'b')];
       const wrapper = mountDialog(resources);

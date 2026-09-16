@@ -96,7 +96,7 @@ export default {
     },
 
     changeMode() {
-      const targetMode = this.isBulk ? this.targetMode : this.transitionDirection.to;
+      const targetMode = this.showModeSelect ? this.targetMode : this.transitionDirection.to;
 
       this.resources.forEach((resource) => {
         resource.spec.mode = targetMode;
