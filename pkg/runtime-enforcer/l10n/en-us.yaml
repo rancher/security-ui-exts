@@ -443,4 +443,12 @@ runtimeEnforcer:
         occurrences: occurrences
         providedBy: Provided by
         runtimeEnforcer: Runtime Enforcer
-
+  workloadViolations:
+    tab:
+      title: Runtime Violations
+    banner:
+      prefix: The
+      middle: runtime policy is active in
+      suffix: mode. Want to learn more about the Runtime Enforcer extension? Read our
+      documentation: documentation
+    unprotected: This workload does not have an active runtime security policy assigned.

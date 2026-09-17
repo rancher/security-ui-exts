@@ -60,7 +60,7 @@
           <div class="grid-row">
             <span class="row-label">{{ t('runtimeEnforcer.tableColumns.runtimeSecurity.popover.runtimeViolations') }}</span>
             <router-link
-                :to="deploymentViolationsLocation"
+                :to="workloadViolationsLocation"
                 class="metric-link row-value"
                 :class="{ 'disabled-link': totalViolationCount === 0 }"
             >
@@ -226,13 +226,15 @@ export default {
         },
       };
     },
-    deploymentViolationsLocation() {
+    workloadViolationsLocation() {
+      const resourceType = this.row?.type || this.row?.schema?.id || 'apps.deployment';
+
       return {
         name:   'c-cluster-product-resource-namespace-id',
         params: {
           cluster:   this.cluster,
           product:   'explorer',
-          resource:  'apps.deployment',
+          resource:  resourceType,
           namespace: this.namespace,
           id:        this.row?.metadata?.name || '',
         },

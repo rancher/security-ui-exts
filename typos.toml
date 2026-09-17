@@ -1,5 +1,6 @@
 [default.extend-words]
 ba = "ba"
+aks = "aks"
 
 [files]
 extend-exclude = [

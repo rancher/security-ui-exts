@@ -1,8 +1,11 @@
 import { POLICY_LABEL_KEY } from '../types/runtime-enforcer';
 
 export function getBoundPolicyName(row: any): string {
-  const podTemplate = row?.spec?.jobTemplate?.spec?.template ?? row?.spec?.template;
-  const templateLabels = podTemplate?.metadata?.labels;
+  const cronJobTemplate = row?.spec?.jobTemplate?.spec?.template;
+  // Check standard workload template (Deployment, DaemonSet, StatefulSet, ReplicaSet, Job)
+  const workloadTemplate = row?.spec?.template;
+  // Fallback to top-level metadata labels (direct Pods or inherited top labels)
+  const templateLabels = cronJobTemplate?.metadata?.labels || workloadTemplate?.metadata?.labels;
   const topLabels = row?.metadata?.labels;
 
   return templateLabels?.[POLICY_LABEL_KEY] || topLabels?.[POLICY_LABEL_KEY] || '';

@@ -177,7 +177,7 @@ export const POLICY_STATUS = {
   MISSING:       'missing',
 };
 
-export const DOCUMENTATION_URL = 'https://github.com/rancher-sandbox/runtime-enforcer/tree/main/docs';
+export const DOCUMENTATION_URL = 'https://rancher.github.io/runtime-enforcer-product-docs/runtime-enforcer/latest/en/introduction.html';
 
 export const WORKLOAD_PREFIX = 'security.rancher.io/policy :';
 
