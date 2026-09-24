@@ -1,8 +1,9 @@
 <script setup lang="ts">
 // @ts-nocheck
 import {
-  computed, getCurrentInstance, nextTick, onMounted, reactive, ref, watch
+  computed, nextTick, onMounted, reactive, ref, watch
 } from 'vue';
+import { useRouter } from 'vue-router';
 import { useStore } from 'vuex';
 import debounce from 'lodash/debounce';
 import AsyncButton from '@shell/components/AsyncButton';
@@ -31,7 +32,7 @@ import { refreshCharts, getLatestVersion } from '@runtime-enforcer/utils/chart';
 import { CATALOG, SECRET, NAMESPACE as NAMESPACE_TYPE } from '@shell/config/types';
 
 const store = useStore();
-const instance = getCurrentInstance();
+const router = useRouter();
 const t = (key: string, ...args: any[]) => {
   const translate = store.getters['i18n/t'];
 
@@ -401,25 +402,11 @@ async function ensureAuthSecret(namespace = 'default') {
   return getAuthSecretRef(secret);
 }
 
-function canListType(type) {
-  const canList = store.getters['cluster/canList'];
-
-  if (typeof canList === 'function') {
-    return canList(type);
-  }
-
-  return !!canList;
-}
-
 function hasAllRequiredRepos() {
   return !!(certManagerRepo.value && runtimeEnforcerRepo.value && csiDriverRepo.value);
 }
 
 async function load() {
-  if (canListType(CATALOG.CLUSTER_REPO)) {
-    await instance?.proxy?.$fetchType?.(CATALOG.CLUSTER_REPO);
-  }
-
   if (hasAllRequiredRepos()) {
     setTimeout(() => {
       installSteps.value[1].ready = true;
@@ -480,10 +467,6 @@ async function addAllRepositories(btnCb) {
 
   if (!(certAdded && csiDriverAdded && runtimeEnforcerAdded)) {
     return;
-  }
-
-  if (canListType(CATALOG.CLUSTER_REPO)) {
-    await instance?.proxy?.$fetchType?.(CATALOG.CLUSTER_REPO);
   }
 
   await nextTick();
@@ -718,7 +701,7 @@ async function chartRoute() {
         };
 
         await ensureNamespaceExists(certManagerNamespace.value);
-        instance?.proxy?.$router?.push({
+        router.push({
           name:   'c-cluster-apps-charts-install',
           params: { cluster: currentCluster.value?.id || '_' },
           query,
@@ -754,7 +737,7 @@ async function chartRoute() {
         };
 
         await ensureNamespaceExists(csiDriverNamespace.value);
-        instance?.proxy?.$router?.push({
+        router.push({
           name:   'c-cluster-apps-charts-install',
           params: { cluster: currentCluster.value?.id || '_' },
           query,
@@ -791,7 +774,7 @@ async function chartRoute() {
         };
 
         await ensureNamespaceExists(runtimeEnforcerNamespace.value);
-        instance?.proxy?.$router?.push({
+        router.push({
           name:   'c-cluster-apps-charts-install',
           params: { cluster: currentCluster.value?.id || '_' },
           query,

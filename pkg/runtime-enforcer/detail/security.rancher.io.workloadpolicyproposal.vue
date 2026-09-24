@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-// import { useRoute } from 'vue-router';
-import { getCurrentInstance } from 'vue';
+import { useRoute } from 'vue-router';
 import { useStore } from 'vuex';
 import DetailPage from '@shell/components/Resource/Detail/Page.vue';
 import TitleBar from '@shell/components/Resource/Detail/TitleBar/index.vue';
@@ -20,9 +19,7 @@ const props = defineProps<{
 const proposal = props.value;
 
 const store = useStore();
-// const route = useRoute();
-const instance = getCurrentInstance();
-const route = instance?.proxy?.$route as any;
+const route = useRoute();
 const i18n = useI18n(store);
 
 const defaultTitleBarProps = useDefaultTitleBarProps(proposal);

@@ -24,6 +24,9 @@ jest.mock('lodash/debounce', () => ({
   __esModule: true,
   default:    jest.fn((fn) => fn),
 }));
+const mockRouter = { push: jest.fn() };
+
+jest.mock('vue-router', () => ({ useRouter: () => mockRouter }));
 jest.mock('../../utils/handle-growl', () => ({ handleGrowl: jest.fn() }));
 jest.mock('../../utils/chart', () => ({
   refreshCharts:    jest.fn(),
@@ -78,9 +81,6 @@ const createWrapper = async(options: WrapperOptions = {}) => {
     chartName,
     versions: ['1.2.3'],
   }));
-  const router = { push: jest.fn() };
-  const fetchType = jest.fn().mockResolvedValue(undefined);
-
   const store = createStore({
     getters: {
       currentCluster: () => ({ id: 'cluster-1' }),
@@ -151,10 +151,8 @@ const createWrapper = async(options: WrapperOptions = {}) => {
     global: {
       plugins: [store],
       mocks:   {
-        $fetchType: fetchType,
-        $route:     { params: {}, query: {} },
-        $router:    router,
-        $store:     store,
+        $route: { params: {}, query: {} },
+        $store: store,
       },
       stubs: {
         InstallWizard:            InstallWizardStub,
@@ -177,8 +175,7 @@ const createWrapper = async(options: WrapperOptions = {}) => {
     wrapper,
     store,
     dispatch,
-    router,
-    fetchType,
+    router: mockRouter,
     chartSelector,
   };
 };
@@ -457,7 +454,7 @@ describe('runtime-enforcer InstallView.vue', () => {
   });
 
   it('addAllRepositories only adds missing repos', async() => {
-    const { wrapper, fetchType, dispatch } = await createWrapper({ repos: [createRepo(CERT_MANAGER_REPOS.CHARTS_REPO_NAME, CERT_MANAGER_REPOS.CHARTS_REPO)] });
+    const { wrapper, dispatch } = await createWrapper({ repos: [createRepo(CERT_MANAGER_REPOS.CHARTS_REPO_NAME, CERT_MANAGER_REPOS.CHARTS_REPO)] });
 
     await wrapper.vm.addAllRepositories();
 
@@ -470,7 +467,6 @@ describe('runtime-enforcer InstallView.vue', () => {
       CERT_MANAGER_CSI_DRIVER_REPOS.CHARTS_REPO_NAME,
       RUNTIME_ENFORCER_REPOS.CHARTS_REPO_NAME,
     ]));
-    expect(fetchType).toHaveBeenCalledWith(CATALOG.CLUSTER_REPO);
   });
 
   it('pushes cert-manager-csi-driver install route when cert-manager exists but CSI driver is not installed', async() => {
