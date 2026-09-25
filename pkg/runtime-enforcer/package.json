@@ -1,6 +1,6 @@
 {
   "name": "runtime-enforcer",
-  "description": "runtime-enforcer plugin",
+  "description": "SUSE Security Runtime Enforcer extension for Rancher Manager",
   "version": "0.1.0",
   "private": false,
   "icon": "https://raw.githubusercontent.com/rancher/security-ui-exts/main/pkg/runtime-enforcer/assets/img/runtime-enforcer-logo.svg",
@@ -15,7 +15,7 @@
   },
   "scripts": {},
   "engines": {
-    "node": ">=16"
+    "node": ">=24"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "~5.0.0",
