@@ -10,7 +10,7 @@ const createResource = (name: string) => ({
   metadata:               { name, namespace: 'ingress' },
   nameDisplay:            name,
   toActivePolicyResource: jest.fn((targetMode) => ({
-    apiVersion: 'security.rancher.io/v1alpha1',
+    apiVersion: 'runtimeenforcer.kubewarden.io/v1alpha1',
     kind:       'WorkloadPolicy',
     metadata:   { name, namespace: 'ingress' },
     spec:       { mode: targetMode, rulesByContainer: {} },

@@ -4,8 +4,8 @@ export const CHART_REGISTRY_URL = 'oci://dp.apps.rancher.io/charts';
 export const DOCKER_CONFIG_JSON_TYPE = '.dockerconfigjson';
 
 export const RESOURCE = {
-  POLICY_PROPOSALS: 'security.rancher.io.workloadpolicyproposal',
-  ACTIVE_POLICIES:  'security.rancher.io.workloadpolicy',
+  POLICY_PROPOSALS: 'runtimeenforcer.kubewarden.io.workloadpolicyproposal',
+  ACTIVE_POLICIES:  'runtimeenforcer.kubewarden.io.workloadpolicy',
 };
 
 export const EXEC_SOURCE = {
@@ -179,11 +179,11 @@ export const POLICY_STATUS = {
 
 export const DOCUMENTATION_URL = 'https://rancher.github.io/runtime-enforcer-product-docs/runtime-enforcer/latest/en/introduction.html';
 
-export const WORKLOAD_PREFIX = 'security.rancher.io/policy :';
+export const POLICY_LABEL_KEY = 'runtimeenforcer.kubewarden.io/policy';
 
-export const POLICY_LABEL_KEY = 'security.rancher.io/policy';
+export const WORKLOAD_PREFIX = `${ POLICY_LABEL_KEY } :`;
 
-export const PROMOTE_LABEL_KEY = 'security.rancher.io/promote';
+export const PROMOTE_LABEL_KEY = 'runtimeenforcer.kubewarden.io/promote';
 
 export const APPLY_MODE = {
   AUTOMATIC: 'automatic',

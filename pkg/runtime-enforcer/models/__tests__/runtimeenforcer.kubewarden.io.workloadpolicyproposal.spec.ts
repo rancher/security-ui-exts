@@ -1,5 +1,5 @@
 import SteveModel from '@shell/plugins/steve/steve-class';
-import WorkloadPolicyProposal from '../security.rancher.io.workloadpolicyproposal';
+import WorkloadPolicyProposal from '../runtimeenforcer.kubewarden.io.workloadpolicyproposal';
 import { PRODUCT_NAME, RESOURCE } from '../../types/runtime-enforcer';
 import { PROMOTE_LABEL_KEY } from '@runtime-enforcer/types';
 
@@ -362,12 +362,12 @@ describe('WorkloadPolicyProposal model', () => {
 
   describe('toActivePolicyResource', () => {
     it('converts the proposal into a WorkloadPolicy shape with the given mode', () => {
-      proposal.apiVersion = 'security.rancher.io/v1alpha1';
+      proposal.apiVersion = 'runtimeenforcer.kubewarden.io/v1alpha1';
       proposal.metadata = { name: 'deploy-nginx-ingress', namespace: 'ingress' };
       proposal.spec = { rulesByContainer: { nginx: { executables: { allowed: ['/usr/bin/nginx'] } } } };
 
       expect(proposal.toActivePolicyResource('protect')).toEqual({
-        apiVersion: 'security.rancher.io/v1alpha1',
+        apiVersion: 'runtimeenforcer.kubewarden.io/v1alpha1',
         kind:       'WorkloadPolicy',
         metadata:   {
           name:      'deploy-nginx-ingress',

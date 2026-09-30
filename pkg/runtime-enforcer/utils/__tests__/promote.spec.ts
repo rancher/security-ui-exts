@@ -47,8 +47,8 @@ describe('applyPromoteLabel', () => {
     await applyPromoteLabel(resource, POLICY_MODE.PROTECT);
 
     expect(resource.metadata.labels).toEqual({
-      existing:                      'label',
-      'security.rancher.io/promote': POLICY_MODE.PROTECT,
+      existing:                                'label',
+      'runtimeenforcer.kubewarden.io/promote': POLICY_MODE.PROTECT,
     });
     expect(resource.save).toHaveBeenCalledTimes(1);
   });
@@ -58,7 +58,7 @@ describe('applyPromoteLabel', () => {
 
     await applyPromoteLabel(resource, POLICY_MODE.MONITOR);
 
-    expect(resource.metadata.labels['security.rancher.io/promote']).toBe(POLICY_MODE.MONITOR);
+    expect(resource.metadata.labels['runtimeenforcer.kubewarden.io/promote']).toBe(POLICY_MODE.MONITOR);
     expect(resource.save).toHaveBeenCalledTimes(1);
   });
 });
@@ -110,7 +110,7 @@ describe('applyWorkloadPolicyLabel', () => {
 
     await applyWorkloadPolicyLabel(store, baseSnapshot);
 
-    expect(workload.spec.template.metadata.labels['security.rancher.io/policy']).toBe('proposal-1');
+    expect(workload.spec.template.metadata.labels['runtimeenforcer.kubewarden.io/policy']).toBe('proposal-1');
     expect(workload.save).toHaveBeenCalledTimes(1);
   });
 
@@ -120,7 +120,7 @@ describe('applyWorkloadPolicyLabel', () => {
 
     await applyWorkloadPolicyLabel(store, { ...baseSnapshot, ownerWorkloadSteveType: 'batch.cronjob' });
 
-    expect(workload.spec.jobTemplate.spec.template.metadata.labels['security.rancher.io/policy']).toBe('proposal-1');
+    expect(workload.spec.jobTemplate.spec.template.metadata.labels['runtimeenforcer.kubewarden.io/policy']).toBe('proposal-1');
     expect(workload.save).toHaveBeenCalledTimes(1);
   });
 
@@ -134,8 +134,8 @@ describe('applyWorkloadPolicyLabel', () => {
     await applyWorkloadPolicyLabel(store, baseSnapshot);
 
     expect(workload.spec.template.metadata.labels).toEqual({
-      app:                          'my-deployment',
-      'security.rancher.io/policy': 'proposal-1',
+      app:                                    'my-deployment',
+      'runtimeenforcer.kubewarden.io/policy': 'proposal-1',
     });
   });
 });

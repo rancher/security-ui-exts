@@ -85,7 +85,7 @@ jest.mock('@shell/types/store/pagination.types', () => ({
   PaginationParamFilter: { createMultipleFields: (fields: unknown[]) => ({ fields }) },
 }));
 
-const PolicyProposalList = require('../security.rancher.io.workloadpolicyproposal.vue').default;
+const PolicyProposalList = require('../runtimeenforcer.kubewarden.io.workloadpolicyproposal.vue').default;
 
 type MakeWrapperOptions = {
   canCreate?: boolean;
@@ -120,7 +120,7 @@ function makeWrapper(options: MakeWrapperOptions = {}) {
   });
 }
 
-describe('security.rancher.io.workloadpolicyproposal list', () => {
+describe('runtimeenforcer.kubewarden.io.workloadpolicyproposal list', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });

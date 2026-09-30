@@ -1,5 +1,5 @@
 const workloadPolicies = [{
-  apiVersion: 'security.rancher.io/v1alpha1',
+  apiVersion: 'runtimeenforcer.kubewarden.io/v1alpha1',
   kind:       'WorkloadPolicy',
   metadata:   {
     name:              'nginx-policy',
@@ -81,7 +81,7 @@ const workloadPolicies = [{
     }],
   },
 }, {
-  apiVersion: 'security.rancher.io/v1alpha1',
+  apiVersion: 'runtimeenforcer.kubewarden.io/v1alpha1',
   kind:       'WorkloadPolicy',
   metadata:   {
     name:              'redis-policy',
@@ -140,7 +140,7 @@ const workloadPolicies = [{
     }],
   },
 }, {
-  apiVersion: 'security.rancher.io/v1alpha1',
+  apiVersion: 'runtimeenforcer.kubewarden.io/v1alpha1',
   kind:       'WorkloadPolicy',
   metadata:   {
     name:              'fluent-bit-policy',
@@ -198,7 +198,7 @@ const workloadPolicies = [{
     }],
   },
 }, {
-  apiVersion: 'security.rancher.io/v1alpha1',
+  apiVersion: 'runtimeenforcer.kubewarden.io/v1alpha1',
   kind:       'WorkloadPolicy',
   metadata:   {
     name:              'cleanup-policy',
@@ -251,7 +251,7 @@ const workloadPolicies = [{
     }],
   },
 }, {
-  apiVersion: 'security.rancher.io/v1alpha1',
+  apiVersion: 'runtimeenforcer.kubewarden.io/v1alpha1',
   kind:       'WorkloadPolicy',
   metadata:   {
     name:              'postgres-policy',

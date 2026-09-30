@@ -10,7 +10,7 @@ describe('DeploymentDetailRuntimeSecurity.vue', () => {
     spec: {
       template: {
         metadata: {
-          labels: { 'security.rancher.io/policy': 'strict-db' },
+          labels: { 'runtimeenforcer.kubewarden.io/policy': 'strict-db' },
         },
       },
     },

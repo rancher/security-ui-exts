@@ -1,8 +1,8 @@
 product:
   runtimeEnforcer: Runtime Enforcer
 typeLabel:
-  security.rancher.io.workloadpolicyproposal: Policy Proposals
-  security.rancher.io.workloadpolicy: Active Policies
+  runtimeenforcer.kubewarden.io.workloadpolicyproposal: Policy Proposals
+  runtimeenforcer.kubewarden.io.workloadpolicy: Active Policies
 
 runtimeEnforcer:
   policyProposals:
@@ -185,7 +185,7 @@ runtimeEnforcer:
           automatic:
             single: Automatically apply the active policy and restart the workload
             bulk: Automatically apply the active policies and restart the workloads
-            tooltip: Applies the new active policy for you - writes the security.rancher.io/policy label onto the workload and restarts it, so enforcement takes effect immediately.
+            tooltip: Applies the new active policy for you - writes the runtimeenforcer.kubewarden.io/policy label onto the workload and restarts it, so enforcement takes effect immediately.
           manual:
             single: Manually apply the active policy <b>(recommended for GitOps)</b>
             bulk: Manually apply the active policies <b>(recommended for GitOps)</b>
@@ -291,15 +291,15 @@ runtimeEnforcer:
         keep:
           single: Do not remove the label of the active policy from the workload
           bulk: Do not remove the labels of the active policies from the workloads
-          tooltip: Deletes the active policy but leaves the security.rancher.io/policy label on the workload. Enforcement stops immediately; Choose this if you'll attach a new policy shortly, or if the workload's labels are managed elsewhere.
+          tooltip: Deletes the active policy but leaves the runtimeenforcer.kubewarden.io/policy label on the workload. Enforcement stops immediately; Choose this if you'll attach a new policy shortly, or if the workload's labels are managed elsewhere.
         remove:
           single: Automatically remove the label of the active policy and restart the workload
           bulk: Automatically remove the labels of the active policies and restart the workloads
-          tooltip: Deletes the active policy and strips the security.rancher.io/policy label from the workload for you, restarting it.
+          tooltip: Deletes the active policy and strips the runtimeenforcer.kubewarden.io/policy label from the workload for you, restarting it.
         manual:
           single: Manually remove the label of the active policy <b>(recommended for GitOps)</b>
           bulk: Manually remove the labels of the active policies <b>(recommended for GitOps)</b>
-          tooltip: Deletes the active policy but leaves the label for you to remove. Delete the security.rancher.io/policy label from the workload in your source of truth and redeploy. Recommended for GitOps-managed workloads (e.g. Fleet), so the change sticks and isn't reverted on the next sync.
+          tooltip: Deletes the active policy but leaves the label for you to remove. Delete the runtimeenforcer.kubewarden.io/policy label from the workload in your source of truth and redeploy. Recommended for GitOps-managed workloads (e.g. Fleet), so the change sticks and isn't reverted on the next sync.
       manualRemoval:
         single: To manually remove the label of the active policy from the workload, you need to remove the label below from the corresponding workload and redeploy it. <learnMore>Learn more</learnMore>
         bulk: To manually remove the labels of the active policies from the workloads, you need to remove the labels below from the corresponding workloads and redeploy them. <learnMore>Learn more</learnMore>
