@@ -177,7 +177,7 @@ export const POLICY_STATUS = {
   MISSING:       'missing',
 };
 
-export const DOCUMENTATION_URL = 'https://rancher.github.io/runtime-enforcer-product-docs/runtime-enforcer/latest/en/introduction.html';
+export const DOCUMENTATION_URL = 'https://documentation.suse.com/cloudnative/runtime-enforcer/latest/en/installation/quickstart.html';
 
 export const POLICY_LABEL_KEY = 'runtimeenforcer.kubewarden.io/policy';
 

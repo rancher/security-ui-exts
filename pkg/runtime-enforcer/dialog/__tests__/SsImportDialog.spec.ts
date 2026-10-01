@@ -1,5 +1,5 @@
 import { shallowMount } from '@vue/test-utils';
-import ImportDialog from '../ImportDialog.vue';
+import SsImportDialog from '../SsImportDialog.vue';
 import { exceptionToErrorsArray } from '@shell/utils/error';
 import { NAMESPACE } from '@shell/config/types';
 import { NAME as NAME_COL, TYPE, NAMESPACE as NAMESPACE_COL, AGE } from '@shell/config/table-headers';
@@ -23,7 +23,7 @@ const createWrapper = ({
   dispatch?: jest.Mock,
   attachTo?: HTMLElement,
 } = {}) => {
-  return shallowMount(ImportDialog as any, {
+  return shallowMount(SsImportDialog as any, {
     props: { defaultNamespace },
     attachTo,
     global: {

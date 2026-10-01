@@ -239,7 +239,7 @@ async function fetchPageSecondaryResources({ force, page }: { force: any; page: 
 
 function importYaml() {
   store.dispatch('cluster/promptModal', {
-    component:      'ImportDialog',
+    component:      'SsImportDialog',
     modalWidth:     '960px',
     height:         'auto',
     styles:         'max-height: 90vh;',
