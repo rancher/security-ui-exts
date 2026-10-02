@@ -1,6 +1,6 @@
 <template>
   <div v-if="boundPolicy" class="workload-runtime-violations">
-    <div class="banner-row mb-24">
+    <div class="banner-row">
       <Banner color="info" class="policy-info-banner">
         <span class="banner-text">
           <RichTranslation k="runtimeEnforcer.workloadViolations.banner.text">
@@ -39,6 +39,7 @@
         :paging="true"
         :default-sort-by="'occurrences'"
         :default-sort-order="'desc'"
+        class="violations-table"
     >
       <template #col:executable="{ row }">
         <td>
@@ -269,17 +270,21 @@ export default {
     margin: 0;
     display: flex;
     align-items: center;
+    border-radius: 4px;
   }
 
   .banner-text {
     display: inline-block;
+    font-family: Lato, sans-serif;
     font-size: 14px;
-    line-height: 20px;
-    color: var(--body-text);
+    line-height: 140%;
+    font-weight: 500;
+    color: var(--body-text, #141419);
 
-    .policy-link {
-      font-weight: 600;
-      color: var(--body-text);
+    .policy-link,
+    .doc-link {
+      font-weight: 500;
+      color: var(--body-text, #141419);
       text-decoration: underline;
 
       &:hover {
@@ -290,20 +295,11 @@ export default {
     .mode-text {
       font-weight: 600;
     }
-
-    .doc-link {
-      color: var(--body-text);
-      text-decoration: underline;
-
-      &:hover {
-        color: var(--link);
-      }
-    }
   }
 }
 
-.mb-24 {
-  margin-bottom: 24px;
+.violations-table {
+  margin-top: 24px;
 }
 
 .executable-pill {

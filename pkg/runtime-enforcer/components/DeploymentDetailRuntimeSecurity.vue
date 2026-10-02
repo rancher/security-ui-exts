@@ -53,14 +53,15 @@ export default {
   .deployment-runtime-security-row {
     display: flex;
     align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: 4px;
     font-family: Lato, sans-serif;
     font-size: 14px;
     line-height: 21px;
 
     .detail-label {
       color: var(--text-muted, #6c6c76);
-      min-width: 140px;
+      width: 160px;       /* Match standard Rancher metadata label width */
+      min-width: 160px;
       font-weight: 400;
     }
 
