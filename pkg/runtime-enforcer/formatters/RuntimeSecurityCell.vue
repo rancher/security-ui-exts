@@ -299,7 +299,7 @@ $gap-size: 10px;
   align-items: center;
   width: fit-content;
   height: 100%;
-  cursor: pointer;
+  cursor: default;
 
   &:hover .hover-overlay {
     display: block;

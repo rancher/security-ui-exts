@@ -179,6 +179,7 @@ export default {
     width: 360px;
     word-wrap: break-word;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    cursor: default;
     .title {
       font-weight: 600;
       font-size: 16px;
@@ -193,6 +194,12 @@ export default {
 
       white-space: pre-wrap;
       word-break: break-word;
+    }
+    a,
+    .router-link,
+    .action-link,
+    button {
+      cursor: pointer;
     }
   }
   .message-list {
