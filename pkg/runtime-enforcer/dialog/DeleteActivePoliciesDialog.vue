@@ -3,7 +3,6 @@ import { Card } from '@components/Card';
 import { Banner } from '@components/Banner';
 import RcButton from '@components/RcButton/RcButton.vue';
 import { PRODUCT_NAME } from '@runtime-enforcer/types/runtime-enforcer.ts';
-import { exceptionToErrorsArray } from '@shell/utils/error';
 import { TIMESTAMP } from '@shell/config/labels-annotations';
 import RadioButton from '@components/Form/Radio/RadioButton.vue';
 import { _EDIT } from '@shell/config/query-params';
@@ -11,7 +10,12 @@ import { DOCUMENTATION_URL, WORKLOAD_PREFIX, POLICY_LABEL_KEY, WORKLOAD_RESTART_
 import RichTranslation from '@shell/components/RichTranslation.vue';
 import SubtleLink from '@shell/components/SubtleLink.vue';
 import WorkloadTag from '@runtime-enforcer/components/common/WorkloadTag.vue';
-import { WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
+import { POD, WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
+import { waitFor } from '@shell/utils/async';
+
+// How long auto removal waits for the old labelled pods to go away before giving up.
+const LABELLED_PODS_TIMEOUT_MS = 60000;
+const LABELLED_PODS_POLL_MS = 2000;
 
 export default {
   emits: ['close'],
@@ -36,7 +40,6 @@ export default {
   data() {
     return {
       deleteInProgress:      false,
-      errors:                [],
       workloadRemovalOption: 'keep',
       _EDIT:                 _EDIT,
       DOCUMENTATION_URL,
@@ -118,45 +121,64 @@ export default {
 
   methods: {
     close() {
-      // Reset the workloadRemovalOption to break from the loop for getting the updated workload in case of auto removal option.
-      this.workloadRemovalOption = 'keep';
       this.$emit('close');
     },
 
     async unlabelAndRedeployWorkload(workload, now) {
+      if (!workload) {
+        return;
+      }
+
+      const podTemplate = workload.spec?.jobTemplate?.spec?.template ?? workload.spec?.template;
+
+      if (!podTemplate) {
+        return;
+      }
+
+      const templateMetadata = podTemplate.metadata ??= {};
+      const labels = templateMetadata.labels ??= {};
+
+      if (!labels[POLICY_LABEL_KEY]) {
+        return;
+      }
+
+      delete labels[POLICY_LABEL_KEY];
+
+      if (workload.kind !== 'CronJob' && workload.kind !== 'Job' && workload.spec?.template) {
+        const metadata = workload.spec.template.metadata ??= {};
+        const annotations = metadata.annotations ??= {};
+
+        annotations[TIMESTAMP] = now;
+      }
+
+      await workload.save({ force: true });
+    },
+
+    async waitForLabelledPodsToGo(resource) {
+      // The backend rejects the delete while any pod (including finished Job pods) still carries the label,
+      // so wait for the old pods to go rather than for the workload template to change.
+      const selector = `${ POLICY_LABEL_KEY }=${ resource.metadata.name }`;
+      const namespace = resource.metadata.namespace;
+
+      await this.$store.dispatch('cluster/findMatching', {
+        type: POD, selector, namespace
+      });
       try {
-        if (!workload) {
-          return;
-        }
-
-        const podTemplate = workload.spec?.jobTemplate?.spec?.template ?? workload.spec?.template;
-
-        if (!podTemplate) {
-          return;
-        }
-
-        const templateMetadata = podTemplate.metadata ??= {};
-        const labels = templateMetadata.labels ??= {};
-
-        delete labels[POLICY_LABEL_KEY];
-
-        if (workload.kind !== 'CronJob' && workload.kind !== 'Job' && workload.spec?.template) {
-          const metadata = workload.spec.template.metadata ??= {};
-          const annotations = metadata.annotations ??= {};
-
-          annotations[TIMESTAMP] = now;
-        }
-
-        await workload.save({ force: true });
-      } catch (err) {
-        this.errors = exceptionToErrorsArray(err);
+        await waitFor(
+          () => this.$store.getters['cluster/matching'](POD, selector, namespace).length === 0,
+          '',
+          LABELLED_PODS_TIMEOUT_MS,
+          LABELLED_PODS_POLL_MS
+        );
+      } catch {
+        // Fall through on timeout: the delete either succeeds or the backend rejects it naming the pods still using the policy.
       }
     },
 
     async deletePolicies() {
       this.deleteInProgress = true;
       try {
-        await Promise.all((this.resources || []).map(async (resource, index) => {
+        await Promise.all((this.resources || []).map(async(resource, index) => {
 
           const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
 
@@ -174,44 +196,10 @@ export default {
             }
 
             await this.unlabelAndRedeployWorkload(workload, now);
-
-            // Remove the policy once the workload has been redeployed or if the user chose to keep the workload
-            // use a loop to wait for the workload to be redeployed before removing the policy
-            while (this.workloadRemovalOption === 'auto') {
-              const updatedWorkload = await this.$store.dispatch('cluster/find', {
-                type: WORKLOAD_KIND_TO_TYPE_MAPPING[workload?.kind],
-                id:   `${ workload.metadata.namespace }/${ workload.name }`,
-                opt:  { force: true },
-              });
-
-              if (!updatedWorkload) {
-                break;
-              }
-
-              const podTemplate = updatedWorkload.spec?.jobTemplate?.spec?.template ?? updatedWorkload.spec?.template;
-
-              if (!podTemplate) {
-                break;
-              }
-
-              const templateMetadata = podTemplate.metadata ??= {};
-              const labels = templateMetadata.labels ??= {};
-
-              if (!labels[POLICY_LABEL_KEY]) {
-                break;
-              }
-              await new Promise(resolve => setTimeout(resolve, 2000));
-            }
-          }
-          // For the case of auto removing labels from workloads, wait for 5 seconds before removing the policy to ensure that the workload has been redeployed
-          // and ReplicaSet has been synced for the policy label removal. The timing is not predictable. (5 seconds is a safe bet for now according to testing)
-          // The sync up latency could cause the removal failure as the policy label is still present on the replicaSet.
-          if (this.workloadRemovalOption === 'auto') {
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            await this.waitForLabelledPodsToGo(resource);
           }
           await resource?.remove?.();
         }));
-        this.deleteInProgress = false;
         this.$store.dispatch('growl/success', { title: this.growlTitle, message: this.growlMessage });
         this.$router.push({
           name:   `c-cluster-${ PRODUCT_NAME }-resource`,
@@ -223,6 +211,8 @@ export default {
         this.close();
       } catch (err) {
         this.$store.dispatch('growl/error', { title: this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.title.error'), message: err.message });
+      } finally {
+        this.deleteInProgress = false;
       }
     },
   },
@@ -262,6 +252,7 @@ export default {
             val="keep"
             :label="workloadRemovalOptions[0].label"
             :mode="_EDIT"
+            :disabled="deleteInProgress"
             :use-body-text-color="true"
             @update:value="workloadRemovalOption = $event"
           >
@@ -282,6 +273,7 @@ export default {
             val="auto"
             :label="workloadRemovalOptions[1].label"
             :mode="_EDIT"
+            :disabled="deleteInProgress"
             :use-body-text-color="true"
             @update:value="workloadRemovalOption = $event"
           >
@@ -302,6 +294,7 @@ export default {
             val="manual"
             :label="workloadRemovalOptions[2].label"
             :mode="_EDIT"
+            :disabled="deleteInProgress"
             :use-body-text-color="true"
             @update:value="workloadRemovalOption = $event"
           >
@@ -343,6 +336,7 @@ export default {
       <RcButton
         variant="link"
         size="large"
+        :disabled="deleteInProgress"
         @click="close"
       >
         {{ t('runtimeEnforcer.policyProposal.deleteDialog.cancel') }}
