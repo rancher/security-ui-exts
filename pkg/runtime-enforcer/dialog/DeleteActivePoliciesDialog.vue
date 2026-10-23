@@ -190,7 +190,7 @@ export default {
             });
 
             if (!workload) {
-              this.$store.dispatch('growl/error', { title: this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.title.error'), message: this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.workloadNotFound', { name: resource.workloadRef?.workloadName })  });
+              this.$store.dispatch('growl/error', { title: this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.title.error'), message: this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.workloadNotFound', { name: resource.workloadRef?.workloadName }, true)  });
 
               return;
             }
