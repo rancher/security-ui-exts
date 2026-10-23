@@ -174,7 +174,7 @@ describe('DeleteActivePoliciesDialog', () => {
       const { wrapper } = mountDialog({ resources: [createResource()] });
 
       (wrapper.vm as any).workloadRemovalOption = 'keep';
-      expect((wrapper.vm as any).growlMessage).toBe('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single');
+      expect((wrapper.vm as any).growlMessage).toBe('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single:{"name":"policy-a"}');
     });
 
     it('returns keep bulk growl message', () => {
@@ -189,7 +189,7 @@ describe('DeleteActivePoliciesDialog', () => {
 
       (wrapper.vm as any).workloadRemovalOption = 'auto';
       expect((wrapper.vm as any).growlMessage).toBe(
-        'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.single'
+        'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single:{"name":"policy-a"} runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.single:{}'
       );
     });
 
@@ -198,7 +198,7 @@ describe('DeleteActivePoliciesDialog', () => {
 
       (wrapper.vm as any).workloadRemovalOption = 'auto';
       expect((wrapper.vm as any).growlMessage).toBe(
-        'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk:{"count":2} runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.bulk'
+        'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk:{"count":2} runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.bulk:{}'
       );
     });
 
@@ -207,7 +207,7 @@ describe('DeleteActivePoliciesDialog', () => {
 
       (wrapper.vm as any).workloadRemovalOption = 'manual';
       expect((wrapper.vm as any).growlMessage).toBe(
-        'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single runtimeEnforcer.activePolicies.deleteDialog.growl.manualRemoval.single'
+        'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single:{"name":"policy-a"} runtimeEnforcer.activePolicies.deleteDialog.growl.manualRemoval.single:{}'
       );
     });
 
@@ -216,7 +216,7 @@ describe('DeleteActivePoliciesDialog', () => {
 
       (wrapper.vm as any).workloadRemovalOption = 'manual';
       expect((wrapper.vm as any).growlMessage).toBe(
-        'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk:{"count":2} runtimeEnforcer.activePolicies.deleteDialog.growl.manualRemoval.bulk'
+        'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk:{"count":2} runtimeEnforcer.activePolicies.deleteDialog.growl.manualRemoval.bulk:{}'
       );
     });
 
@@ -346,7 +346,7 @@ describe('DeleteActivePoliciesDialog', () => {
       expect(resources[1].remove).toHaveBeenCalledTimes(1);
       expect(dispatch).toHaveBeenCalledWith('growl/success', {
         title:   'runtimeEnforcer.activePolicies.deleteDialog.growl.title.bulk',
-        message: 'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk:{"count":2} runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.bulk',
+        message: 'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk:{"count":2} runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.bulk:{}',
       });
       expect((wrapper.vm as any).deleteInProgress).toBe(false);
       expect(wrapper.emitted('close')).toHaveLength(1);
@@ -364,7 +364,7 @@ describe('DeleteActivePoliciesDialog', () => {
       expect(redeploySpy).not.toHaveBeenCalled();
       expect(dispatch).toHaveBeenCalledWith('growl/success', {
         title:   'runtimeEnforcer.activePolicies.deleteDialog.growl.title.single',
-        message: 'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single runtimeEnforcer.activePolicies.deleteDialog.growl.manualRemoval.single',
+        message: 'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single:{"name":"a"} runtimeEnforcer.activePolicies.deleteDialog.growl.manualRemoval.single:{}',
       });
       expect((wrapper.vm as any).deleteInProgress).toBe(false);
     });
