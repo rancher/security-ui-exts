@@ -101,15 +101,15 @@ export default {
       case 'keep':
         return this.isBulk
           ? this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk', { count: this.resources.length }, true)
-          : this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single', { name: this.resources[0]?.nameDisplay });
+          : this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single', { name: this.resources[0]?.nameDisplay }, true);
       case 'auto':
         return this.isBulk
-          ? `${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk', { count: this.resources.length }, true )} ${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.bulk')}`
-          : `${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single', { name: this.resources[0]?.nameDisplay })} ${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.single')}`;
+          ? `${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk', { count: this.resources.length }, true )} ${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.bulk', {}, true)}`
+          : `${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single', { name: this.resources[0]?.nameDisplay }, true)} ${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.single', {}, true)}`;
       case 'manual':
         return this.isBulk
-          ? `${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk', { count: this.resources.length }, true )} ${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.manualRemoval.bulk')}`
-          : `${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single', { name: this.resources[0]?.nameDisplay })} ${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.manualRemoval.single')}`;
+          ? `${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk', { count: this.resources.length }, true )} ${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.manualRemoval.bulk', {}, true)}`
+          : `${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single', { name: this.resources[0]?.nameDisplay }, true)} ${this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.manualRemoval.single', {}, true)}`;
       }
     },
     growlTitle() {
