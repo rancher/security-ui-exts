@@ -18,6 +18,10 @@ export default {
     },
   },
 
+  data() {
+    return { exportInProgress: false };
+  },
+
   computed: {
     isBulk() {
       return this.resources.length > 1;
@@ -44,18 +48,33 @@ export default {
     // Each policy's YAML is fetched and cleaned of Steve-added fields, mirroring the base
     // model's download()/downloadBulk().
     async exportPolicies() {
-      const yamls = await Promise.all(this.resources.map(async(resource) => {
-        const value = await resource.followLink('view', { headers: { accept: 'application/yaml' } });
+      const key = 'runtimeEnforcer.activePolicies.exportDialog.growl';
 
-        return resource.cleanForDownload(value.data);
-      }));
+      this.exportInProgress = true;
+      try {
+        const yamls = await Promise.all(this.resources.map(async(resource) => {
+          const value = await resource.followLink('view', { headers: { accept: 'application/yaml' } });
 
-      const yaml = yamls.join('---\n');
-      const fileName = this.isBulk ? 'active-policies.yaml' : `${ this.resources[0]?.metadata?.name || this.resources[0]?.nameDisplay }.yaml`;
+          return resource.cleanForDownload(value.data);
+        }));
 
-      await downloadFile(fileName, yaml, 'application/yaml');
+        const yaml = yamls.join('---\n');
+        const fileName = this.isBulk ? 'active-policies.yaml' : `${ this.resources[0]?.metadata?.name || this.resources[0]?.nameDisplay }.yaml`;
 
-      this.close();
+        await downloadFile(fileName, yaml, 'application/yaml');
+
+        this.$store.dispatch('growl/success', {
+          title:   this.t(`${ key }.title.${ this.isBulk ? 'bulk' : 'single' }`, {}, true),
+          message: this.isBulk
+            ? this.t(`${ key }.message.bulk`, { count: this.resources.length }, true)
+            : this.t(`${ key }.message.single`, { name: this.resources[0]?.nameDisplay }, true),
+        });
+        this.close();
+      } catch (err) {
+        this.$store.dispatch('growl/error', { title: this.t(`${ key }.title.error`, {}, true), message: err.message });
+      } finally {
+        this.exportInProgress = false;
+      }
     },
   },
 };
@@ -81,6 +100,7 @@ export default {
       <RcButton
         variant="link"
         size="large"
+        :disabled="exportInProgress"
         @click="close"
       >
         {{ t('runtimeEnforcer.activePolicies.exportDialog.cancel') }}
@@ -90,6 +110,7 @@ export default {
         size="large"
         left-icon="download"
         class="ml-10"
+        :disabled="exportInProgress"
         @click="exportPolicies"
       >
         {{ t('runtimeEnforcer.activePolicies.exportDialog.export') }}

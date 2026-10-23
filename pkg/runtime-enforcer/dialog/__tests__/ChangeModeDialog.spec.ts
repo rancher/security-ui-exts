@@ -6,13 +6,13 @@ const t = jest.fn((key, args, raw) => (raw ? `${ key }:${ JSON.stringify(args) }
 const createResource = (mode: string, name = `policy-${ mode }`) => ({
   nameDisplay: name,
   spec:        { mode },
-  save:        jest.fn(),
+  save:        jest.fn().mockResolvedValue(undefined),
 });
 
-const mountDialog = (resources: any[]) => {
+const mountDialog = (resources: any[], dispatch = jest.fn()) => {
   return shallowMount(ChangeModeDialog as any, {
     props:  { resources },
-    global: { mocks: { t } },
+    global: { mocks: { t, $store: { dispatch } } },
   });
 };
 
@@ -100,33 +100,33 @@ describe('ChangeModeDialog', () => {
   });
 
   describe('changeMode', () => {
-    it('toggles single resource from monitor to protect using transitionDirection', () => {
+    it('toggles single resource from monitor to protect using transitionDirection', async() => {
       const resource = createResource('monitor');
       const wrapper = mountDialog([resource]);
 
-      (wrapper.vm as any).changeMode();
+      await (wrapper.vm as any).changeMode();
 
       expect(resource.spec.mode).toBe('protect');
       expect(resource.save).toHaveBeenCalledTimes(1);
       expect(wrapper.emitted('close')).toHaveLength(1);
     });
 
-    it('toggles single resource from protect to monitor using transitionDirection', () => {
+    it('toggles single resource from protect to monitor using transitionDirection', async() => {
       const resource = createResource('protect');
       const wrapper = mountDialog([resource]);
 
-      (wrapper.vm as any).changeMode();
+      await (wrapper.vm as any).changeMode();
 
       expect(resource.spec.mode).toBe('monitor');
       expect(resource.save).toHaveBeenCalledTimes(1);
       expect(wrapper.emitted('close')).toHaveLength(1);
     });
 
-    it('toggles every resource to protect when all selected policies are in monitor', () => {
+    it('toggles every resource to protect when all selected policies are in monitor', async() => {
       const resources = [createResource('monitor', 'a'), createResource('monitor', 'b')];
       const wrapper = mountDialog(resources);
 
-      (wrapper.vm as any).changeMode();
+      await (wrapper.vm as any).changeMode();
 
       resources.forEach((resource) => {
         expect(resource.spec.mode).toBe('protect');
@@ -135,11 +135,11 @@ describe('ChangeModeDialog', () => {
       expect(wrapper.emitted('close')).toHaveLength(1);
     });
 
-    it('toggles every resource to monitor when all selected policies are in protect', () => {
+    it('toggles every resource to monitor when all selected policies are in protect', async() => {
       const resources = [createResource('protect', 'a'), createResource('protect', 'b')];
       const wrapper = mountDialog(resources);
 
-      (wrapper.vm as any).changeMode();
+      await (wrapper.vm as any).changeMode();
 
       resources.forEach((resource) => {
         expect(resource.spec.mode).toBe('monitor');
@@ -148,18 +148,86 @@ describe('ChangeModeDialog', () => {
       expect(wrapper.emitted('close')).toHaveLength(1);
     });
 
-    it('applies selected targetMode to all resources in bulk mode', () => {
+    it('applies selected targetMode to all resources in bulk mode', async() => {
       const resources = [createResource('monitor', 'a'), createResource('protect', 'b')];
       const wrapper = mountDialog(resources);
 
       (wrapper.vm as any).targetMode = 'protect';
-      (wrapper.vm as any).changeMode();
+      await (wrapper.vm as any).changeMode();
 
       resources.forEach((resource) => {
         expect(resource.spec.mode).toBe('protect');
         expect(resource.save).toHaveBeenCalledTimes(1);
       });
       expect(wrapper.emitted('close')).toHaveLength(1);
+    });
+
+    it('shows a success growl naming the policy and its new mode', async() => {
+      const wrapper = mountDialog([createResource('monitor', 'web')]);
+
+      await (wrapper.vm as any).changeMode();
+
+      expect((wrapper.vm as any).$store.dispatch).toHaveBeenCalledWith('growl/success', {
+        title:   'runtimeEnforcer.activePolicies.changeModeDialog.growl.title.single:{}',
+        message: 'runtimeEnforcer.activePolicies.changeModeDialog.growl.message.single:{"name":"web","mode":"runtimeEnforcer.activePolicies.mode.protect"}',
+      });
+    });
+
+    it('shows a bulk success growl with the count and new mode', async() => {
+      const wrapper = mountDialog([createResource('protect', 'a'), createResource('protect', 'b')]);
+
+      await (wrapper.vm as any).changeMode();
+
+      expect((wrapper.vm as any).$store.dispatch).toHaveBeenCalledWith('growl/success', {
+        title:   'runtimeEnforcer.activePolicies.changeModeDialog.growl.title.bulk:{}',
+        message: 'runtimeEnforcer.activePolicies.changeModeDialog.growl.message.bulk:{"count":2,"mode":"runtimeEnforcer.activePolicies.mode.monitor"}',
+      });
+    });
+
+    it('restores the previous mode, shows an error growl and stays open when a save fails', async() => {
+      const failing = createResource('monitor', 'a');
+      const succeeding = createResource('monitor', 'b');
+
+      failing.save.mockRejectedValueOnce(new Error('forbidden'));
+
+      const wrapper = mountDialog([failing, succeeding]);
+
+      await (wrapper.vm as any).changeMode();
+
+      expect(failing.spec.mode).toBe('monitor');
+      expect(succeeding.spec.mode).toBe('protect');
+      expect((wrapper.vm as any).$store.dispatch).toHaveBeenCalledWith('growl/error', {
+        title:   'runtimeEnforcer.activePolicies.changeModeDialog.growl.title.error:{}',
+        message: 'forbidden',
+      });
+      expect((wrapper.vm as any).$store.dispatch).not.toHaveBeenCalledWith('growl/success', expect.anything());
+      expect(wrapper.emitted('close')).toBeUndefined();
+      expect((wrapper.vm as any).changeInProgress).toBe(false);
+    });
+  });
+
+  it('keeps the dialog content fixed while the new mode is being saved', async() => {
+    const resource = createResource('monitor');
+    const wrapper = mountDialog([resource]);
+
+    await (wrapper.vm as any).changeMode();
+
+    expect(resource.spec.mode).toBe('protect');
+    expect((wrapper.vm as any).transitionDirection).toEqual({ from: 'monitor', to: 'protect' });
+    expect((wrapper.vm as any).showBanner).toBe(false);
+  });
+
+  describe('showBanner', () => {
+    it('hides the Monitor warning when switching a policy to Protect', () => {
+      expect((mountDialog([createResource('monitor')]).vm as any).showBanner).toBe(false);
+    });
+
+    it('shows the Monitor warning when switching a policy to Monitor', () => {
+      expect((mountDialog([createResource('protect')]).vm as any).showBanner).toBe(true);
+    });
+
+    it('shows the Monitor warning when the target mode is picked from the dropdown', () => {
+      expect((mountDialog([createResource('monitor', 'a'), createResource('protect', 'b')]).vm as any).showBanner).toBe(true);
     });
   });
 });
