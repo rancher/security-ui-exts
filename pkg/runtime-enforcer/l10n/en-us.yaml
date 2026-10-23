@@ -156,7 +156,7 @@ runtimeEnforcer:
         title:
           single: Policy Proposal Deleted
           bulk: Policy Proposals Deleted
-          error: Failed to delete
+          error: Failed to delete policy proposal
         single: The {name} policy proposal has been successfully deleted. Restarting the corresponding workload might take a few minutes to complete.
         bulk: The selected policy proposals ({count}) have been successfully deleted. Restarting the corresponding workloads might take a few minutes to complete.
     promoteDialog:
@@ -209,6 +209,7 @@ runtimeEnforcer:
           single: Restarting the corresponding workload might take a few minutes to complete.
           bulk: Restarting the corresponding workloads might take a few minutes to complete.
     errors:
+      loadWorkload: Failed to load workload
       emptyPath: "Container {container}: Executable path at position {index} cannot be empty."
       invalidPath: "Container {container}: Executable path {path} must start with a leading slash /."
   activePolicies:
@@ -315,7 +316,7 @@ runtimeEnforcer:
         title:
           single: Active Policy Deleted
           bulk: Active Policies Deleted
-          error: Failed to delete
+          error: Failed to delete active policy
         delete:
           single: The {name} active policy has been successfully deleted.
           bulk: The selected active policies ({count}) have been successfully deleted.
@@ -425,8 +426,8 @@ runtimeEnforcer:
       errorTitle: Error allowing executable
       growl:
         title:
-          single: Executable allowed
-          bulk: Executables allowed
+          single: Executable Allowed
+          bulk: Executables Allowed
         message:
           single: '{path} has been added to the list of allowed executables.'
           bulk: '{count} executables have been added to the list of allowed executables.'

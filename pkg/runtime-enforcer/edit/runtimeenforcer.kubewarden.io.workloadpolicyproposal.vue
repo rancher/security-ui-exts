@@ -218,7 +218,7 @@ export default {
         id:   `${ this.value.metadata.namespace }/${ this.value.workload }`,
       });
     } catch (err) {
-      await this.$store.dispatch('growl/fromError', { err }, { root: true });
+      await this.$store.dispatch('growl/fromError', { title: this.t('runtimeEnforcer.policyProposal.errors.loadWorkload'), err }, { root: true });
     }
   },
   mounted() {
