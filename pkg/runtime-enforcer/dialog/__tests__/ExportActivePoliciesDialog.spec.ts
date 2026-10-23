@@ -13,10 +13,10 @@ const createResource = (name: string) => ({
   cleanForDownload: jest.fn((yaml) => yaml),
 });
 
-const mountDialog = (resources: any[]) => {
+const mountDialog = (resources: any[], dispatch = jest.fn()) => {
   return shallowMount(ExportActivePoliciesDialog as any, {
     props:  { resources },
-    global: { mocks: { t } },
+    global: { mocks: { t, $store: { dispatch } } },
   });
 };
 
@@ -85,6 +85,10 @@ describe('ExportActivePoliciesDialog', () => {
         expect.stringContaining('name: deploy-nginx-ingress'),
         'application/yaml'
       );
+      expect((wrapper.vm as any).$store.dispatch).toHaveBeenCalledWith('growl/success', {
+        title:   'runtimeEnforcer.activePolicies.exportDialog.growl.title.single:{}',
+        message: 'runtimeEnforcer.activePolicies.exportDialog.growl.message.single:{"name":"deploy-nginx-ingress"}',
+      });
       expect(wrapper.emitted('close')).toHaveLength(1);
     });
 
@@ -105,7 +109,26 @@ describe('ExportActivePoliciesDialog', () => {
       expect(mimeType).toBe('application/yaml');
       // documents are separated by the `---` divider.
       expect(yaml.split('---\n').filter(Boolean)).toHaveLength(2);
+      expect((wrapper.vm as any).$store.dispatch).toHaveBeenCalledWith('growl/success', {
+        title:   'runtimeEnforcer.activePolicies.exportDialog.growl.title.bulk:{}',
+        message: 'runtimeEnforcer.activePolicies.exportDialog.growl.message.bulk:{"count":2}',
+      });
       expect(wrapper.emitted('close')).toHaveLength(1);
+    });
+
+    it('shows an error growl and stays open when the export fails', async() => {
+      (downloadFile as jest.Mock).mockRejectedValueOnce(new Error('blocked'));
+
+      const wrapper = mountDialog([createResource('a')]);
+
+      await (wrapper.vm as any).exportPolicies();
+
+      expect((wrapper.vm as any).$store.dispatch).toHaveBeenCalledWith('growl/error', {
+        title:   'runtimeEnforcer.activePolicies.exportDialog.growl.title.error:{}',
+        message: 'blocked',
+      });
+      expect(wrapper.emitted('close')).toBeUndefined();
+      expect((wrapper.vm as any).exportInProgress).toBe(false);
     });
   });
 });

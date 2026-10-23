@@ -23,7 +23,11 @@ export default {
   },
 
   data() {
-    return { targetMode: POLICY_MODE.MONITOR };
+    return {
+      targetMode:       POLICY_MODE.MONITOR,
+      changeInProgress: false,
+      initialModes:     this.resources.map((r) => r.spec.mode),
+    };
   },
 
   computed: {
@@ -32,19 +36,19 @@ export default {
     },
 
     allSameMode() {
-      return this.resources.every((r) => r.spec.mode === this.resources[0]?.spec.mode);
+      return this.initialModes.every((mode) => mode === this.initialModes[0]);
     },
     showModeSelect() {
       return this.isBulk && !this.allSameMode;
     },
 
     transitionDirection() {
-      if (this.resources[0].spec.mode === POLICY_MODE.MONITOR) {
+      if (this.initialModes[0] === POLICY_MODE.MONITOR) {
         return {
           from: POLICY_MODE.MONITOR,
           to:   POLICY_MODE.PROTECT,
         };
-      } else if (this.resources[0].spec.mode === POLICY_MODE.PROTECT) {
+      } else if (this.initialModes[0] === POLICY_MODE.PROTECT) {
         return {
           from: POLICY_MODE.PROTECT,
           to:   POLICY_MODE.MONITOR,
@@ -61,6 +65,10 @@ export default {
 
     title() {
       return this.t(`runtimeEnforcer.activePolicies.changeModeDialog.title.${ this.isBulk ? 'bulk' : 'single' }`);
+    },
+
+    showBanner() {
+      return this.showModeSelect || this.transitionDirection?.to === POLICY_MODE.MONITOR;
     },
 
     bannerText() {
@@ -95,14 +103,39 @@ export default {
       return this.t(`runtimeEnforcer.activePolicies.mode.${mode.toLowerCase()}`);
     },
 
-    changeMode() {
+    async changeMode() {
       const targetMode = this.showModeSelect ? this.targetMode : this.transitionDirection.to;
+      const key = 'runtimeEnforcer.activePolicies.changeModeDialog.growl';
 
-      this.resources.forEach((resource) => {
-        resource.spec.mode = targetMode;
-        resource.save();
-      });
-      this.close();
+      this.changeInProgress = true;
+      try {
+        await Promise.all(this.resources.map(async(resource) => {
+          const previousMode = resource.spec.mode;
+
+          resource.spec.mode = targetMode;
+          try {
+            await resource.save();
+          } catch (err) {
+            // Put the old mode back so the table doesn't show a mode the policy isn't in.
+            resource.spec.mode = previousMode;
+            throw err;
+          }
+        }));
+
+        const mode = this.modetext(targetMode);
+
+        this.$store.dispatch('growl/success', {
+          title:   this.t(`${ key }.title.${ this.isBulk ? 'bulk' : 'single' }`, {}, true),
+          message: this.isBulk
+            ? this.t(`${ key }.message.bulk`, { count: this.resources.length, mode }, true)
+            : this.t(`${ key }.message.single`, { name: this.resources[0]?.nameDisplay, mode }, true),
+        });
+        this.close();
+      } catch (err) {
+        this.$store.dispatch('growl/error', { title: this.t(`${ key }.title.error`, {}, true), message: err.message });
+      } finally {
+        this.changeInProgress = false;
+      }
     },
   },
 };
@@ -120,6 +153,7 @@ export default {
     </template>
     <template #body>
       <Banner
+        v-if="showBanner"
         class="export-banner"
         color="info"
       >
@@ -171,6 +205,7 @@ export default {
       <RcButton
         variant="link"
         size="large"
+        :disabled="changeInProgress"
         @click="close"
       >
         {{ t('runtimeEnforcer.activePolicies.changeModeDialog.cancel') }}
@@ -180,6 +215,7 @@ export default {
         size="large"
         left-icon="refresh"
         class="ml-10"
+        :disabled="changeInProgress"
         @click="changeMode"
       >
         {{ t('runtimeEnforcer.activePolicies.changeModeDialog.changeMode') }}

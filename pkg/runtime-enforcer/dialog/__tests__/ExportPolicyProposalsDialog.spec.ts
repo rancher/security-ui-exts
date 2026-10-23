@@ -17,10 +17,10 @@ const createResource = (name: string) => ({
   })),
 });
 
-const mountDialog = (resources: any[]) => {
+const mountDialog = (resources: any[], dispatch = jest.fn()) => {
   return shallowMount(ExportPolicyProposalsDialog as any, {
     props:  { resources },
-    global: { mocks: { t } },
+    global: { mocks: { t, $store: { dispatch } } },
   });
 };
 
@@ -102,6 +102,10 @@ describe('ExportPolicyProposalsDialog', () => {
         expect.stringContaining('kind: WorkloadPolicy'),
         'application/yaml'
       );
+      expect((wrapper.vm as any).$store.dispatch).toHaveBeenCalledWith('growl/success', {
+        title:   'runtimeEnforcer.policyProposal.exportDialog.growl.title.single:{}',
+        message: 'runtimeEnforcer.policyProposal.exportDialog.growl.message.single:{"name":"deploy-nginx-ingress"}',
+      });
       expect(wrapper.emitted('close')).toHaveLength(1);
     });
 
@@ -129,7 +133,26 @@ describe('ExportPolicyProposalsDialog', () => {
       expect(mimeType).toBe('application/yaml');
       // documents are separated by the `---` divider.
       expect(yaml.split('---\n').filter(Boolean)).toHaveLength(2);
+      expect((wrapper.vm as any).$store.dispatch).toHaveBeenCalledWith('growl/success', {
+        title:   'runtimeEnforcer.policyProposal.exportDialog.growl.title.bulk:{}',
+        message: 'runtimeEnforcer.policyProposal.exportDialog.growl.message.bulk:{"count":2}',
+      });
       expect(wrapper.emitted('close')).toHaveLength(1);
+    });
+
+    it('shows an error growl and stays open when the export fails', async() => {
+      (downloadFile as jest.Mock).mockRejectedValueOnce(new Error('blocked'));
+
+      const wrapper = mountDialog([createResource('a')]);
+
+      await (wrapper.vm as any).exportPolicies();
+
+      expect((wrapper.vm as any).$store.dispatch).toHaveBeenCalledWith('growl/error', {
+        title:   'runtimeEnforcer.policyProposal.exportDialog.growl.title.error:{}',
+        message: 'blocked',
+      });
+      expect(wrapper.emitted('close')).toBeUndefined();
+      expect((wrapper.vm as any).exportInProgress).toBe(false);
     });
   });
 });
