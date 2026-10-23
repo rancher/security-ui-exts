@@ -62,8 +62,8 @@ export default {
 
     growlMessage() {
       return this.isBulk
-        ? this.t('runtimeEnforcer.policyProposal.deleteDialog.growl.bulk', { count: this.resources.length })
-        : this.t('runtimeEnforcer.policyProposal.deleteDialog.growl.single', { name: this.resources[0]?.nameDisplay });
+        ? this.t('runtimeEnforcer.policyProposal.deleteDialog.growl.bulk', { count: this.resources.length }, true)
+        : this.t('runtimeEnforcer.policyProposal.deleteDialog.growl.single', { name: this.resources[0]?.nameDisplay }, true);
     },
 
     growlTitle() {

@@ -135,6 +135,14 @@ runtimeEnforcer:
         protect: Protect mode
       cancel: Cancel
       export: Export
+      growl:
+        title:
+          single: Policy Proposal Exported
+          bulk: Policy Proposals Exported
+          error: Failed to export policy proposal
+        message:
+          single: The {name} policy proposal has been successfully exported as an active policy.
+          bulk: The selected policy proposals ({count}) have been successfully exported as active policies.
     deleteDialog:
       title:
         single: Delete policy proposal
@@ -156,7 +164,7 @@ runtimeEnforcer:
         title:
           single: Policy Proposal Deleted
           bulk: Policy Proposals Deleted
-          error: Failed to delete
+          error: Failed to delete policy proposal
         single: The {name} policy proposal has been successfully deleted. Restarting the corresponding workload might take a few minutes to complete.
         bulk: The selected policy proposals ({count}) have been successfully deleted. Restarting the corresponding workloads might take a few minutes to complete.
     promoteDialog:
@@ -209,6 +217,7 @@ runtimeEnforcer:
           single: Restarting the corresponding workload might take a few minutes to complete.
           bulk: Restarting the corresponding workloads might take a few minutes to complete.
     errors:
+      loadWorkload: Failed to load workload
       emptyPath: "Container {container}: Executable path at position {index} cannot be empty."
       invalidPath: "Container {container}: Executable path {path} must start with a leading slash /."
   activePolicies:
@@ -315,7 +324,7 @@ runtimeEnforcer:
         title:
           single: Active Policy Deleted
           bulk: Active Policies Deleted
-          error: Failed to delete
+          error: Failed to delete active policy
         delete:
           single: The {name} active policy has been successfully deleted.
           bulk: The selected active policies ({count}) have been successfully deleted.
@@ -332,13 +341,21 @@ runtimeEnforcer:
         bulk: Change mode for active policies
       banner:
         single: Switching to Monitor mode will disable active enforcement for this policy. Any executables that violate the policy will no longer be blocked. The Runtime Enforcer will only observe and log these violations.
-        bulk: Switching to Monitor mode will disable active enforcement for this policy. Any executables that violate the policy will no longer be blocked. The Runtime Enforcer will only observe and log these violations.
+        bulk: Switching to Monitor mode will disable active enforcement for these policies. Any executables that violate the policies will no longer be blocked. The Runtime Enforcer will only observe and log these violations.
       confirm:
-        single: Are you sure you want to change the current mode for the monitoring-policy active policy from
+        single: Are you sure you want to change the current mode for the <b>{name}</b> active policy from
         bulk: Are you sure you want to change the current mode for the <b>selected policies ({count})</b>? If so, please select the new mode below.
         bulkSame: Are you sure you want to change the current mode for the <b>selected policies ({count})</b> from
       cancel: Cancel
       changeMode: Change Mode
+      growl:
+        title:
+          single: Active Policy Mode Changed
+          bulk: Active Policy Modes Changed
+          error: Failed to change active policy mode
+        message:
+          single: The {name} active policy is now in {mode} mode.
+          bulk: The selected active policies ({count}) are now in {mode} mode.
     exportDialog:
       title:
         single: Export active policy
@@ -348,6 +365,14 @@ runtimeEnforcer:
         bulk: 'Are you sure you want to export the <b>selected active policies ({count})</b>?'
       cancel: Cancel
       export: Export
+      growl:
+        title:
+          single: Active Policy Exported
+          bulk: Active Policies Exported
+          error: Failed to export active policy
+        message:
+          single: The {name} active policy has been successfully exported.
+          bulk: The selected active policies ({count}) have been successfully exported.
     import:
       instruction: You can import multiple policies at the same time by separating their YAML using `---` as divider.
   activePolicy:
@@ -425,8 +450,8 @@ runtimeEnforcer:
       errorTitle: Error allowing executable
       growl:
         title:
-          single: Executable allowed
-          bulk: Executables allowed
+          single: Executable Allowed
+          bulk: Executables Allowed
         message:
           single: '{path} has been added to the list of allowed executables.'
           bulk: '{count} executables have been added to the list of allowed executables.'

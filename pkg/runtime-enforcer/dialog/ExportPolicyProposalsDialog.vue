@@ -25,7 +25,7 @@ export default {
   },
 
   data() {
-    return { targetMode: POLICY_MODE.MONITOR };
+    return { targetMode: POLICY_MODE.MONITOR, exportInProgress: false };
   },
 
   computed: {
@@ -63,15 +63,30 @@ export default {
     // Single export produces one YAML file named after the proposal. Bulk export also produces
     // a single YAML file, but with all selected proposals as separate documents joined by '---'.
     async exportPolicies() {
-      const yaml = this.resources
-        .map((resource) => jsyaml.dump(resource.toActivePolicyResource(this.targetMode)))
-        .join('---\n');
+      const key = 'runtimeEnforcer.policyProposal.exportDialog.growl';
 
-      const fileName = this.isBulk ? 'active-policies.yaml' : `${ this.resources[0]?.metadata?.name || this.resources[0]?.nameDisplay }.yaml`;
+      this.exportInProgress = true;
+      try {
+        const yaml = this.resources
+          .map((resource) => jsyaml.dump(resource.toActivePolicyResource(this.targetMode)))
+          .join('---\n');
 
-      await downloadFile(fileName, yaml, 'application/yaml');
+        const fileName = this.isBulk ? 'active-policies.yaml' : `${ this.resources[0]?.metadata?.name || this.resources[0]?.nameDisplay }.yaml`;
 
-      this.close();
+        await downloadFile(fileName, yaml, 'application/yaml');
+
+        this.$store.dispatch('growl/success', {
+          title:   this.t(`${ key }.title.${ this.isBulk ? 'bulk' : 'single' }`, {}, true),
+          message: this.isBulk
+            ? this.t(`${ key }.message.bulk`, { count: this.resources.length }, true)
+            : this.t(`${ key }.message.single`, { name: this.resources[0]?.nameDisplay }, true),
+        });
+        this.close();
+      } catch (err) {
+        this.$store.dispatch('growl/error', { title: this.t(`${ key }.title.error`, {}, true), message: err.message });
+      } finally {
+        this.exportInProgress = false;
+      }
     },
   },
 };
@@ -108,6 +123,7 @@ export default {
       <RcButton
         variant="link"
         size="large"
+        :disabled="exportInProgress"
         @click="close"
       >
         {{ t('runtimeEnforcer.policyProposal.exportDialog.cancel') }}
@@ -117,6 +133,7 @@ export default {
         size="large"
         left-icon="download"
         class="ml-10"
+        :disabled="exportInProgress"
         @click="exportPolicies"
       >
         {{ t('runtimeEnforcer.policyProposal.exportDialog.export') }}

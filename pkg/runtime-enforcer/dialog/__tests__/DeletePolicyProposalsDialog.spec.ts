@@ -55,7 +55,7 @@ describe('DeletePolicyProposalsDialog', () => {
       expect((wrapper.vm as any).confirmText).toBe(
         'runtimeEnforcer.policyProposal.deleteDialog.confirm.single:{"name":"single-policy","workload":"wk-1"}'
       );
-      expect((wrapper.vm as any).growlMessage).toBe('runtimeEnforcer.policyProposal.deleteDialog.growl.single');
+      expect((wrapper.vm as any).growlMessage).toBe('runtimeEnforcer.policyProposal.deleteDialog.growl.single:{"name":"single-policy"}');
       expect((wrapper.vm as any).growlTitle).toBe(
         'runtimeEnforcer.policyProposal.deleteDialog.growl.title.single'
       );
@@ -73,7 +73,7 @@ describe('DeletePolicyProposalsDialog', () => {
       expect((wrapper.vm as any).confirmText).toBe(
         'runtimeEnforcer.policyProposal.deleteDialog.confirm.bulk:{"count":2}'
       );
-      expect((wrapper.vm as any).growlMessage).toBe('runtimeEnforcer.policyProposal.deleteDialog.growl.bulk');
+      expect((wrapper.vm as any).growlMessage).toBe('runtimeEnforcer.policyProposal.deleteDialog.growl.bulk:{"count":2}');
       expect((wrapper.vm as any).growlTitle).toBe(
         'runtimeEnforcer.policyProposal.deleteDialog.growl.title.bulk'
       );
@@ -155,7 +155,7 @@ describe('DeletePolicyProposalsDialog', () => {
       expect((wrapper.vm as any).deleteInProgress).toBe(false);
       expect(dispatch).toHaveBeenCalledWith('growl/success', {
         title:   'runtimeEnforcer.policyProposal.deleteDialog.growl.title.bulk',
-        message: 'runtimeEnforcer.policyProposal.deleteDialog.growl.bulk',
+        message: 'runtimeEnforcer.policyProposal.deleteDialog.growl.bulk:{"count":2}',
       });
       expect(push).toHaveBeenCalledWith({
         name:   `c-cluster-${ PRODUCT_NAME }-resource`,
