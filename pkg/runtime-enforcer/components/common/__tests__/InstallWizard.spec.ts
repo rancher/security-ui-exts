@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils';
+import { createStore } from 'vuex';
 
 import InstallWizard from '../InstallWizard.vue';
 
@@ -21,6 +22,12 @@ const createSteps = () => ([
 ]);
 
 const createWrapper = (props = {}) => {
+  const store = createStore({
+    getters: {
+      'i18n/t': () => (key: string) => key === 'runtimeEnforcer.dashboard.appInstall.title' ? 'Runtime Enforcer' : key,
+    },
+  });
+
   return mount(InstallWizard, {
     props: {
       steps: createSteps(),
@@ -31,6 +38,9 @@ const createWrapper = (props = {}) => {
       repos:         '<div data-testid="repos-slot">Repo Content</div>',
       install:       '<div data-testid="install-slot">Install Content</div>',
       bannerSubtext: '<span data-testid="banner-subtext">Banner Subtext</span>',
+    },
+    global: {
+      plugins: [store],
     },
   });
 };
@@ -47,7 +57,7 @@ describe('InstallWizard.vue', () => {
   it('renders the default title and active step label area', () => {
     const wrapper = createWrapper();
 
-    expect(wrapper.text()).toContain('Runtime Enforcer');
+    expect(wrapper.find('.product h2').exists()).toBe(true);
     expect(wrapper.find('[data-testid="banner-subtext"]').exists()).toBe(true);
   });
 

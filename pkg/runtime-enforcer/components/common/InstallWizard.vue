@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { useStore } from 'vuex';
+import { useI18n } from '@shell/composables/useI18n';
 
 type WizardStep = {
   name: string;
@@ -16,6 +18,9 @@ const props = withDefaults(defineProps<{
   initStepIndex: 0,
   showTitle:     true,
 });
+
+const store = useStore();
+const { t } = useI18n(store);
 
 const emit = defineEmits(['next']);
 
@@ -89,9 +94,15 @@ defineExpose({ goToStep });
       <div class="title">
         <template v-if="showTitle">
           <div class="product">
+            <div class="product-image">
+              <img
+                src="../../assets/img/runtime-enforcer-logo.svg"
+                class="logo"
+              />
+            </div>
             <div class="subtitle mr-20">
               <h2 class="mb-0">
-                Runtime Enforcer
+                {{ t("runtimeEnforcer.dashboard.appInstall.title") }}
               </h2>
             </div>
           </div>

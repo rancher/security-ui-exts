@@ -8,6 +8,7 @@ import { useStore } from 'vuex';
 import debounce from 'lodash/debounce';
 import AsyncButton from '@shell/components/AsyncButton';
 import Loading from '@shell/components/Loading';
+import { Banner } from '@components/Banner';
 import { LabeledInput } from '@components/Form/LabeledInput';
 import { Checkbox } from '@components/Form/Checkbox';
 import FileSelector from '@shell/components/form/FileSelector';
@@ -59,6 +60,8 @@ const installSteps = ref([
 
 const debouncedRefreshCharts = ref(null);
 const install = ref(false);
+const isAirgap = ref(false);
+const registryUrl = ref(CHART_REGISTRY_URL);
 const initStepIndex = ref(0);
 const maxStepNum = ref(1);
 const auth = reactive({
@@ -87,6 +90,17 @@ const inStore = computed(() => store.getters['currentProduct']?.inStore || 'clus
 const mode = computed(() => 'create');
 
 const combinedWatchedValues = computed(() => [certManagerRepo.value, csiDriverRepo.value, runtimeEnforcerRepo.value]);
+
+watch(isAirgap, (enabled) => {
+  registryUrl.value = enabled ? '' : CHART_REGISTRY_URL;
+});
+
+function getRepositoryUrl(repositoryUrl) {
+  const repositoryPath = repositoryUrl.replace(CHART_REGISTRY_URL, '');
+  const registryBaseUrl = registryUrl.value.replace(/\/+$/, '');
+
+  return `${ registryBaseUrl }${ repositoryPath }`;
+}
 
 const controllerChart4CertManager = computed(() => {
   if (certManagerRepo.value) {
@@ -157,7 +171,7 @@ const runtimeEnforcerRepo = computed(() => {
   return findRepoByChartOrFallback(
     RUNTIME_ENFORCER_REPOS.CHARTS_REPO_NAME,
     RUNTIME_ENFORCER_REPOS.CHARTS_REPO_NAME,
-    RUNTIME_ENFORCER_REPOS.CHARTS_REPO
+    getRepositoryUrl(RUNTIME_ENFORCER_REPOS.CHARTS_REPO)
   );
 });
 
@@ -165,7 +179,7 @@ const csiDriverRepo = computed(() => {
   return findRepoByChartOrFallback(
     CERT_MANAGER_CSI_DRIVER.CONTROLLER,
     CERT_MANAGER_CSI_DRIVER_REPOS.CHARTS_REPO_NAME,
-    CERT_MANAGER_CSI_DRIVER_REPOS.CHARTS_REPO
+    getRepositoryUrl(CERT_MANAGER_CSI_DRIVER_REPOS.CHARTS_REPO)
   );
 });
 
@@ -173,7 +187,7 @@ const certManagerRepo = computed(() => {
   return findRepoByChartOrFallback(
     CERT_MANAGER.CONTROLLER,
     CERT_MANAGER_REPOS.CHARTS_REPO_NAME,
-    CERT_MANAGER_REPOS.CHARTS_REPO
+    getRepositoryUrl(CERT_MANAGER_REPOS.CHARTS_REPO)
   );
 });
 
@@ -188,7 +202,15 @@ const areRequiredInstallChartsUnavailable = computed(() => {
 });
 
 const isContinueDisabled = computed(() => {
-  return !auth.authSecret && (!auth.username || !auth.password) && !auth.caBundle;
+  const missingCredentials = !auth.authSecret && (!auth.username || !auth.password);
+
+  if (!isAirgap.value) {
+    return missingCredentials;
+  }
+
+  const waiveAirgapSecurity = !auth.caBundle && !auth.insecureSkipTLSVerify && !auth.insecurePlainHttp;
+
+  return !registryUrl.value || (waiveAirgapSecurity && missingCredentials);
 });
 
 async function onAuthSecretChanged(authSecret) {
@@ -262,13 +284,13 @@ function buildDockerConfigJson(secret) {
   const username = decodeBase64(secret?.data?.username) || secret?.stringData?.username || '';
   const password = decodeBase64(secret?.data?.password) || secret?.stringData?.password || '';
 
-  const registryUrl = CHART_REGISTRY_URL;
-  const registryHost = registryUrl
+  const activeRegistryUrl = isAirgap.value ? registryUrl.value : CHART_REGISTRY_URL;
+  const registryHost = activeRegistryUrl
     ? (() => {
       try {
-        return new URL(registryUrl).host;
+        return new URL(activeRegistryUrl).host;
       } catch {
-        return registryUrl;
+        return activeRegistryUrl;
       }
     })()
     : '';
@@ -461,8 +483,7 @@ async function continueWithGlobalRepoAuth() {
 
 async function addAllRepositories(btnCb) {
   const certAdded = certManagerRepo.value ? true : await addRepository4CertManager(btnCb);
-  const hasCsiDriverTargetRepo = !!findRepoByUrlOrName(CERT_MANAGER_CSI_DRIVER_REPOS.CHARTS_REPO_NAME, CERT_MANAGER_CSI_DRIVER_REPOS.CHARTS_REPO);
-  const csiDriverAdded = hasCsiDriverTargetRepo ? true : await addRepository4CsiDriver(btnCb);
+  const csiDriverAdded = csiDriverRepo.value ? true : await addRepository4CsiDriver(btnCb);
   const runtimeEnforcerAdded = runtimeEnforcerRepo.value ? true : await addRepository4RuntimeEnforcer(btnCb);
 
   if (!(certAdded && csiDriverAdded && runtimeEnforcerAdded)) {
@@ -496,10 +517,11 @@ async function addRepository4CertManager(btnCb) {
       type:     CATALOG.CLUSTER_REPO,
       metadata: { name: CERT_MANAGER_REPOS.CHARTS_REPO_NAME },
       spec:     {
-        url:                   CERT_MANAGER_REPOS.CHARTS_REPO,
+        url:                   getRepositoryUrl(CERT_MANAGER_REPOS.CHARTS_REPO),
         clientSecret:          authSecretRef,
         insecurePlainHttp:     auth.insecurePlainHttp,
         insecureSkipTLSVerify: auth.insecureSkipTLSVerify,
+        caBundle:              auth.caBundle || undefined,
       },
     });
 
@@ -529,7 +551,10 @@ async function addRepository4CertManager(btnCb) {
 }
 
 async function addRepository4CsiDriver(btnCb) {
-  const existingCsiDriverRepo = findRepoByUrlOrName(CERT_MANAGER_CSI_DRIVER_REPOS.CHARTS_REPO_NAME, CERT_MANAGER_CSI_DRIVER_REPOS.CHARTS_REPO);
+  const existingCsiDriverRepo = findRepoByUrlOrName(
+    CERT_MANAGER_CSI_DRIVER_REPOS.CHARTS_REPO_NAME,
+    getRepositoryUrl(CERT_MANAGER_CSI_DRIVER_REPOS.CHARTS_REPO)
+  );
 
   if (existingCsiDriverRepo) {
     return true;
@@ -541,10 +566,11 @@ async function addRepository4CsiDriver(btnCb) {
       type:     CATALOG.CLUSTER_REPO,
       metadata: { name: CERT_MANAGER_CSI_DRIVER_REPOS.CHARTS_REPO_NAME },
       spec:     {
-        url:                   CERT_MANAGER_CSI_DRIVER_REPOS.CHARTS_REPO,
+        url:                   getRepositoryUrl(CERT_MANAGER_CSI_DRIVER_REPOS.CHARTS_REPO),
         clientSecret:          authSecretRef,
         insecurePlainHttp:     auth.insecurePlainHttp,
         insecureSkipTLSVerify: auth.insecureSkipTLSVerify,
+        caBundle:              auth.caBundle || undefined,
       },
     });
 
@@ -584,10 +610,11 @@ async function addRepository4RuntimeEnforcer(btnCb) {
       type:     CATALOG.CLUSTER_REPO,
       metadata: { name: RUNTIME_ENFORCER_REPOS.CHARTS_REPO_NAME },
       spec:     {
-        url:                   RUNTIME_ENFORCER_REPOS.CHARTS_REPO,
+        url:                   getRepositoryUrl(RUNTIME_ENFORCER_REPOS.CHARTS_REPO),
         clientSecret:          authSecretRef,
         insecurePlainHttp:     auth.insecurePlainHttp,
         insecureSkipTLSVerify: auth.insecureSkipTLSVerify,
+        caBundle:              auth.caBundle || undefined,
       },
     });
 
@@ -851,6 +878,12 @@ onMounted(async() => {
       v-if="!install && !certManagerRepo && !csiDriverRepo && !runtimeEnforcerRepo"
       class="title p-10"
     >
+      <div class="logo mt-20 mb-10">
+        <img
+          src="../assets/img/runtime-enforcer-logo.svg"
+          height="64"
+        />
+      </div>
       <h1
         class="mb-20"
         data-testid="re-install-title"
@@ -870,6 +903,7 @@ onMounted(async() => {
     </div>
 
     <div v-else>
+      <div style="display: flex">
         <InstallWizard
           ref="wizard"
           :init-step-index="initStepIndex"
@@ -878,23 +912,69 @@ onMounted(async() => {
           style="width: 100%;"
         >
           <template #globalRepoAuth>
-            <div class="logo mt-20 mb-10">
-                <img
-                src="../assets/img/runtime-enforcer-logo.svg"
-                height="64"
-                />
-            </div>
-            <h1
+            <h2
               class="mt-20 mb-10"
               data-testid="re-repo-title"
             >
               {{ t('runtimeEnforcer.installationWizard.globalRepoAuth.title') }}
-            </h1>
+            </h2>
             <p class="mb-20">
               {{ t('runtimeEnforcer.installationWizard.globalRepoAuth.description') }}
             </p>
+            <div class="mt-16 airgap-row">
+              <Checkbox
+                v-model:value="isAirgap"
+                :mode="mode"
+                :label="t('runtimeEnforcer.installationWizard.globalRepoAuth.airgapOption')"
+                data-testid="runtime-enforcer-airgap-option"
+              />
+            </div>
+            <div v-if="isAirgap" class="airgap-settings mb-16">
+              <Banner class="mb-20 mt-20" color="warning">
+                {{ t('runtimeEnforcer.installationWizard.globalRepoAuth.airgapWarning') }}
+              </Banner>
+              <div class="ca-bundle-section mt-16">
+                <LabeledInput
+                  class="mb-16"
+                  v-model:value="registryUrl"
+                  :label="t('runtimeEnforcer.installationWizard.globalRepoAuth.registryBaseUrl')"
+                  placeholder="oci://<private-registry-home>/charts"
+                  data-testid="runtime-enforcer-registry-url"
+                />
+                <div class="row create-secret-banner mb-16 mt-20">
+                  <Checkbox
+                    v-model:value="auth.insecureSkipTLSVerify"
+                    class="mt-10"
+                    :mode="mode"
+                    :label="t('runtimeEnforcer.installationWizard.globalRepoAuth.skipTlsVerification')"
+                    data-testid="appco-oci-skip-tls-checkbox"
+                  />
+                  <Checkbox
+                    v-model:value="auth.insecurePlainHttp"
+                    class="mt-10"
+                    :mode="mode"
+                    :label="t('runtimeEnforcer.installationWizard.globalRepoAuth.allowPlainHttp')"
+                    data-testid="appco-oci-insecure-plain-http"
+                  />
+                </div>
+                <LabeledInput
+                  v-model:value="auth.caBundle"
+                  type="multiline"
+                  :label="t('runtimeEnforcer.installationWizard.globalRepoAuth.caBundle')"
+                  style="max-height: 110px; overflow-y: auto;"
+                  :placeholder="t('runtimeEnforcer.installationWizard.globalRepoAuth.caBundlePlaceholder')"
+                />
+                <div class="mt-16">
+                  <FileSelector
+                    class="btn btn-sm role-tertiary"
+                    :label="t('runtimeEnforcer.installationWizard.globalRepoAuth.readFromFile')"
+                    @selected="onFileSelected"
+                  />
+                </div>
+              </div>
+            </div>
             <SelectOrCreateAuthSecret
-              class="mt-16 create-secret-banner"
+              class="create-secret-banner"
               v-model:value="auth.authSecret"
               :mode="mode"
               data-testid="appco-secret"
@@ -907,40 +987,6 @@ onMounted(async() => {
               :cache-secrets="true"
               @inputauthval="onAuthInputChange"
             />
-
-            <div class="ca-bundle-section mt-16">
-              <LabeledInput
-                v-model:value="auth.caBundle"
-                type="multiline"
-                :label="t('runtimeEnforcer.installationWizard.globalRepoAuth.caBundle')"
-                style="max-height: 110px; overflow-y: auto;"
-                :placeholder="t('runtimeEnforcer.installationWizard.globalRepoAuth.caBundlePlaceholder')"
-              />
-              <div class="mt-16">
-                <FileSelector
-                  class="btn btn-sm role-tertiary"
-                  :label="t('runtimeEnforcer.installationWizard.globalRepoAuth.readFromFile')"
-                  @selected="onFileSelected"
-                />
-              </div>
-            </div>
-
-            <div class="row create-secret-banner mb-16 mt-20">
-              <Checkbox
-                v-model:value="auth.insecureSkipTLSVerify"
-                class="mt-10"
-                :mode="mode"
-                :label="t('runtimeEnforcer.installationWizard.globalRepoAuth.skipTlsVerification')"
-                data-testid="appco-oci-skip-tls-checkbox"
-              />
-              <Checkbox
-                v-model:value="auth.insecurePlainHttp"
-                class="mt-10"
-                :mode="mode"
-                :label="t('runtimeEnforcer.installationWizard.globalRepoAuth.allowPlainHttp')"
-                data-testid="appco-oci-insecure-plain-http"
-              />
-            </div>
 
             <div class="namespaces-section mt-20 mb-20">
               <h3 class="mb-10">{{ t('runtimeEnforcer.installationWizard.globalRepoAuth.secretNamespaces') }}</h3>
@@ -1064,6 +1110,7 @@ onMounted(async() => {
             </div>
           </template>
         </InstallWizard>
+      </div>
     </div>
   </div>
 </template>
@@ -1093,6 +1140,18 @@ onMounted(async() => {
 
 .create-secret-banner, .ca-bundle-section, .namespaces-section {
   width: 100%
+}
+
+.airgap-settings {
+  width: 100%;
+}
+
+.airgap-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  text-align: left;
 }
 
 .namespaces-section {

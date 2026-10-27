@@ -5,6 +5,9 @@ typeLabel:
   runtimeenforcer.kubewarden.io.workloadpolicy: Active Policies
 
 runtimeEnforcer:
+  dashboard:
+    appInstall:
+      title: Runtime Enforcer
   policyProposals:
     title: Policy Proposals
     banner:
@@ -56,6 +59,9 @@ runtimeEnforcer:
       step: Global Repository Authentication
       title: Global Repository Authentication
       description: Provide a global OCI authentication secret and optional TLS settings for chart repositories.
+      airgapOption: Air-gapped environment
+      airgapWarning: Configure a private OCI registry that is accessible to this cluster for chart downloads.
+      registryBaseUrl: Registry Base URL
       caBundle: CA Bundle
       caBundlePlaceholder: Paste custom CA certificate content if required
       readFromFile: Read from File

@@ -395,6 +395,53 @@ describe('runtime-enforcer InstallView.vue', () => {
     expect(wrapper.vm.auth.password).toBe('pass');
   });
 
+  it('shows the private registry input and uses airgap settings when enabled', async() => {
+    const { wrapper, dispatch } = await createWrapper({ install: true });
+
+    expect(wrapper.find('[data-testid="runtime-enforcer-airgap-option"]').exists()).toBe(true);
+    wrapper.vm.isAirgap = true;
+    await nextTick();
+
+    expect(wrapper.find('[data-testid="runtime-enforcer-registry-url"]').exists()).toBe(true);
+
+    wrapper.vm.registryUrl = 'oci://registry.example/charts';
+    wrapper.vm.auth.caBundle = 'pem-data';
+    wrapper.vm.auth.insecureSkipTLSVerify = true;
+    await wrapper.vm.addRepository4CertManager();
+
+    const createCall = dispatch.mock.calls.find(([action]) => action === 'cluster/create');
+
+    expect(createCall[1].spec).toMatchObject({
+      url:                   'oci://registry.example/charts/cert-manager',
+      caBundle:              'pem-data',
+      insecureSkipTLSVerify: true,
+    });
+  });
+
+  it('validates credentials and required airgap settings', async() => {
+    const { wrapper } = await createWrapper();
+
+    expect(wrapper.vm.isContinueDisabled).toBe(true);
+
+    wrapper.vm.auth.authSecret = 'registry-secret';
+    expect(wrapper.vm.isContinueDisabled).toBe(false);
+
+    wrapper.vm.isAirgap = true;
+    await nextTick();
+    expect(wrapper.vm.isContinueDisabled).toBe(true);
+
+    wrapper.vm.registryUrl = 'oci://registry.example/charts';
+    expect(wrapper.vm.isContinueDisabled).toBe(false);
+
+    wrapper.vm.auth.authSecret = '';
+    wrapper.vm.auth.insecureSkipTLSVerify = false;
+    wrapper.vm.auth.caBundle = '';
+    expect(wrapper.vm.isContinueDisabled).toBe(true);
+
+    wrapper.vm.auth.caBundle = 'pem-data';
+    expect(wrapper.vm.isContinueDisabled).toBe(false);
+  });
+
   it('marks CSI driver installed when installed app matches chart name', async() => {
     const { wrapper } = await createWrapper({
       installedApps: [{
