@@ -9,8 +9,7 @@ const t = jest.fn((key, args, raw) => (raw ? `${ key }:${ JSON.stringify(args) }
 const createResource = (name: string) => ({
   metadata:         { name, namespace: 'ingress' },
   nameDisplay:      name,
-  followLink:       jest.fn().mockResolvedValue({ data: `kind: WorkloadPolicy\nmetadata:\n  name: ${ name }\n` }),
-  cleanForDownload: jest.fn((yaml) => yaml),
+  toExportResource: jest.fn(() => ({ kind: 'WorkloadPolicy', metadata: { name, namespace: 'ingress' } })),
 });
 
 const mountDialog = (resources: any[], dispatch = jest.fn()) => {
@@ -78,11 +77,10 @@ describe('ExportActivePoliciesDialog', () => {
 
       await (wrapper.vm as any).exportPolicies();
 
-      expect(resource.followLink).toHaveBeenCalledWith('view', { headers: { accept: 'application/yaml' } });
-      expect(resource.cleanForDownload).toHaveBeenCalledWith(expect.stringContaining('kind: WorkloadPolicy'));
+      expect(resource.toExportResource).toHaveBeenCalled();
       expect(downloadFile).toHaveBeenCalledWith(
         'deploy-nginx-ingress.yaml',
-        expect.stringContaining('name: deploy-nginx-ingress'),
+        'kind: WorkloadPolicy\nmetadata:\n  name: deploy-nginx-ingress\n  namespace: ingress\n',
         'application/yaml'
       );
       expect((wrapper.vm as any).$store.dispatch).toHaveBeenCalledWith('growl/success', {
@@ -99,8 +97,7 @@ describe('ExportActivePoliciesDialog', () => {
       await (wrapper.vm as any).exportPolicies();
 
       resources.forEach((resource) => {
-        expect(resource.followLink).toHaveBeenCalledWith('view', { headers: { accept: 'application/yaml' } });
-        expect(resource.cleanForDownload).toHaveBeenCalled();
+        expect(resource.toExportResource).toHaveBeenCalled();
       });
 
       const [fileName, yaml, mimeType] = (downloadFile as jest.Mock).mock.calls[0];

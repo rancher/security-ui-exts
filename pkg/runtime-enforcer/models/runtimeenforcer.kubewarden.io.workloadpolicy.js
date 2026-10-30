@@ -181,6 +181,19 @@ export default class WorkloadPolicyProposal extends SteveModel {
     });
   }
 
+  toExportResource() {
+    return {
+      apiVersion: this.apiVersion,
+      kind:       this.kind,
+      metadata:   {
+        name:      this.metadata?.name,
+        namespace: this.metadata?.namespace,
+        ...(this.metadata?.labels ? { labels: this.metadata.labels } : {}),
+      },
+      spec: this.spec,
+    };
+  }
+
   exportPolicy(resources = this) {
     this.$dispatch('promptModal', {
       component:  'ExportActivePoliciesDialog',

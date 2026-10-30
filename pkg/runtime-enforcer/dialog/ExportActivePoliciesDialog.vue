@@ -1,4 +1,5 @@
 <script>
+import jsyaml from 'js-yaml';
 import { Card } from '@components/Card';
 import RcButton from '@components/RcButton/RcButton.vue';
 import { downloadFile } from '@shell/utils/download';
@@ -45,20 +46,15 @@ export default {
 
     // Single export produces one YAML file named after the policy. Bulk export also produces
     // a single YAML file, but with all selected policies as separate documents joined by '---'.
-    // Each policy's YAML is fetched and cleaned of Steve-added fields, mirroring the base
-    // model's download()/downloadBulk().
     async exportPolicies() {
       const key = 'runtimeEnforcer.activePolicies.exportDialog.growl';
 
       this.exportInProgress = true;
       try {
-        const yamls = await Promise.all(this.resources.map(async(resource) => {
-          const value = await resource.followLink('view', { headers: { accept: 'application/yaml' } });
+        const yaml = this.resources
+          .map((resource) => jsyaml.dump(resource.toExportResource()))
+          .join('---\n');
 
-          return resource.cleanForDownload(value.data);
-        }));
-
-        const yaml = yamls.join('---\n');
         const fileName = this.isBulk ? 'active-policies.yaml' : `${ this.resources[0]?.metadata?.name || this.resources[0]?.nameDisplay }.yaml`;
 
         await downloadFile(fileName, yaml, 'application/yaml');
