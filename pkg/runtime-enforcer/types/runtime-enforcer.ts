@@ -185,6 +185,8 @@ export const WORKLOAD_PREFIX = `${ POLICY_LABEL_KEY } :`;
 
 export const PROMOTE_LABEL_KEY = 'runtimeenforcer.kubewarden.io/promote';
 
+export const PROMOTED_FROM_LABEL_KEY = 'runtimeenforcer.kubewarden.io/promoted-from';
+
 export const APPLY_MODE = {
   AUTOMATIC: 'automatic',
   MANUAL:    'manual',

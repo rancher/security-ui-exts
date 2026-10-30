@@ -1,5 +1,5 @@
 import WorkloadPolicy from '../runtimeenforcer.kubewarden.io.workloadpolicy';
-import { PROMOTE_LABEL_KEY } from '@runtime-enforcer/types';
+import { PROMOTED_FROM_LABEL_KEY } from '@runtime-enforcer/types';
 
 jest.mock('@shell/plugins/steve/steve-class', () => {
   const MockSteveModel = class {
@@ -29,7 +29,7 @@ describe('WorkloadPolicy model', () => {
       policy.metadata = {
         name:              'deploy-nginx-ingress',
         namespace:         'ingress',
-        labels:            { [PROMOTE_LABEL_KEY]: 'true' },
+        labels:            { [PROMOTED_FROM_LABEL_KEY]: 'deploy-nginx-ingress' },
         annotations:       { 'kubectl.kubernetes.io/last-applied-configuration': '{}' },
         resourceVersion:   '12345',
         uid:               'policy-uid',
@@ -49,7 +49,7 @@ describe('WorkloadPolicy model', () => {
         metadata:   {
           name:      'deploy-nginx-ingress',
           namespace: 'ingress',
-          labels:    { [PROMOTE_LABEL_KEY]: 'true' },
+          labels:    { [PROMOTED_FROM_LABEL_KEY]: 'deploy-nginx-ingress' },
         },
         spec: {
           mode:             'protect',

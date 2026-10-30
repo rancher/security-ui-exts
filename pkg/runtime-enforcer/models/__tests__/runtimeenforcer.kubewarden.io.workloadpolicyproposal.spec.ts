@@ -1,7 +1,7 @@
 import SteveModel from '@shell/plugins/steve/steve-class';
 import WorkloadPolicyProposal from '../runtimeenforcer.kubewarden.io.workloadpolicyproposal';
 import { PRODUCT_NAME, RESOURCE } from '../../types/runtime-enforcer';
-import { PROMOTE_LABEL_KEY } from '@runtime-enforcer/types';
+import { PROMOTED_FROM_LABEL_KEY } from '@runtime-enforcer/types';
 
 jest.mock('@shell/plugins/steve/steve-class', () => {
   const MockSteveModel = class {
@@ -372,7 +372,7 @@ describe('WorkloadPolicyProposal model', () => {
         metadata:   {
           name:      'deploy-nginx-ingress',
           namespace: 'ingress',
-          labels:    { [PROMOTE_LABEL_KEY]: 'true' },
+          labels:    { [PROMOTED_FROM_LABEL_KEY]: 'deploy-nginx-ingress' },
         },
         spec: {
           mode:             'protect',
@@ -398,7 +398,7 @@ describe('WorkloadPolicyProposal model', () => {
       expect(result.metadata).toEqual({
         name:      'deploy-nginx-ingress',
         namespace: 'ingress',
-        labels:    { [PROMOTE_LABEL_KEY]: 'true' },
+        labels:    { [PROMOTED_FROM_LABEL_KEY]: 'deploy-nginx-ingress' },
       });
       expect(result.status).toBeUndefined();
     });
