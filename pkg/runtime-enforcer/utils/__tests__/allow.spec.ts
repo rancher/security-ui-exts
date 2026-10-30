@@ -41,4 +41,18 @@ describe('allowExecutables', () => {
       sidecar: { executables: { allowed: ['/usr/bin/wget'] } },
     });
   });
+
+  it('restores the previous rules and rethrows when the save fails', async() => {
+    const policy = createPolicy({ rulesByContainer: { nginx: { executables: { allowed: ['/usr/bin/curl'] } } } });
+    const error = new Error('denied');
+
+    policy.save.mockRejectedValueOnce(error);
+
+    await expect(allowExecutables(policy, [
+      { containerName: 'nginx', executablePath: '/usr/bin/wget' },
+      { containerName: 'sidecar', executablePath: '/usr/bin/sh' },
+    ])).rejects.toBe(error);
+
+    expect(policy.spec.rulesByContainer).toEqual({ nginx: { executables: { allowed: ['/usr/bin/curl'] } } });
+  });
 });
