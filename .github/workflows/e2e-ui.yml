@@ -37,6 +37,14 @@ on:
       sbomscanner:
         description: SBOMScanner chart version (empty = latest)
         default: ''
+      runner:
+        description: GitHub-hosted runner image
+        type: choice
+        default: ubuntu-latest
+        options:
+          - ubuntu-latest
+          - ubuntu-26.04
+          - ubuntu-24.04
 
   pull_request:
     branches: [main]
@@ -82,7 +90,7 @@ env:
 
 jobs:
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     timeout-minutes: 120
     steps:
       # ================================================================================================
@@ -166,8 +174,8 @@ jobs:
             .[] | select(.draft == false and .prerelease == false)
                 | select(.tag_name | startswith(\"$prefix\"))
                 | select(any(.assets[]; .name == \"sha256sum-amd64.txt\"))
-                | .tag_name" | grep -vxF -f <(tr ' ' '\n' <<< "$RKE2_SKIP" | grep .) | sort -V | tail -1) || true
-          [ -n "$ver" ] || { echo "::error::No published RKE2 release for ${prefix%[.+]} (skipped: ${RKE2_SKIP:-none})"; exit 1; }
+                | .tag_name" | sort -V | tail -1)
+          [ -n "$ver" ] || { echo "::error::No published RKE2 release for ${prefix%[.+]}"; exit 1; }
           echo "Installing RKE2 $ver"
 
           curl -sfL https://get.rke2.io | sudo INSTALL_RKE2_VERSION="$ver" sh -
@@ -187,10 +195,6 @@ jobs:
           kubectl get nodes -o wide
         env:
           GH_TOKEN: ${{ github.token }}
-          # Space-separated RKE2 releases that are never installed, even when asked for. v1.36.6+rke2r1 (containerd 2.3.7):
-          # Rancher 2.15.3 helm-operation pods stay 1/2 NotReady, so rancher.sh times out waiting for them.
-          # A newer patch is picked up automatically; drop entries once fixed upstream.
-          RKE2_SKIP: v1.36.6+rke2r1
 
       # k3s: rancher.sh creates the k3d cluster itself
       - name: Install Rancher (Helm)
@@ -558,6 +562,40 @@ jobs:
             kubectl logs -n "$SBOMSCANNER_NS" "$d" --all-containers --tail=500 > "diagnostics/${d##*/}.log"
           done
           cp serve-pkgs.log diagnostics/ 2>/dev/null || true
+
+          # Host side: kernel, AppArmor denials, kubelet/containerd exec handling
+          {
+            uname -a
+            sudo aa-status 2>&1 | head -5
+            echo "--- dmesg (apparmor/denied/seccomp)"
+            sudo dmesg -T | grep -iE 'apparmor|denied|seccomp' | tail -100
+          } > diagnostics/host.txt 2>&1
+          if [ "$RANCHER_ENV" = rke2 ]; then
+            sudo tail -n 2000 /var/lib/rancher/rke2/agent/logs/kubelet.log > diagnostics/kubelet.log
+            sudo tail -n 2000 /var/lib/rancher/rke2/agent/containerd/containerd.log > diagnostics/containerd.log
+          fi
+
+          # Rancher ends a helm-operation pod by exec'ing `pkill -x kubectl` in its proxy container once
+          # the helm container exits 0. Pods stuck at 1/2 NotReady mean that kill didn't take effect:
+          # show the proxy's processes, then try the same kill with a plain kubectl exec.
+          stuck=$(kubectl get pods -n cattle-system -o json | jq -r '.items[]
+            | select(.metadata.name | startswith("helm-operation-"))
+            | select(any(.status.containerStatuses[]?; .name == "helm" and .state.terminated.exitCode == 0))
+            | select(any(.status.containerStatuses[]?; .name == "proxy" and .state.running != null))
+            | .metadata.name')
+          for p in $stuck; do
+            echo "=== $p"
+            kubectl get pod -n cattle-system "$p" -o jsonpath='{range .status.containerStatuses[*]}{.name}: {.state}{"\n"}{end}'
+            echo "--- processes in proxy (pid comm cmdline)"
+            kubectl exec -n cattle-system "$p" -c proxy -- sh -c \
+              'for d in /proc/[0-9]*; do echo "${d#/proc/} $(cat $d/comm 2>/dev/null) $(tr "\0" " " < $d/cmdline 2>/dev/null)"; done'
+            echo "--- pkill -x kubectl"
+            kubectl exec -n cattle-system "$p" -c proxy -- sh -c 'pkill --version 2>&1 | head -1; pkill -x kubectl; echo "pkill exit=$?"'
+            echo "kubectl exec exit=$?"
+            sleep 5
+            echo "--- after"
+            kubectl get pod -n cattle-system "$p" -o jsonpath='{range .status.containerStatuses[*]}{.name}: {.state}{"\n"}{end}'
+          done 2>&1 | tee diagnostics/helm-operation-probe.txt
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
