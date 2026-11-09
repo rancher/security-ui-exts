@@ -18,7 +18,7 @@ on:
         description: Rancher version constraint - p2.14 | c2.13 | p* (latest prime) | p2.15-0 (devel)
         default: 'p*'
       k8s:
-        description: Kubernetes minor for rke2/k3s, e.g. v1.33 (empty = derived from Rancher support matrix)
+        description: Kubernetes for rke2/k3s - minor (v1.33) or exact patch (v1.33.5) (empty = derived from Rancher support matrix)
         default: ''
       ui:
         description: Vulnerability Scanner UI extension from
@@ -71,7 +71,7 @@ env:
   # First value after && must be truthy, otherwise the value after || is returned
   RANCHER_ENV: ${{ inputs.environment || 'rke2' }}
   RANCHER: ${{ inputs.rancher || 'p*' }}
-  # Read by rancher.sh / cluster_k3d.sh; also used to pick the RKE2 channel
+  # Read by rancher.sh / cluster_k3d.sh; also used to pick the RKE2 release (minor or exact patch)
   K3S: ${{ inputs.k8s || '' }}
   UI_FROM: ${{ inputs.ui || 'source' }}
   SCANNER_FROM: ${{ inputs.scanner || 'helm-repo' }}
@@ -155,13 +155,19 @@ jobs:
         run: |
           # Install an exact version: with a channel, get.rke2.io asks update.rke2.io for the version, and
           # when that server is down it uses the channel name as the version and 404s on the download.
-          # Pick the newest published patch of the supported minor that has its release files.
+          # Pick the newest published release that has its release files: of the exact patch when the
+          # k8s input has one (v1.36.5 -> v1.36.5+rke2rN), otherwise of the supported minor.
+          if [[ "$K3S" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            prefix="${BASH_REMATCH[0]}+"
+          else
+            prefix="$K8S_MINOR."
+          fi
           ver=$(gh api 'repos/rancher/rke2/releases?per_page=100' --paginate --jq "
             .[] | select(.draft == false and .prerelease == false)
-                | select(.tag_name | startswith(\"$K8S_MINOR.\"))
+                | select(.tag_name | startswith(\"$prefix\"))
                 | select(any(.assets[]; .name == \"sha256sum-amd64.txt\"))
-                | .tag_name" | sort -V | tail -1)
-          [ -n "$ver" ] || { echo "::error::No published RKE2 release for $K8S_MINOR"; exit 1; }
+                | .tag_name" | grep -vxF -f <(tr ' ' '\n' <<< "$RKE2_SKIP" | grep .) | sort -V | tail -1) || true
+          [ -n "$ver" ] || { echo "::error::No published RKE2 release for ${prefix%[.+]} (skipped: ${RKE2_SKIP:-none})"; exit 1; }
           echo "Installing RKE2 $ver"
 
           curl -sfL https://get.rke2.io | sudo INSTALL_RKE2_VERSION="$ver" sh -
@@ -181,6 +187,10 @@ jobs:
           kubectl get nodes -o wide
         env:
           GH_TOKEN: ${{ github.token }}
+          # Space-separated RKE2 releases that are never installed, even when asked for. v1.36.6+rke2r1 (containerd 2.3.7):
+          # Rancher 2.15.3 helm-operation pods stay 1/2 NotReady, so rancher.sh times out waiting for them.
+          # A newer patch is picked up automatically; drop entries once fixed upstream.
+          RKE2_SKIP: v1.36.6+rke2r1
 
       # k3s: rancher.sh creates the k3d cluster itself
       - name: Install Rancher (Helm)
