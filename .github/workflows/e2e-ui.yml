@@ -114,6 +114,23 @@ jobs:
       - name: Pre-clean
         run: .github/scripts/e2e-cleanup.sh
 
+      # Kernel 7.0.0-1019-azure (ubuntu-26.04 image 20261101) turns runc's change_profile into the
+      # cri-containerd AppArmor profile into a stacked `cri-containerd.apparmor.d//&unconfined` label
+      # ("change_profile unprivileged unconfined converted to stacking"). Processes in one container then
+      # carry different labels and the profile denies signals between them, so Rancher's
+      # `pkill -x kubectl` can't end the helm-operation proxy container and the pods stay 1/2 NotReady.
+      - name: Relax AppArmor change_profile restriction
+        run: |
+          keys=(apparmor_restrict_unprivileged_unconfined apparmor_restrict_unprivileged_userns)
+          for k in "${keys[@]}"; do
+            [ -e "/proc/sys/kernel/$k" ] && echo "before: kernel.$k=$(cat "/proc/sys/kernel/$k")"
+          done
+          if [ -e /proc/sys/kernel/apparmor_restrict_unprivileged_unconfined ]; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_unconfined=0
+          else
+            echo "kernel.apparmor_restrict_unprivileged_unconfined not present on $(uname -r)"
+          fi
+
       - name: Install k3d
         if: env.RANCHER_ENV == 'k3s'
         run: curl -fsSL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
@@ -563,13 +580,6 @@ jobs:
           done
           cp serve-pkgs.log diagnostics/ 2>/dev/null || true
 
-          # Host side: kernel, AppArmor denials, kubelet/containerd exec handling
-          {
-            uname -a
-            sudo aa-status 2>&1 | head -5
-            echo "--- dmesg (apparmor/denied/seccomp)"
-            sudo dmesg -T | grep -iE 'apparmor|denied|seccomp' | tail -100
-          } > diagnostics/host.txt 2>&1
           if [ "$RANCHER_ENV" = rke2 ]; then
             sudo tail -n 2000 /var/lib/rancher/rke2/agent/logs/kubelet.log > diagnostics/kubelet.log
             sudo tail -n 2000 /var/lib/rancher/rke2/agent/containerd/containerd.log > diagnostics/containerd.log
@@ -596,6 +606,15 @@ jobs:
             echo "--- after"
             kubectl get pod -n cattle-system "$p" -o jsonpath='{range .status.containerStatuses[*]}{.name}: {.state}{"\n"}{end}'
           done 2>&1 | tee diagnostics/helm-operation-probe.txt
+
+          # Host side, after the probe so its signal denials are included
+          {
+            uname -a
+            for f in /proc/sys/kernel/apparmor_restrict_*; do [ -e "$f" ] && echo "${f##*/}=$(cat "$f")"; done
+            sudo aa-status 2>&1 | head -5
+            echo "--- dmesg (apparmor/denied/seccomp)"
+            sudo dmesg -T | grep -iE 'apparmor|denied|seccomp' | tail -300
+          } > diagnostics/host.txt 2>&1
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
