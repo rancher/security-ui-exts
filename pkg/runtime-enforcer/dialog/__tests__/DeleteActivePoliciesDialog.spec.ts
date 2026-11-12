@@ -45,6 +45,11 @@ const createWorkload = (name = 'wk-a', withPolicyLabel = true) => ({
   save: jest.fn().mockResolvedValue(undefined),
 });
 
+// Steve rejects with the response body and puts the HTTP status on a non-enumerable `_status`.
+const apiError = (status: number, message: string) => Object.defineProperty({ message }, '_status', { value: status });
+
+const blockedByPodsError = (name = 'a') => apiError(403, `admission webhook "vworkloadpolicy.kb.io" denied the request: workloadpolicies.runtimeenforcer.kubewarden.io "${ name }" is forbidden: cannot delete WorkloadPolicy "${ name }" while 1 pod(s) in namespace "runtime-enforcer" still use it: pod-a`);
+
 const mountDialog = ({
   resources = [createResource('policy-a', 'wk-a')],
   dispatch,
@@ -83,7 +88,6 @@ describe('DeleteActivePoliciesDialog', () => {
 
       expect((wrapper.vm as any).isBulk).toBe(false);
       expect((wrapper.vm as any).title).toBe('runtimeEnforcer.activePolicies.deleteDialog.title.single');
-      expect((wrapper.vm as any).bannerText).toBe('runtimeEnforcer.activePolicies.deleteDialog.banner.single');
       expect((wrapper.vm as any).confirmText).toBe(
         'runtimeEnforcer.activePolicies.deleteDialog.confirm.single:{"name":"nginx-policy"}'
       );
@@ -95,7 +99,6 @@ describe('DeleteActivePoliciesDialog', () => {
 
       expect((wrapper.vm as any).isBulk).toBe(true);
       expect((wrapper.vm as any).title).toBe('runtimeEnforcer.activePolicies.deleteDialog.title.bulk');
-      expect((wrapper.vm as any).bannerText).toBe('runtimeEnforcer.activePolicies.deleteDialog.banner.bulk');
       expect((wrapper.vm as any).confirmText).toBe(
         'runtimeEnforcer.activePolicies.deleteDialog.confirm.bulk:{"count":2}'
       );
@@ -108,10 +111,6 @@ describe('DeleteActivePoliciesDialog', () => {
       const { wrapper } = mountDialog({ resources: [createResource()] });
 
       expect((wrapper.vm as any).workloadRemovalOptions).toEqual([
-        {
-          label: 'runtimeEnforcer.activePolicies.deleteDialog.workloadRemovalOptions.keep.single',
-          value: 'keep',
-        },
         {
           label: 'runtimeEnforcer.activePolicies.deleteDialog.workloadRemovalOptions.remove.single',
           value: 'auto',
@@ -128,10 +127,6 @@ describe('DeleteActivePoliciesDialog', () => {
 
       expect((wrapper.vm as any).workloadRemovalOptions).toEqual([
         {
-          label: 'runtimeEnforcer.activePolicies.deleteDialog.workloadRemovalOptions.keep.bulk',
-          value: 'keep',
-        },
-        {
           label: 'runtimeEnforcer.activePolicies.deleteDialog.workloadRemovalOptions.remove.bulk',
           value: 'auto',
         },
@@ -144,11 +139,14 @@ describe('DeleteActivePoliciesDialog', () => {
   });
 
   describe('computed: deleteButtonText', () => {
-    it('uses default delete text when option is keep/manual', () => {
-      const { wrapper } = mountDialog();
+    it('opens with automatic removal selected', () => {
+      const { wrapper } = mountDialog({ resources: [createResource()] });
 
-      (wrapper.vm as any).workloadRemovalOption = 'keep';
-      expect((wrapper.vm as any).deleteButtonText).toBe('runtimeEnforcer.activePolicies.deleteDialog.delete');
+      expect((wrapper.vm as any).deleteButtonText).toBe('runtimeEnforcer.activePolicies.deleteDialog.deletePolicy.single & runtimeEnforcer.activePolicies.deleteDialog.restartWorkload.single');
+    });
+
+    it('uses default delete text when option is manual', () => {
+      const { wrapper } = mountDialog();
 
       (wrapper.vm as any).workloadRemovalOption = 'manual';
       expect((wrapper.vm as any).deleteButtonText).toBe('runtimeEnforcer.activePolicies.deleteDialog.delete');
@@ -166,83 +164,6 @@ describe('DeleteActivePoliciesDialog', () => {
 
       (wrapper.vm as any).workloadRemovalOption = 'auto';
       expect((wrapper.vm as any).deleteButtonText).toBe('runtimeEnforcer.activePolicies.deleteDialog.deletePolicy.bulk & runtimeEnforcer.activePolicies.deleteDialog.restartWorkload.bulk');
-    });
-  });
-
-  describe('computed: growlMessage', () => {
-    it('returns keep single growl message', () => {
-      const { wrapper } = mountDialog({ resources: [createResource()] });
-
-      (wrapper.vm as any).workloadRemovalOption = 'keep';
-      expect((wrapper.vm as any).growlMessage).toBe('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single:{"name":"policy-a"}');
-    });
-
-    it('returns keep bulk growl message', () => {
-      const { wrapper } = mountDialog({ resources: [createResource('a'), createResource('b')] });
-
-      (wrapper.vm as any).workloadRemovalOption = 'keep';
-      expect((wrapper.vm as any).growlMessage).toBe('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk:{"count":2}');
-    });
-
-    it('returns auto single growl message', () => {
-      const { wrapper } = mountDialog({ resources: [createResource()] });
-
-      (wrapper.vm as any).workloadRemovalOption = 'auto';
-      expect((wrapper.vm as any).growlMessage).toBe(
-        'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single:{"name":"policy-a"} runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.single:{}'
-      );
-    });
-
-    it('returns auto bulk growl message', () => {
-      const { wrapper } = mountDialog({ resources: [createResource('a'), createResource('b')] });
-
-      (wrapper.vm as any).workloadRemovalOption = 'auto';
-      expect((wrapper.vm as any).growlMessage).toBe(
-        'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk:{"count":2} runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.bulk:{}'
-      );
-    });
-
-    it('returns manual single growl message', () => {
-      const { wrapper } = mountDialog({ resources: [createResource()] });
-
-      (wrapper.vm as any).workloadRemovalOption = 'manual';
-      expect((wrapper.vm as any).growlMessage).toBe(
-        'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single:{"name":"policy-a"} runtimeEnforcer.activePolicies.deleteDialog.growl.manualRemoval.single:{}'
-      );
-    });
-
-    it('returns manual bulk growl message', () => {
-      const { wrapper } = mountDialog({ resources: [createResource('a'), createResource('b')] });
-
-      (wrapper.vm as any).workloadRemovalOption = 'manual';
-      expect((wrapper.vm as any).growlMessage).toBe(
-        'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk:{"count":2} runtimeEnforcer.activePolicies.deleteDialog.growl.manualRemoval.bulk:{}'
-      );
-    });
-
-    it('returns undefined for unknown option', () => {
-      const { wrapper } = mountDialog({ resources: [createResource()] });
-
-      (wrapper.vm as any).workloadRemovalOption = 'unknown';
-      expect((wrapper.vm as any).growlMessage).toBeUndefined();
-    });
-  });
-
-  describe('computed: growlTitle', () => {
-    it('returns single growl title', () => {
-      const { wrapper } = mountDialog({ resources: [createResource('nginx-policy', 'nginx')] });
-
-      expect((wrapper.vm as any).growlTitle).toBe(
-        'runtimeEnforcer.activePolicies.deleteDialog.growl.title.single'
-      );
-    });
-
-    it('returns bulk growl title', () => {
-      const { wrapper } = mountDialog({ resources: [createResource('a'), createResource('b')] });
-
-      expect((wrapper.vm as any).growlTitle).toBe(
-        'runtimeEnforcer.activePolicies.deleteDialog.growl.title.bulk'
-      );
     });
   });
 
@@ -287,7 +208,7 @@ describe('DeleteActivePoliciesDialog', () => {
   });
 
   describe('deletePolicies', () => {
-    it('removes resources, skips redeploy for keep, dispatches growl and routes', async() => {
+    it('removes resources, skips redeploy for manual, dispatches the plain growl and routes', async() => {
       const resources = [createResource('a', 'wk-a'), createResource('b', 'wk-b')];
       const dispatch = jest.fn();
       const push = jest.fn();
@@ -296,7 +217,7 @@ describe('DeleteActivePoliciesDialog', () => {
       });
       const redeploySpy = jest.spyOn(wrapper.vm as any, 'unlabelAndRedeployWorkload').mockResolvedValue(undefined);
 
-      (wrapper.vm as any).workloadRemovalOption = 'keep';
+      (wrapper.vm as any).workloadRemovalOption = 'manual';
       await (wrapper.vm as any).deletePolicies();
 
       expect(resources[0].remove).toHaveBeenCalledTimes(1);
@@ -352,21 +273,128 @@ describe('DeleteActivePoliciesDialog', () => {
       expect(wrapper.emitted('close')).toHaveLength(1);
     });
 
-    it('uses manual growl message when manual option is selected', async() => {
-      const resources = [createResource('a', 'wk-a')];
-      const dispatch = jest.fn();
-      const { wrapper } = mountDialog({ resources, dispatch });
-      const redeploySpy = jest.spyOn(wrapper.vm as any, 'unlabelAndRedeployWorkload').mockResolvedValue(undefined);
+    it('does not wait on finished pods that still carry the label', async() => {
+      const pods = [{ status: { phase: 'Succeeded' } }, { status: { phase: 'Failed' } }];
+      const matching = jest.fn(() => pods);
+      const dispatch = jest.fn((action, args) => Promise.resolve(action === 'cluster/find' ? createWorkload(args.id.split('/')[1]) : undefined));
+      const { wrapper } = mountDialog({ dispatch, matching });
 
+      jest.spyOn(wrapper.vm as any, 'unlabelAndRedeployWorkload').mockResolvedValue(undefined);
+      await (wrapper.vm as any).deletePolicies();
+
+      const [testFn] = (waitFor as jest.Mock).mock.calls[0];
+
+      expect(testFn()).toBe(true);
+      pods.push({ status: { phase: 'Running' } });
+      expect(testFn()).toBe(false);
+    });
+
+    it('still deletes the policy in auto mode when its workload no longer exists', async() => {
+      const resource = createResource('a', 'wk-a');
+      const dispatch = jest.fn((action) => (action === 'cluster/find' ? Promise.reject(apiError(404, 'not found')) : Promise.resolve()));
+      const { wrapper } = mountDialog({ resources: [resource], dispatch });
+
+      await (wrapper.vm as any).deletePolicies();
+
+      expect(resource.remove).toHaveBeenCalledTimes(1);
+      expect(dispatch).not.toHaveBeenCalledWith('growl/error', expect.anything());
+      expect(dispatch).toHaveBeenCalledWith('growl/success', {
+        title:   'runtimeEnforcer.activePolicies.deleteDialog.growl.title.single',
+        message: 'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single:{"name":"a"} runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.single:{}',
+      });
+      expect(wrapper.emitted('close')).toHaveLength(1);
+    });
+
+    it('does not delete the policy when looking up its workload fails for another reason', async() => {
+      const resource = createResource('a', 'wk-a');
+      const dispatch = jest.fn((action) => (action === 'cluster/find' ? Promise.reject(apiError(500, 'server error')) : Promise.resolve()));
+      const { wrapper } = mountDialog({ resources: [resource], dispatch });
+
+      await (wrapper.vm as any).deletePolicies();
+
+      expect(resource.remove).not.toHaveBeenCalled();
+      expect(dispatch).toHaveBeenCalledWith('growl/error', {
+        title:   'runtimeEnforcer.activePolicies.deleteDialog.growl.title.error',
+        message: 'server error',
+      });
+      expect(wrapper.emitted('close')).toBeUndefined();
+    });
+
+    it('shows a persistent error and keeps the dialog open when manual delete is blocked by labelled pods', async() => {
+      const resource = createResource('a', 'wk-a');
+      const dispatch = jest.fn();
+      const push = jest.fn();
+      const { wrapper } = mountDialog({
+        resources: [resource], dispatch, push
+      });
+
+      resource.remove.mockRejectedValueOnce(blockedByPodsError('a'));
       (wrapper.vm as any).workloadRemovalOption = 'manual';
       await (wrapper.vm as any).deletePolicies();
 
-      expect(redeploySpy).not.toHaveBeenCalled();
+      expect(dispatch).toHaveBeenCalledWith('growl/error', {
+        title:   'runtimeEnforcer.activePolicies.deleteDialog.growl.title.error',
+        message: 'runtimeEnforcer.activePolicies.deleteDialog.growl.labelStillInUse:{"name":"a","pods":"pod-a"}',
+        timeout: 0,
+      });
+      expect(dispatch).not.toHaveBeenCalledWith('growl/success', expect.anything());
+      expect(push).not.toHaveBeenCalled();
+      expect(wrapper.emitted('close')).toBeUndefined();
+      expect((wrapper.vm as any).deleteInProgress).toBe(false);
+    });
+
+    it('falls back to the backend message when the rejection names no pods', async() => {
+      const resource = createResource('a', 'wk-a');
+      const dispatch = jest.fn();
+      const { wrapper } = mountDialog({ resources: [resource], dispatch });
+
+      resource.remove.mockRejectedValueOnce(apiError(403, 'cannot delete WorkloadPolicy "a" while pods still use it'));
+      (wrapper.vm as any).workloadRemovalOption = 'manual';
+      await (wrapper.vm as any).deletePolicies();
+
+      expect(dispatch).toHaveBeenCalledWith('growl/error', {
+        title:   'runtimeEnforcer.activePolicies.deleteDialog.growl.title.error',
+        message: 'cannot delete WorkloadPolicy "a" while pods still use it',
+        timeout: 0,
+      });
+    });
+
+    it('keeps the generic error for a 403 that is not the labelled pods rejection', async() => {
+      const resource = createResource('a', 'wk-a');
+      const dispatch = jest.fn();
+      const { wrapper } = mountDialog({ resources: [resource], dispatch });
+
+      resource.remove.mockRejectedValueOnce(apiError(403, 'workloadpolicies.runtimeenforcer.kubewarden.io "a" is forbidden: User "u-1" cannot delete resource'));
+      (wrapper.vm as any).workloadRemovalOption = 'manual';
+      await (wrapper.vm as any).deletePolicies();
+
+      expect(dispatch).toHaveBeenCalledWith('growl/error', {
+        title:   'runtimeEnforcer.activePolicies.deleteDialog.growl.title.error',
+        message: 'workloadpolicies.runtimeenforcer.kubewarden.io "a" is forbidden: User "u-1" cannot delete resource',
+      });
+    });
+
+    it('reports each blocked policy and confirms the ones deleted in a bulk delete', async() => {
+      const resources = [createResource('a', 'wk-a'), createResource('b', 'wk-b'), createResource('c', 'wk-c')];
+      const dispatch = jest.fn();
+      const push = jest.fn();
+      const { wrapper } = mountDialog({
+        resources, dispatch, push
+      });
+
+      resources[1].remove.mockRejectedValueOnce(blockedByPodsError('b'));
+      resources[2].remove.mockRejectedValueOnce(blockedByPodsError('c'));
+      (wrapper.vm as any).workloadRemovalOption = 'manual';
+      await (wrapper.vm as any).deletePolicies();
+
+      expect(dispatch).toHaveBeenCalledWith('growl/error', expect.objectContaining({ message: 'runtimeEnforcer.activePolicies.deleteDialog.growl.labelStillInUse:{"name":"b","pods":"pod-a"}', timeout: 0 }));
+      expect(dispatch).toHaveBeenCalledWith('growl/error', expect.objectContaining({ message: 'runtimeEnforcer.activePolicies.deleteDialog.growl.labelStillInUse:{"name":"c","pods":"pod-a"}', timeout: 0 }));
       expect(dispatch).toHaveBeenCalledWith('growl/success', {
         title:   'runtimeEnforcer.activePolicies.deleteDialog.growl.title.single',
-        message: 'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single:{"name":"a"} runtimeEnforcer.activePolicies.deleteDialog.growl.manualRemoval.single:{}',
+        message: 'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single:{"name":"a"}',
       });
-      expect((wrapper.vm as any).deleteInProgress).toBe(false);
+      expect(push).toHaveBeenCalledTimes(1);
+      expect(wrapper.emitted('close')).toHaveLength(1);
     });
 
     it('shows an error growl and re-enables delete when remove fails', async() => {
@@ -382,6 +410,7 @@ describe('DeleteActivePoliciesDialog', () => {
       });
       const redeploySpy = jest.spyOn(wrapper.vm as any, 'unlabelAndRedeployWorkload').mockResolvedValue(undefined);
 
+      (wrapper.vm as any).workloadRemovalOption = 'manual';
       await expect((wrapper.vm as any).deletePolicies()).resolves.toBeUndefined();
       expect(redeploySpy).not.toHaveBeenCalled();
       expect(dispatch).not.toHaveBeenCalledWith('growl/success', expect.anything());
@@ -413,14 +442,14 @@ describe('DeleteActivePoliciesDialog', () => {
       expect((wrapper.vm as any).deleteInProgress).toBe(false);
     });
 
-    it('still attempts the delete after timing out and shows the backend rejection', async() => {
+    it('still attempts the delete after timing out and shows a persistent error when pods still use the policy', async() => {
       const resource = createResource('a', 'wk-a');
       const dispatch = jest.fn((action) => Promise.resolve(action === 'cluster/find' ? createWorkload('wk-a') : undefined));
       const { wrapper } = mountDialog({ resources: [resource], dispatch });
 
       jest.spyOn(wrapper.vm as any, 'unlabelAndRedeployWorkload').mockResolvedValue(undefined);
       (waitFor as jest.Mock).mockRejectedValueOnce(new Error('waitFor timed out after 60 seconds'));
-      resource.remove.mockRejectedValueOnce(new Error('cannot delete WorkloadPolicy "a" while 1 pod(s) in namespace "runtime-enforcer" still use it: pod-a'));
+      resource.remove.mockRejectedValueOnce(blockedByPodsError('a'));
 
       (wrapper.vm as any).workloadRemovalOption = 'auto';
       await (wrapper.vm as any).deletePolicies();
@@ -428,7 +457,8 @@ describe('DeleteActivePoliciesDialog', () => {
       expect(resource.remove).toHaveBeenCalledTimes(1);
       expect(dispatch).toHaveBeenCalledWith('growl/error', {
         title:   'runtimeEnforcer.activePolicies.deleteDialog.growl.title.error',
-        message: 'cannot delete WorkloadPolicy "a" while 1 pod(s) in namespace "runtime-enforcer" still use it: pod-a',
+        message: 'runtimeEnforcer.activePolicies.deleteDialog.growl.labelStillInUse:{"name":"a","pods":"pod-a"} runtimeEnforcer.activePolicies.deleteDialog.growl.autoRestartHint',
+        timeout: 0,
       });
       expect((wrapper.vm as any).deleteInProgress).toBe(false);
     });
@@ -453,7 +483,7 @@ describe('DeleteActivePoliciesDialog', () => {
 
       const radios = wrapper.findAll('radiobutton');
 
-      expect(radios).toHaveLength(3);
+      expect(radios).toHaveLength(2);
       radios.forEach((radio) => expect(radio.attributes('disabled')).toBe('true'));
     });
   });

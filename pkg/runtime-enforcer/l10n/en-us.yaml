@@ -296,28 +296,21 @@ runtimeEnforcer:
       title:
         single: Delete active policy
         bulk: Delete active policies
-      banner:
-        single: By default, deleting the active policy will not remove the labels applied on the workload - if you wish do to so, please select the desired option below.
-        bulk: By default, deleting the active policies will not remove the labels applied on the workloads - if you wish do to so, please select the desired option below.
       confirm:
-        single: Are you sure you want to delete the <b>{name}</b>? This action cannot be undone.
+        single: Are you sure you want to delete the <b>{name}</b> policy? This action cannot be undone.
         bulk: Are you sure you want to delete the <b>selected active policies  ({count})</b>? This action cannot be undone.
       workloadRemovalOptions:
-        keep:
-          single: Do not remove the label of the active policy from the workload
-          bulk: Do not remove the labels of the active policies from the workloads
-          tooltip: Deletes the active policy but leaves the runtimeenforcer.kubewarden.io/policy label on the workload. Enforcement stops immediately; Choose this if you'll attach a new policy shortly, or if the workload's labels are managed elsewhere.
         remove:
-          single: Automatically remove the label of the active policy and restart the workload
-          bulk: Automatically remove the labels of the active policies and restart the workloads
+          single: Automatically remove the label and restart the workload
+          bulk: Automatically remove the labels and restart the workloads
           tooltip: Deletes the active policy and strips the runtimeenforcer.kubewarden.io/policy label from the workload for you, restarting it.
         manual:
-          single: Manually remove the label of the active policy <b>(recommended for GitOps)</b>
-          bulk: Manually remove the labels of the active policies <b>(recommended for GitOps)</b>
-          tooltip: Deletes the active policy but leaves the label for you to remove. Delete the runtimeenforcer.kubewarden.io/policy label from the workload in your source of truth and redeploy. Recommended for GitOps-managed workloads (e.g. Fleet), so the change sticks and isn't reverted on the next sync.
+          single: Manually remove the label before deleting the policy <b>(recommended for GitOps)</b>
+          bulk: Manually remove the labels before deleting the policies <b>(recommended for GitOps)</b>
+          tooltip: The active policy can only be deleted once no running pod carries its runtimeenforcer.kubewarden.io/policy label. Remove the label from the workload in your source of truth and redeploy it first. Recommended for GitOps-managed workloads (e.g. Fleet), so the change sticks and isn't reverted on the next sync.
       manualRemoval:
-        single: To manually remove the label of the active policy from the workload, you need to remove the label below from the corresponding workload and redeploy it. <learnMore>Learn more</learnMore>
-        bulk: To manually remove the labels of the active policies from the workloads, you need to remove the labels below from the corresponding workloads and redeploy them. <learnMore>Learn more</learnMore>
+        single: To manually remove the label of the active policy from the workload, you need to remove the label below from the corresponding workload and redeploy it <b>before deleting the policy</b>. <learnMore>Learn more</learnMore>
+        bulk: To manually remove the labels of the active policies from the workloads, you need to remove the labels below from the corresponding workloads and redeploy them <b>before deleting the policies</b>. <learnMore>Learn more</learnMore>
       cancel: Cancel
       delete: Delete
       deletePolicy:
@@ -337,10 +330,8 @@ runtimeEnforcer:
         autoRemoval:
           single: Restarting the corresponding workload might take a few minutes to complete.
           bulk: Restarting the corresponding workloads might take a few minutes to complete.
-        manualRemoval:
-          single: Don't forget to manually remove the labels of the active policy from the workload and redeploy it.
-          bulk: Don't forget to manually remove the labels of the active policies from the workloads and redeploy them.
-        workloadNotFound: The workload for the {name} active policy was not found.
+        labelStillInUse: 'The {name} active policy could not be deleted because its label is still in use by pods: {pods}.'
+        autoRestartHint: The workload may still be restarting; try again shortly.
     changeModeDialog:
       title:
         single: Change mode for active policy
