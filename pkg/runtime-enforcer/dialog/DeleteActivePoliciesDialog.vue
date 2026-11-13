@@ -26,6 +26,28 @@ const podsUsingPolicy = (err) => `${ err?.message }`.match(/still use it: (.+)$/
 // Same pods the webhook counts: it ignores finished (Succeeded/Failed) pods, e.g. completed CronJob runs.
 const isRunning = (pod) => !['Succeeded', 'Failed'].includes(pod.status?.phase);
 
+// How the workload's controller treats existing pods once the label is removed from its template:
+// - rollout: replaces them itself
+// - runToCompletion: Job pods keep the label until they finish (a Job's pod template is immutable; CronJob edits only affect future runs)
+// - onDelete: only pods created after the edit lose the label, the existing ones must be restarted by hand
+const podReplacement = (workload) => {
+  switch (workload?.kind) {
+  case 'Deployment':
+    return 'rollout';
+  case 'StatefulSet':
+  case 'DaemonSet':
+    return workload.spec?.updateStrategy?.type === 'OnDelete' ? 'onDelete' : 'rollout';
+  case 'Job':
+  case 'CronJob':
+    return 'runToCompletion';
+  case 'ReplicaSet':
+  case 'ReplicationController':
+    return 'onDelete';
+  default:
+    return undefined;
+  }
+};
+
 export default {
   emits: ['close'],
 
@@ -104,7 +126,8 @@ export default {
     },
 
     async unlabelAndRedeployWorkload(workload, now) {
-      if (!workload) {
+      // The API rejects pod template edits on a started Job (422).
+      if (!workload || workload.kind === 'Job') {
         return;
       }
 
@@ -155,72 +178,82 @@ export default {
     },
 
     async findWorkload(resource) {
-      try {
-        return await this.$store.dispatch('cluster/find', {
-          type: WORKLOAD_KIND_TO_TYPE_MAPPING[resource.workloadRef?.workloadType],
-          id:   `${ resource.metadata.namespace }/${ resource.workloadRef?.workloadName }`,
-        });
-      } catch (err) {
-        // A deleted workload has no label left to remove, so the policy can still be deleted.
-        if (statusOf(err) === 404) {
-          return undefined;
-        }
-        throw err;
+      const type = WORKLOAD_KIND_TO_TYPE_MAPPING[resource.workloadRef?.workloadType];
+
+      // `workloadRef` is found by scanning workload templates for the policy label, so it is empty once the
+      // workload is deleted or the label already removed: there is nothing left to unlabel.
+      if (!type) {
+        return undefined;
       }
+
+      return this.$store.dispatch('cluster/find', { type, id: `${ resource.metadata.namespace }/${ resource.workloadRef.workloadName }` });
     },
 
     async deletePolicy(resource) {
-      if (this.workloadRemovalOption === 'auto') {
-        const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+      let autoHint;
 
-        await this.unlabelAndRedeployWorkload(await this.findWorkload(resource), now);
-        await this.waitForLabelledPodsToGo(resource);
+      try {
+        if (this.workloadRemovalOption === 'auto') {
+          const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+          const workload = await this.findWorkload(resource);
+
+          // Picked before the edit: once the label is gone, `workloadRef` no longer finds the workload.
+          autoHint = podReplacement(workload);
+          await this.unlabelAndRedeployWorkload(workload, now);
+          if (autoHint !== 'onDelete') {
+            await this.waitForLabelledPodsToGo(resource);
+          }
+        }
+        await resource?.remove?.();
+
+        return { resource, autoHint };
+      } catch (error) {
+        return {
+          resource, error, autoHint
+        };
       }
-      await resource?.remove?.();
     },
 
     successGrowl(deleted) {
       const plurality = deleted.length > 1 ? 'bulk' : 'single';
       const deletedMessage = deleted.length > 1
         ? this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.bulk', { count: deleted.length }, true)
-        : this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single', { name: deleted[0]?.nameDisplay }, true);
+        : this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single', { name: deleted[0]?.resource.nameDisplay }, true);
 
       return {
         title:   this.t(`runtimeEnforcer.activePolicies.deleteDialog.growl.title.${ plurality }`),
-        message: this.workloadRemovalOption === 'auto'
+        // Only a rollout restarts pods; the other workload kinds keep running as they are.
+        message: deleted.some((result) => result.autoHint === 'rollout')
           ? `${ deletedMessage } ${ this.t(`runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.${ plurality }`, {}, true) }`
           : deletedMessage,
       };
     },
 
-    errorGrowl(resource, err) {
+    errorGrowl({ resource, error, autoHint }) {
       const title = this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.title.error');
 
-      if (isBlockedByLabelledPods(err)) {
-        const pods = podsUsingPolicy(err);
-        const reason = pods ? this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.labelStillInUse', { name: resource.nameDisplay, pods }, true) : err.message;
+      if (isBlockedByLabelledPods(error)) {
+        const pods = podsUsingPolicy(error);
+        const reason = pods ? this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.labelStillInUse', { name: resource.nameDisplay, pods }, true) : error.message;
 
         return {
           title,
-          message: this.workloadRemovalOption === 'auto' ? `${ reason } ${ this.t('runtimeEnforcer.activePolicies.deleteDialog.growl.autoRestartHint') }` : reason,
+          message: autoHint ? `${ reason } ${ this.t(`runtimeEnforcer.activePolicies.deleteDialog.growl.autoHint.${ autoHint }`) }` : reason,
           timeout: 0,
         };
       }
 
-      return { title, message: err?.message };
+      return { title, message: error?.message };
     },
 
     async deletePolicies() {
       this.deleteInProgress = true;
       try {
-        const resources = this.resources || [];
-        const results = await Promise.allSettled(resources.map((resource) => this.deletePolicy(resource)));
-        const deleted = resources.filter((_, i) => results[i].status === 'fulfilled');
+        const results = await Promise.all((this.resources || []).map((resource) => this.deletePolicy(resource)));
+        const deleted = results.filter((result) => !result.error);
 
-        results.forEach((result, i) => {
-          if (result.status === 'rejected') {
-            this.$store.dispatch('growl/error', this.errorGrowl(resources[i], result.reason));
-          }
+        results.filter((result) => result.error).forEach((result) => {
+          this.$store.dispatch('growl/error', this.errorGrowl(result));
         });
 
         if (!deleted.length) {
