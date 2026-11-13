@@ -15,7 +15,7 @@ jest.mock('@shell/utils/error', () => ({ exceptionToErrorsArray: jest.fn((err) =
 
 const t = jest.fn((key, args, raw) => (raw ? `${ key }:${ JSON.stringify(args) }` : key));
 
-const createResource = (name = 'policy-a', workloadName = 'wk-a') => ({
+const createResource = (name = 'policy-a', workloadName = 'wk-a', workloadType = 'Deployment') => ({
   nameDisplay: name,
   metadata:    {
     uid:             `${ name }-uid`,
@@ -24,17 +24,18 @@ const createResource = (name = 'policy-a', workloadName = 'wk-a') => ({
     ownerReferences: [{ name: workloadName }],
   },
   workloadRef: {
-    workloadType: 'Deployment',
+    workloadType,
     workloadName,
   },
   remove: jest.fn().mockResolvedValue(undefined),
 });
 
-const createWorkload = (name = 'wk-a', withPolicyLabel = true) => ({
-  kind:     'Deployment',
+const createWorkload = (name = 'wk-a', withPolicyLabel = true, kind = 'Deployment', spec = {}) => ({
+  kind,
   name,
   metadata: { namespace: 'runtime-enforcer' },
   spec:     {
+    ...spec,
     template: {
       metadata: {
         labels:      withPolicyLabel ? { [POLICY_LABEL_KEY]: 'policy-a' } : {},
@@ -289,9 +290,10 @@ describe('DeleteActivePoliciesDialog', () => {
       expect(testFn()).toBe(false);
     });
 
-    it('still deletes the policy in auto mode when its workload no longer exists', async() => {
-      const resource = createResource('a', 'wk-a');
-      const dispatch = jest.fn((action) => (action === 'cluster/find' ? Promise.reject(apiError(404, 'not found')) : Promise.resolve()));
+    it('still deletes the policy in auto mode when no workload carries its label anymore, without mentioning a restart', async() => {
+      // The workload was deleted or already unlabelled, so the model finds no workload for the policy.
+      const resource = createResource('a', '', '');
+      const dispatch = jest.fn((action) => (action === 'cluster/find' ? Promise.reject(new Error('Unknown schema for type: undefined')) : Promise.resolve()));
       const { wrapper } = mountDialog({ resources: [resource], dispatch });
 
       await (wrapper.vm as any).deletePolicies();
@@ -300,7 +302,7 @@ describe('DeleteActivePoliciesDialog', () => {
       expect(dispatch).not.toHaveBeenCalledWith('growl/error', expect.anything());
       expect(dispatch).toHaveBeenCalledWith('growl/success', {
         title:   'runtimeEnforcer.activePolicies.deleteDialog.growl.title.single',
-        message: 'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single:{"name":"a"} runtimeEnforcer.activePolicies.deleteDialog.growl.autoRemoval.single:{}',
+        message: 'runtimeEnforcer.activePolicies.deleteDialog.growl.delete.single:{"name":"a"}',
       });
       expect(wrapper.emitted('close')).toHaveLength(1);
     });
@@ -457,10 +459,50 @@ describe('DeleteActivePoliciesDialog', () => {
       expect(resource.remove).toHaveBeenCalledTimes(1);
       expect(dispatch).toHaveBeenCalledWith('growl/error', {
         title:   'runtimeEnforcer.activePolicies.deleteDialog.growl.title.error',
-        message: 'runtimeEnforcer.activePolicies.deleteDialog.growl.labelStillInUse:{"name":"a","pods":"pod-a"} runtimeEnforcer.activePolicies.deleteDialog.growl.autoRestartHint',
+        message: 'runtimeEnforcer.activePolicies.deleteDialog.growl.labelStillInUse:{"name":"a","pods":"pod-a"} runtimeEnforcer.activePolicies.deleteDialog.growl.autoHint.rollout',
         timeout: 0,
       });
       expect((wrapper.vm as any).deleteInProgress).toBe(false);
+    });
+
+    it('does not edit a Job pod template and explains that its pods must finish when the delete is blocked', async() => {
+      const resource = createResource('a', 'job-a', 'Job');
+      const job = createWorkload('job-a', true, 'Job');
+      const dispatch = jest.fn((action) => Promise.resolve(action === 'cluster/find' ? job : undefined));
+      const { wrapper } = mountDialog({ resources: [resource], dispatch });
+
+      resource.remove.mockRejectedValueOnce(blockedByPodsError('a'));
+      await (wrapper.vm as any).deletePolicies();
+
+      expect(job.save).not.toHaveBeenCalled();
+      expect(resource.remove).toHaveBeenCalledTimes(1);
+      expect(dispatch).toHaveBeenCalledWith('growl/error', {
+        title:   'runtimeEnforcer.activePolicies.deleteDialog.growl.title.error',
+        message: 'runtimeEnforcer.activePolicies.deleteDialog.growl.labelStillInUse:{"name":"a","pods":"pod-a"} runtimeEnforcer.activePolicies.deleteDialog.growl.autoHint.runToCompletion',
+        timeout: 0,
+      });
+    });
+
+    it.each([
+      ['ReplicaSet', {}],
+      ['StatefulSet', { updateStrategy: { type: 'OnDelete' } }],
+    ])('removes the label from a %s that does not replace its pods without waiting, and asks to restart them when blocked', async(kind, spec) => {
+      const resource = createResource('a', 'wk-a', kind);
+      const workload = createWorkload('wk-a', true, kind, spec);
+      const dispatch = jest.fn((action) => Promise.resolve(action === 'cluster/find' ? workload : undefined));
+      const { wrapper } = mountDialog({ resources: [resource], dispatch });
+
+      resource.remove.mockRejectedValueOnce(blockedByPodsError('a'));
+      await (wrapper.vm as any).deletePolicies();
+
+      expect(workload.save).toHaveBeenCalledTimes(1);
+      expect(workload.spec.template.metadata.labels).toEqual({});
+      expect(waitFor).not.toHaveBeenCalled();
+      expect(dispatch).toHaveBeenCalledWith('growl/error', {
+        title:   'runtimeEnforcer.activePolicies.deleteDialog.growl.title.error',
+        message: 'runtimeEnforcer.activePolicies.deleteDialog.growl.labelStillInUse:{"name":"a","pods":"pod-a"} runtimeEnforcer.activePolicies.deleteDialog.growl.autoHint.onDelete',
+        timeout: 0,
+      });
     });
 
     it('disables cancel while the deletion is in progress', async() => {

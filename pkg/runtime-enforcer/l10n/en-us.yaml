@@ -331,7 +331,10 @@ runtimeEnforcer:
           single: Restarting the corresponding workload might take a few minutes to complete.
           bulk: Restarting the corresponding workloads might take a few minutes to complete.
         labelStillInUse: 'The {name} active policy could not be deleted because its label is still in use by pods: {pods}.'
-        autoRestartHint: The workload may still be restarting; try again shortly.
+        autoHint:
+          rollout: The workload may still be restarting; try again shortly.
+          runToCompletion: Job pods keep the label until they finish; try again once they complete.
+          onDelete: This workload does not replace its pods when its template changes; restart or delete them, then try again.
     changeModeDialog:
       title:
         single: Change mode for active policy
