@@ -15,6 +15,7 @@
     "strict": true,
     "noEmit": true,
     "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "isolatedModules": true,
     "baseUrl": ".",
     "paths": {
@@ -34,11 +35,13 @@
       "@vulnerability-scanner/*": ["./pkg/vulnerability-scanner/*"],
       "@runtime-enforcer/*": ["./pkg/runtime-enforcer/*"],
       "@common/*": ["./pkg/common/*"],
+      "@kubewarden/*": ["./pkg/kubewarden/*"],
     },
     "typeRoots": [
       "./node_modules",
       "./node_modules/@rancher/shell/types",
-      "./node_modules/@rancher/components/types"
+      "./node_modules/@rancher/components/types",
+      "./pkg/kubewarden/types"
     ],
     "types": [
       "@types/node",
@@ -66,7 +69,11 @@
 
     "./pkg/common/**/*.ts",
     "./pkg/common/**/*.tsx",
-    "./pkg/common/**/*.vue"
+    "./pkg/common/**/*.vue",
+
+    "./pkg/kubewarden/**/*.ts",
+    "./pkg/kubewarden/**/*.tsx",
+    "./pkg/kubewarden/**/*.vue"
   ],
   "exclude": [
     "node_modules",

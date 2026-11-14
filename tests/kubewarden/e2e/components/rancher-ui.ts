@@ -1,0 +1,282 @@
+import semver, { Range } from 'semver'
+import type { Locator, Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
+import jsyaml from 'js-yaml'
+import _ from 'lodash'
+import { step } from '../rancher/rancher-test'
+import { TableRow } from './table-row'
+
+export type YAMLPatch = string | ((patch:any) => void) | { [key: string]: unknown }
+export type AuthSecret = string | RegExp | { username: string, password: string }
+
+/**
+ * aria-label is not always filled - we have to use filters to find elements reliably
+ */
+export class RancherUI {
+  readonly page      : Page
+  readonly codeMirror: Locator
+
+  constructor(page: Page) {
+    this.page = page
+    this.codeMirror = page.locator('div.CodeMirror-code').or(page.locator('div.cm-content').first())
+  }
+
+  // ==================================================================================================
+
+  // Button
+  button(name: string|RegExp) {
+    return this.page.getByRole('button', { name, exact: true })
+      .or(this.page.locator('a.btn,button', { has: this.page.getByText(name, { exact: true }) }))
+      .filter({ visible: true })
+      .describe(`Button: ${name}`)
+  }
+
+  // Labeled Input
+  input(label: string|RegExp) {
+    return this.page.locator('div.labeled-input')
+      .filter({ has: this.page.getByText(label, { exact: true }) })
+      .locator('input')
+      .filter({ visible: true })
+      .describe(`Input: ${label}`)
+  }
+
+  // Labeled Checkbox
+  checkbox(label: string|RegExp) {
+    return this.page.locator('label.checkbox-container')
+      .filter({ hasText: label })
+      .locator('span.checkbox-custom')
+      .describe(`Checkbox: ${label}`)
+  }
+
+  // Return heading or custom header element
+  heading(name: string|RegExp) {
+    return this.page.getByRole('heading', { name, exact: true })
+      .or(this.page.locator('div.item-card-header').getByText(name, { exact: true }))
+  }
+
+  // Tab
+  tab(name: string|RegExp) {
+    // Modify string parameter to handle (N) suffix (UI >= 4.0.4)
+    if (typeof name === 'string') name = new RegExp(`^${name}( \\(\\d+\\))?$`)
+    return this.page.getByRole('tab', { name }).describe(`Tab: ${name}`)
+  }
+
+  // Radio group
+  radioGroup(label: string) {
+    // Exact name with optional "i" tooltip
+    const groupLabel = new RegExp(`^${label} .?$`)
+    return this.page.locator('.radio-group')
+      .filter({ has: this.page.getByRole('heading', { name: groupLabel }) })
+      .locator('xpath=./following-sibling::div')
+      .describe(`Radio group: ${label}`)
+  }
+
+  // Radio input (span)
+  radio(label: string, name: string): Locator {
+    return this.radioGroup(label).getByRole('radio', { name }).describe(`Radio: ${name} in ${label}`)
+  }
+
+  // (un)Labeled Select (ComboBox)
+  select(label: string|Locator) {
+    const base = (typeof label === 'string')
+      ? this.page.locator('div.labeled-select').filter({ hasText: label })
+      : label.locator('div.unlabeled-select')
+
+    return base.getByRole('combobox', { name: 'Search for option' }).describe(`Select: ${label}`)
+  }
+
+  // Select option from (un)labeled Select
+  async selectOption(label: string|Locator, option: string | RegExp | number) {
+    const select = (typeof label === 'string')
+      ? this.select(label)
+      : (await label.getAttribute('role') === 'combobox')
+          ? label
+          : this.select(label)
+
+    await expect(select.locator('xpath=../..').locator('i.icon-spinner')).toBeHidden()
+    await select.click()
+
+    const optionItem = typeof option === 'number'
+      ? this.page.getByRole('option').nth(option)
+      : this.page.getByRole('option', { name: option, exact: true })
+    await optionItem.click()
+
+    // Select is removed if I choose "New Namespace" option
+    if (await select.isVisible()) {
+      // Clicking optionItem that is already selected does not close menu (policy questions)
+      if (await select.getAttribute('aria-expanded') === 'true') {
+        await select.click()
+      }
+    }
+  }
+
+  // Helper for SelectOrCreateAuthSecret component
+  // Select existing secret or create new based on auth parameter
+  async selectAuthentication(auth: AuthSecret, label: string|Locator = 'Authentication') {
+    if (auth instanceof RegExp) {
+      await this.selectOption(label, auth)
+    } else if (typeof auth == 'string') {
+      // Secrets have additional info in name "HTTP Basic Auth | Registry: ..."
+      await this.selectOption(label, new RegExp(`^${auth}( |$)`))
+    } else {
+      await this.selectOption(label, /^Create /) // (an|a new) (HTTP Basic Auth|Image Pull) Secret
+      await this.input('Username').fill(auth.username)
+      await this.input('Password').fill(auth.password)
+    }
+  }
+
+  // Slide-in drawer or old config
+  async showConfiguration() {
+    const configBtn = RancherUI.isVersion('>=2.12') ? 'Show Configuration' : 'Config'
+    await this.button(configBtn).click()
+  }
+
+  // Handling for second "Close" button on policy readme
+  async hideConfiguration() {
+    if (RancherUI.isVersion('>=2.12'))
+      await this.button(/^Close.*Configuration drawer$/).last().click()
+  }
+
+  // ==================================================================================================
+  // Table Handler
+
+  // Wait until table loads
+  async waitForTable(options?: { timeout?: number }) {
+    const row0 = this.tableRow(0).row
+    const norows = this.page.locator('table.sortable-table > tbody:visible').getByText('There are no rows to show.')
+    await expect(row0.or(norows)).toBeVisible(options)
+  }
+
+  tableRow(arg: number | string | RegExp | { [key: string]: string | RegExp }, options?: { group?: string }): TableRow {
+    return new TableRow(this, arg, options)
+  }
+
+  // ==================================================================================================
+  // Helper functions
+
+  /**
+   * Set or modify url parameters
+   * @param params new url parameters
+   * @param url wait for url before changing it (after redirect)
+   */
+  async swapUrlParams(params: Record<string, string>, url?: string|RegExp) {
+    if (url) await expect(this.page).toHaveURL(url)
+    const newUrl = new URL(this.page.url())
+    for (const [key, value] of Object.entries(params)) {
+      newUrl.searchParams.set(key, value)
+    }
+    await this.page.goto(newUrl.toString())
+  }
+
+  async openView(view: 'Edit Options' | 'Edit YAML' | 'Edit as YAML' | 'Compare Changes') {
+    // Give generated fields time to get registered
+    await this.page.waitForTimeout(200)
+    // Show yaml with edited settings
+    await this.button(view).click()
+  }
+
+  /**
+   * Usage:
+   * Yaml nodes are not created automatically, checks presence of the structure
+   *   await editYaml((y) => { y.policyServer.telemetry.enabled = false })
+   * Yaml nodes are created automatically
+   *   await editYaml({ 'policyServer.telemetry.enabled': false })
+   * String patch (contains ':')
+   *   await editYaml('{"policyServer": {"telemetry": { "enabled": false }}}')
+   * String value
+   *   await editYaml('any value will be pasted as string')
+   */
+  @step
+  async editYaml(patch: YAMLPatch) {
+    // Load yaml from code editor
+    await expect(this.codeMirror).toBeVisible()
+
+    // Rancher 2.16 uses CodeMirror 6, UI extension and older Rancher use CodeMirror 5
+    const isCM6 = await this.codeMirror.evaluate(el => el.classList.contains('cm-content'))
+    const lines = isCM6
+      // CodeMirror 6 renders only visible lines, read full document from editor state
+      ? (await this.codeMirror.evaluate((el: any) => el.cmTile.root.view.state.doc.toString())).split('\n')
+      : await this.codeMirror.locator('pre.CodeMirror-line').allTextContents()
+
+    const cmText = lines.join('\n')
+      .replace(/\u00A0/g, ' ') // replace &nbsp; with space
+      .replace(/\u200B/g, '') // remove ZERO WIDTH SPACE last line
+    const cmYaml = cmText.trim() ? (jsyaml.load(cmText) || {}) : {}
+
+    // Edit yaml
+    if (typeof patch === 'function') {
+      patch(cmYaml)
+    } else if (typeof patch === 'string') {
+      _.merge(cmYaml, jsyaml.load(patch))
+    } else if (typeof patch === 'object') {
+      Object.keys(patch).forEach((key) => {
+        _.set(cmYaml, key, patch[key])
+      })
+    }
+
+    // Paste edited yaml
+    await this.codeMirror.click()
+    await this.page.keyboard.press('Control+A')
+    // If patch is a string but not JSON, insert it as-is
+    await this.page.keyboard.insertText(
+      typeof patch === 'string' && !patch.trim().startsWith('{') && !patch.includes(':') ? patch : jsyaml.dump(cmYaml)
+    )
+  }
+
+  @step
+  async importYaml(yaml: YAMLPatch, options?: { wait?: boolean }) {
+    // Open import dialog
+    const dialog = this.page.getByRole('dialog')
+    await this.page.locator('header').locator('button').filter({ has: this.page.locator('i.icon-upload') }).click()
+    await expect(dialog.getByRole('heading', { name: 'Import YAML', exact: true })).toBeVisible()
+
+    // Paste yaml
+    await this.editYaml(yaml)
+    await this.button('Import').click()
+    await expect(dialog.getByRole('heading', { name: /^Applied \d+ Resources?$/ })).toBeVisible()
+
+    // Wait until all resources are active
+    if (options?.wait) {
+      await dialog.getByTestId('sortable-cell-0-0').waitFor()
+      for (const e of await dialog.getByTestId(/sortable-cell-\d+-0/).all()) {
+        await expect(e).toHaveText('Active', { timeout: 60_000 })
+      }
+    }
+
+    // Close dialog
+    await this.button('Close').click()
+  }
+
+  /**
+   * Call await ui.retry(async()=> { <code> }, 'Reason')
+   */
+  async retry(code: () => Promise<void>, message: string, options?: { reload?: boolean }) {
+    const optReload = options?.reload || true
+    try {
+      await code()
+    } catch {
+      test.info().annotations.push({ type: 'Retry', description: message })
+      if (optReload) await this.page.reload()
+      await code()
+    }
+  }
+
+  static requireEnv(name: string): string {
+    const value = process.env[name]
+    if (!value) throw new Error(`Environment variable ${name} not set`)
+    return value
+  }
+
+  static get isPrime(): boolean {
+    return this.requireEnv('RANCHER_PRIME') === 'true'
+  }
+
+  static isVersion(query: string|Range): boolean {
+    // Convert v2.10(.0)-6e85a811efd6b831c3d49a7336a6d4b3e96c1a93-head -> v2.10.0-head
+    const version = this.requireEnv('RANCHER_VERSION')
+      .replace(/^(v?\d+\.\d+)-/, '$1.0-') // v2.10-<sha>-head -> v2.10.0-<sha>-head
+      .replace(/-[a-f0-9]{40}/, '') // v2.16.0-<sha>-head -> v2.16.0-head
+    if (!semver.validRange(query)) throw new Error(`Invalid range: ${query}`)
+    return semver.satisfies(version, query, { includePrerelease: true })
+  }
+}

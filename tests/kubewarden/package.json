@@ -1,0 +1,20 @@
+{
+  "name": "playwright",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "~1.64.1",
+    "@types/js-yaml": "^4.0.9",
+    "@types/lodash": "^4.17.27",
+    "@types/semver": "^7.8.0",
+    "js-yaml": "^5.5.0",
+    "lodash": "^4.18.1",
+    "playwright-qase-reporter": "^2.8.0",
+    "semver": "^7.8.5"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {}
+}

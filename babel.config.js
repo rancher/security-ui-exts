@@ -13,6 +13,7 @@ module.exports = {
               '@sbomscanner-ui-ext':      './pkg/sbomscanner-ui-ext',
               '@network':                 './pkg/network',
               '@runtime-process-profile': './pkg/runtime-process-profile',
+              '@kubewarden':              './pkg/kubewarden',
             },
           },
         ],

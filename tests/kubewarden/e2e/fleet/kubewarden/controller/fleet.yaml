@@ -1,0 +1,74 @@
+# https://fleet.rancher.io/ref-fleet-yaml
+defaultNamespace: cattle-kubewarden-system
+# helmSecretName: ..authSecret
+helm:
+  version: '*-0'  # 2.0.5
+  releaseName: rancher-admission-controller
+  chart: admission-controller
+  repo: https://charts.kubewarden.io
+  # repo: oci://dp.apps.rancher.io/charts/suse-security-admission-controller
+  # valuesFiles:
+  #   - values.yaml
+  values:
+    # image:
+      # tag: latest
+      # registry: mrReg
+    # policyServer:
+      # image:
+        # registry: mrReg
+    auditScanner:
+      policyReporter: true
+      cronJob:
+        schedule: "*/1 * * * *" # every minute
+      # image:
+        # registry: mrReg
+    telemetry:
+      mode: sidecar
+      tracing: true
+      sidecar:
+        # metrics:
+          # enabled: true
+          # port: 8080
+        tracing:
+          jaeger:
+            endpoint: "jaeger-operator-jaeger-collector.jaeger.svc.cluster.local:4317"
+            tls:
+              insecure: true
+    recommendedPolicies:
+      enabled: true
+
+  valuesFrom:
+
+
+diff:
+  comparePatches:
+    - apiVersion: opentelemetry.io/v1alpha1
+      kind: OpenTelemetryCollector
+      name: kubewarden
+      namespace: cattle-kubewarden-system
+      operations:
+        - {"op": "remove", "path": "/spec"}
+
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: MutatingWebhookConfiguration
+      name: kubewarden-controller-mutating-webhook-configuration
+      jsonPointers:
+      operations:
+        - {"op": "remove", "path":"/webhooks"}
+
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      name: kubewarden-controller-validating-webhook-configuration
+      operations:
+        - {"op": "remove", "path":"/webhooks"}
+
+labels:
+  app: rancher-admission-controller
+
+dependsOn:
+  - selector:
+      matchLabels:
+        name: opentelemetry
+  - selector:
+      matchLabels:
+        name: jaeger-operator

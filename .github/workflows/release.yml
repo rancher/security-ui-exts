@@ -18,3 +18,20 @@ jobs:
     with:
       target_branch: gh-pages
       tagged_release: ${{ github.ref_name }}
+
+  # The release workflow is shared by every extension; only final Admission Controller releases run
+  # the Kubewarden e2e suite against the published extension
+  kubewarden-e2e:
+    needs: build-extension-charts
+    if: startsWith(github.ref_name, 'kubewarden-') && github.event.action == 'released'
+    uses: ./.github/workflows/kubewarden-e2e.yml
+    permissions:
+      contents: read
+    with:
+      tag: ${{ github.ref_name }}
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+      QASE_APITOKEN: ${{ secrets.QASE_APITOKEN }}
+      APPCO_USERNAME: ${{ secrets.APPCO_USERNAME }}
+      APPCO_PASSWORD: ${{ secrets.APPCO_PASSWORD }}
