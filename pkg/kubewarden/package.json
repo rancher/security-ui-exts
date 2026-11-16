@@ -1,0 +1,32 @@
+{
+  "name": "kubewarden",
+  "description": "SUSE Security Admission Controller extension for Rancher Manager",
+  "icon": "https://raw.githubusercontent.com/rancher/kubewarden-ui/main/pkg/kubewarden/assets/icon-kubewarden.svg",
+  "version": "4.2.4",
+  "private": false,
+  "rancher": {
+    "annotations": {
+      "catalog.cattle.io/display-name": "SUSE Security Admission Controller",
+      "catalog.cattle.io/kube-version": ">= v1.16.0-0",
+      "catalog.cattle.io/rancher-version": ">= 2.11.0-0",
+      "catalog.cattle.io/ui-extensions-version": ">= 3.0.0 < 4.0.0"
+    }
+  },
+  "scripts": {
+    "dev": "./node_modules/.bin/nuxt dev",
+    "nuxt": "./node_modules/.bin/nuxt"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "5.0.8",
+    "@vue/cli-service": "5.0.8",
+    "@vue/cli-plugin-typescript": "5.0.8"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
+}

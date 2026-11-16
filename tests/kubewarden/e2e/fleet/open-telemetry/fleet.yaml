@@ -1,0 +1,18 @@
+defaultNamespace: opentelemetry
+helm:
+  releaseName: opentelemetry
+  chart: opentelemetry-operator
+  version: "*"   # 0.114.1
+  repo: https://open-telemetry.github.io/opentelemetry-helm-charts
+  values:
+    manager:
+      collectorImage:
+        repository: "otel/opentelemetry-collector-contrib"
+
+labels:
+  name: opentelemetry
+
+# To disable OTEL Collector deployment
+# targetCustomizations:
+# - clusterSelector: {}
+#   doNotDeploy: true
