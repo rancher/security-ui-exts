@@ -50,7 +50,7 @@ export default {
 
       if ( sortGenerationKey) {
         key = `${ sortGenerationKey }/${ this.rows.length }/${ this.descending }/${ this.sortFields.join(',') }`;
-        if ( this.cacheKey === key ) {
+        if ( this.cacheKey === key && this.cachedRowsRef === this.rows ) {
           return this.cachedRows;
         }
       }
@@ -60,6 +60,7 @@ export default {
       if ( key ) {
         this.cacheKey = key;
         this.cachedRows = out;
+        this.cachedRowsRef = this.rows;
       }
 
       return out;
@@ -105,8 +106,9 @@ export default {
     return {
       sortBy,
       descending,
-      cachedRows: null,
-      cacheKey:   null,
+      cachedRows:    null,
+      cachedRowsRef: null,
+      cacheKey:      null,
     };
   },
 
