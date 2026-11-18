@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { useStore } from 'vuex';
 import Banner from '@components/Banner/Banner.vue';
-import PaginatedResourceTable from '@common/components/customized/PaginatedResourceTable.vue';
+import PaginatedResourceTable from '@shell/components/PaginatedResourceTable.vue';
 import LabeledSelect from '@shell/components/form/LabeledSelect';
 import { DOCUMENTATION_URL, RESOURCE, type WorkloadPolicy } from '@runtime-enforcer/types';
 import { getActivePoliciesHeaders } from '@runtime-enforcer/config/policy-proposals-table';
@@ -341,6 +341,7 @@ function importYaml() {
       :schema="schema"
       :namespaced="true"
       :groupable="false"
+      :table-views="false"
       :table-actions="true"
       :row-actions="true"
       :search="false"

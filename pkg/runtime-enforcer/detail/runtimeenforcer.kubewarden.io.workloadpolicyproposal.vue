@@ -172,6 +172,7 @@ const containerHeaders = computed(() => [
         {{ i18n.t('runtimeEnforcer.policyProposal.containers.title') }}
       </h3>
       <SortableTable
+        :table-views-layout="false"
         key-field="container"
         :rows="containerRows"
         :headers="containerHeaders"

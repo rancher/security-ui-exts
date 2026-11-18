@@ -126,6 +126,7 @@ const headers = computed(() => [
 
 <template>
   <SortableTable
+      :table-views-layout="false"
       key-field="id"
       :rows="rows"
       :headers="headers"

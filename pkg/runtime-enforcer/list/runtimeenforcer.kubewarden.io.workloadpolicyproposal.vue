@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { useStore } from 'vuex';
 import Banner from '@components/Banner/Banner.vue';
-import PaginatedResourceTable from '@common/components/customized/PaginatedResourceTable.vue';
+import PaginatedResourceTable from '@shell/components/PaginatedResourceTable.vue';
 import LabeledSelect from '@shell/components/form/LabeledSelect';
 import RichTranslation from '@shell/components/RichTranslation.vue';
 import SubtleLink from '@shell/components/SubtleLink.vue';
@@ -11,7 +11,7 @@ import { getPolicyProposalHeaders, getContainerTableHeaders } from '@runtime-enf
 import RcButton from '@components/RcButton/RcButton.vue';
 import _ from 'lodash';
 import { WORKLOAD_KINDS } from '@shell/config/types';
-import SortableTable from '@common/components/customized/SortableTable';
+import SortableTable from '@shell/components/SortableTable';
 import { WORKLOAD_KIND_TO_TYPE_MAPPING } from '@shell/config/types';
 import { FilterArgs, PaginationFilterField, PaginationParamFilter } from '@shell/types/store/pagination.types';
 
@@ -280,6 +280,7 @@ async function fetchPageSecondaryResources({ force, page }: { force: any; page: 
       :schema="schema"
       :namespaced="true"
       :groupable="false"
+      :table-views="false"
       :table-actions="true"
       :row-actions="true"
       :search="false"
@@ -351,11 +352,12 @@ async function fetchPageSecondaryResources({ force, page }: { force: any; page: 
         </div>
       </template>
       <template #sub-row="{ row, fullColspan }">
-        <tr class="ss-sub-row">
+        <tr class="sub-row">
           <td :colspan="fullColspan">
             <SortableTable
               class="sub-table"
               :rows="row.childrenRec"
+              :table-views-layout="false"
               :search="false"
               :headers="subHeaders"
               :row-actions="false"
@@ -382,6 +384,14 @@ async function fetchPageSecondaryResources({ force, page }: { force: any; page: 
 </template>
 
 <style scoped lang="scss">
+  // Sub-table rules our forked SortableTable had and shell's doesn't (#863)
+  :deep(tr.main-row.has-sub-row:has(+ tr.sub-row .sub-table)) {
+    border-bottom: 1px solid var(--sortable-table-top-divider);
+  }
+  :deep(tr.sub-row .sub-table .sortable-table td:last-child) {
+    padding-right: 0;
+  }
+
   .policy-proposals-page {
     display: flex;
     flex-direction: column;

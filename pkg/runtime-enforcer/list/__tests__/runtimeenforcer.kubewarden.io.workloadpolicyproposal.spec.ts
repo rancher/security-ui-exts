@@ -32,7 +32,7 @@ jest.mock('@components/Banner/Banner.vue', () => ({
   default:    { name: 'Banner', template: '<div><slot /></div>' },
 }));
 
-jest.mock('@common/components/customized/PaginatedResourceTable.vue', () => ({
+jest.mock('@shell/components/PaginatedResourceTable.vue', () => ({
   __esModule: true,
   default:    {
     name:  'PaginatedResourceTable',
@@ -51,7 +51,7 @@ jest.mock('@shell/components/form/LabeledSelect', () => ({
   default:    { name: 'LabeledSelect', template: '<div />' },
 }));
 
-jest.mock('@common/components/customized/SortableTable', () => ({
+jest.mock('@shell/components/SortableTable', () => ({
   __esModule: true,
   default:    { name: 'SortableTable', template: '<div />' },
 }));

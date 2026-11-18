@@ -191,6 +191,7 @@ export default {
       <template v-if="done">
         <div class="results">
           <SortableTable
+            :table-views-layout="false"
             :rows="rows"
             :headers="headers"
             mode="view"
