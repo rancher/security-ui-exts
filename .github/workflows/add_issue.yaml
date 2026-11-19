@@ -5,24 +5,30 @@ on:
     types:
       - opened
 
+permissions: {}
+
 jobs:
   add-to-project:
     name: Add issue to project
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     steps:
+      # The project bot App credentials live in Vault, not repo secrets (rancherlabs/eio#4210)
+      - name: Read App credentials
+        uses: rancher-eio/read-vault-secrets@4c8f4e741954651c502bb7739c46ae1bad26b44d # v3
+        with:
+          secrets: |
+            secret/data/github/repo/${{ github.repository }}/github/rancher-ui-project-bot/app-credentials appId | ADD_ISSUE_APP_ID ;
+            secret/data/github/repo/${{ github.repository }}/github/rancher-ui-project-bot/app-credentials privateKey | ADD_ISSUE_PRIVATE_KEY
       - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         id: app-token
-        env:
-          APP_ID: ${{ secrets.ADD_ISSUE_APP_ID }}
-          PRIVATE_KEY: ${{ secrets.ADD_ISSUE_PRIVATE_KEY }}
-        if: env.APP_ID != '' && env.PRIVATE_KEY != ''
         with:
-          client-id: ${{ secrets.ADD_ISSUE_APP_ID }}
-          private-key: ${{ secrets.ADD_ISSUE_PRIVATE_KEY }}
+          client-id: ${{ env.ADD_ISSUE_APP_ID }}
+          private-key: ${{ env.ADD_ISSUE_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           permission-organization-projects: write
       - uses: actions/add-to-project@f2c1f1fa649a891be84948ea89b5dfba1526ef05 # v2.0.1
-        if: steps.app-token.outcome == 'success'
         with:
           project-url: https://github.com/orgs/rancher/projects/143
           github-token: ${{ steps.app-token.outputs.token }}

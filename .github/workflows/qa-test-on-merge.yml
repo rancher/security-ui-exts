@@ -1,6 +1,6 @@
 name: Move linked issues to QA test
 
-# pull_request_target so the App secrets are available for PRs from forks.
+# pull_request_target so PRs from forks get the OIDC token the Vault login needs.
 # Safe because the job never checks out or runs code from the pull request.
 on:
   pull_request_target: # zizmor: ignore[dangerous-triggers]
@@ -9,21 +9,31 @@ on:
     branches:
       - main
 
-permissions:
-  issues: read
-  pull-requests: read
+permissions: {}
 
 jobs:
   move-to-qa-test:
     name: Move linked issues to QA test
     if: github.repository == 'rancher/security-ui-exts' && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    permissions:
+      issues: read
+      pull-requests: read
+      id-token: write
     steps:
+      # The project bot App credentials live in Vault, not repo secrets (rancherlabs/eio#4210)
+      - name: Read App credentials
+        uses: rancher-eio/read-vault-secrets@4c8f4e741954651c502bb7739c46ae1bad26b44d # v3
+        with:
+          secrets: |
+            secret/data/github/repo/${{ github.repository }}/github/rancher-ui-project-bot/app-credentials appId | ADD_ISSUE_APP_ID ;
+            secret/data/github/repo/${{ github.repository }}/github/rancher-ui-project-bot/app-credentials privateKey | ADD_ISSUE_PRIVATE_KEY
+
       - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         id: app-token
         with:
-          client-id: ${{ secrets.ADD_ISSUE_APP_ID }}
-          private-key: ${{ secrets.ADD_ISSUE_PRIVATE_KEY }}
+          client-id: ${{ env.ADD_ISSUE_APP_ID }}
+          private-key: ${{ env.ADD_ISSUE_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           permission-organization-projects: write
 
