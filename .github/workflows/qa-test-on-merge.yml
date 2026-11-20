@@ -1,0 +1,109 @@
+name: Move linked issues to QA test
+
+# pull_request_target so PRs from forks get the OIDC token the Vault login needs.
+# Safe because the job never checks out or runs code from the pull request.
+on:
+  pull_request_target: # zizmor: ignore[dangerous-triggers]
+    types:
+      - closed
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  move-to-qa-test:
+    name: Move linked issues to QA test
+    if: github.repository == 'rancher/security-ui-exts' && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      issues: read
+      pull-requests: read
+      id-token: write
+    steps:
+      # The project bot App credentials live in Vault, not repo secrets (rancherlabs/eio#4210)
+      - name: Read App credentials
+        uses: rancher-eio/read-vault-secrets@4c8f4e741954651c502bb7739c46ae1bad26b44d # v3
+        with:
+          secrets: |
+            secret/data/github/repo/${{ github.repository }}/github/rancher-ui-project-bot/app-credentials appId | ADD_ISSUE_APP_ID ;
+            secret/data/github/repo/${{ github.repository }}/github/rancher-ui-project-bot/app-credentials privateKey | ADD_ISSUE_PRIVATE_KEY
+
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: app-token
+        with:
+          client-id: ${{ env.ADD_ISSUE_APP_ID }}
+          private-key: ${{ env.ADD_ISSUE_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          permission-organization-projects: write
+
+      - name: Set Status to QA test
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          READ_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          # SUSE Security Rancher UI board (rancher project 143): project, Status field and its "QA test" option
+          PROJECT_ID: PVT_kwDOAI6QIs4BVZGh
+          STATUS_FIELD_ID: PVTSSF_lADOAI6QIs4BVZGhzhQ1Nvo
+          QA_TEST_OPTION_ID: dc400862
+        run: |
+          set -euo pipefail
+          owner="${GITHUB_REPOSITORY%/*}"
+          repo="${GITHUB_REPOSITORY#*/}"
+
+          # Merging doesn't close issues here (repo setting is off), so a closed issue implies already verified by QA
+          merged_issues=$(GH_TOKEN="$READ_TOKEN" gh api graphql \
+            -f query='query($owner: String!, $repo: String!, $pr: Int!) {
+              repository(owner: $owner, name: $repo) {
+                pullRequest(number: $pr) {
+                  closingIssuesReferences(first: 25) { nodes { id number state } }
+                }
+              }
+            }' \
+            -f owner="$owner" -f repo="$repo" -F pr="$PR_NUMBER" \
+            --jq '[.data.repository.pullRequest.closingIssuesReferences.nodes[] | select(.state == "OPEN")]')
+
+          if [ "$merged_issues" = "[]" ]; then
+            echo "No open linked issues"
+            exit 0
+          fi
+
+          open_prs=$(GH_TOKEN="$READ_TOKEN" gh api graphql \
+            -f query='query($owner: String!, $repo: String!) {
+              repository(owner: $owner, name: $repo) {
+                pullRequests(states: OPEN, first: 100) {
+                  nodes { number closingIssuesReferences(first: 25) { nodes { id } } }
+                }
+              }
+            }' \
+            -f owner="$owner" -f repo="$repo" \
+            --jq '[.data.repository.pullRequests.nodes[] | { number, issues: [.closingIssuesReferences.nodes[].id] }]')
+
+          while read -r issue_id number; do
+            others=$(jq -r --arg id "$issue_id" \
+              '[.[] | select(.issues | index($id)) | "#\(.number)"] | join(", ")' <<< "$open_prs")
+
+            if [ -n "$others" ]; then
+              echo "Skipping #$number: still linked to open PR $others"
+              continue
+            fi
+
+            item_id=$(gh api graphql \
+              -f query='mutation($project: ID!, $content: ID!) {
+                addProjectV2ItemById(input: { projectId: $project, contentId: $content }) { item { id } }
+              }' \
+              -f project="$PROJECT_ID" -f content="$issue_id" \
+              --jq '.data.addProjectV2ItemById.item.id')
+
+            gh api graphql \
+              -f query='mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: $project, itemId: $item, fieldId: $field,
+                  value: { singleSelectOptionId: $option }
+                }) { projectV2Item { id } }
+              }' \
+              -f project="$PROJECT_ID" -f item="$item_id" \
+              -f field="$STATUS_FIELD_ID" -f option="$QA_TEST_OPTION_ID" > /dev/null
+
+            echo "Moved #$number to QA test"
+          done < <(jq -r '.[] | "\(.id) \(.number)"' <<< "$merged_issues")
