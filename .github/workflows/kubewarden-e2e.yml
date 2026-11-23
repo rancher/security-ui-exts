@@ -1,0 +1,286 @@
+name: Kubewarden E2E Tests
+
+run-name: ${{ inputs.tag || '' }}
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      rancher:
+        description: Rancher version
+        type: choice
+        default: 'released'
+        options:
+        - released
+        - 'v2.12'
+        - 'v2.13'
+        - 'v2.14'
+        - 'v2.15'
+        - 'v2.16'
+        - 'v2.12-0 (devel)'
+        - 'v2.13-0 (devel)'
+        - 'v2.14-0 (devel)'
+        - 'v2.15-0 (devel)'
+        - 'v2.16-0 (devel)'
+      rancher_text:
+        description: Rancher constraint
+        required: false
+      kubewarden:
+        description: Kubewarden UI from
+        type: choice
+        default: 'auto'
+        options:
+        - auto
+        - source # build extension from main branch
+        - github # https://rancher.github.io/security-ui-exts/
+        - prime  # ui-plugin-charts in released rancher prime
+      k3s:
+        description: Kubernetes version
+        type: choice
+        default: 'auto'
+        options:
+        - auto
+        - v1.30
+        - v1.31
+        - v1.32
+        - v1.33
+        - v1.34
+        - v1.35
+        - v1.36
+        - v1.37
+      mode:
+        description: Kubewarden install mode
+        type: choice
+        default: 'manual'
+        options:
+        - manual
+        - fleet
+        - upgrade
+      testbase:
+        description: Run standard e2e tests
+        type: boolean
+        default: true
+      testpolicies:
+        description: Run extra policy tests
+        type: boolean
+        default: false
+
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'pkg/kubewarden/**'
+      - 'package.json'
+      - 'tests/kubewarden/**'
+
+  # Called by release.yml after a kubewarden-* release, to test the published extension
+  workflow_call:
+    inputs:
+      tag:
+        description: Release tag of the published extension
+        type: string
+        required: true
+    secrets:
+      DOCKERHUB_USERNAME:
+        required: false
+      DOCKERHUB_PASSWORD:
+        required: false
+      QASE_APITOKEN:
+        required: false
+      APPCO_USERNAME:
+        required: false
+      APPCO_PASSWORD:
+        required: false
+
+  schedule:
+    - cron: "1 21 * * *"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || inputs.tag || github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Github -> Secrets and variables -> Actions -> New repository variable
+  K3D_VERSION: # 'v5.6.3' - optionally pin version
+  K3S_VERSION: ${{ inputs.k3s != 'auto' && inputs.k3s || '' }}
+  K3D_CLUSTER_NAME: ${{ github.repository_owner }}-${{ github.event.repository.name }}-runner
+  # First value after the && must be truthy. Otherwise, the value after the || will always be returned
+  TESTBASE: ${{ github.event_name != 'workflow_dispatch' && true || inputs.testbase }}
+  TESTPOLICIES: ${{ inputs.testpolicies || false }}
+  # Enable QASE integration only for original repo
+  QASE: ${{ github.repository_owner == 'rancher' && github.event_name != 'pull_request' }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  e2e:
+    strategy:
+      fail-fast: false
+      matrix:
+        # Rancher versions for PRs is based on the branch
+        rancher:  ${{ (github.event_name == 'schedule' || github.event_name == 'release') && fromJSON('["p2.12", "p2.13", "p2.14", "p2.15", "h2.16"]') || fromJSON(format('["{0}"]', inputs.rancher_text || inputs.rancher )) }}
+        mode: ${{ (github.event_name == 'schedule' || github.event_name == 'release') && fromJSON('["manual", "upgrade", "fleet"]') || fromJSON(format('["{0}"]', inputs.mode || 'manual')) }}
+        exclude:
+          # Limited support = main test only - https://endoflife.date/rancher
+          # Full support = main & fleet & upgrade tests
+          - rancher: ${{ github.event_name != 'workflow_dispatch' && 'p2.12' }}
+            mode: upgrade
+          - rancher: ${{ github.event_name != 'workflow_dispatch' && 'p2.12' }}
+            mode: fleet
+          - rancher: ${{ github.event_name != 'workflow_dispatch' && 'p2.13' }}
+            mode: upgrade
+          - rancher: ${{ github.event_name != 'workflow_dispatch' && 'p2.13' }}
+            mode: fleet
+          - rancher: ${{ github.event_name != 'workflow_dispatch' && 'p2.14' }}
+            mode: upgrade
+          - rancher: ${{ github.event_name != 'workflow_dispatch' && 'p2.14' }}
+            mode: fleet
+          # Devel release = main test only
+          - rancher: ${{ github.event_name != 'workflow_dispatch' && 'h2.16' }}
+            mode: upgrade
+          - rancher: ${{ github.event_name != 'workflow_dispatch' && 'h2.16' }}
+            mode: fleet
+
+
+    # Run schedule workflows only on original repo, not forks
+    if: github.event_name != 'schedule' || github.repository_owner == 'rancher'
+    runs-on: self-hosted
+    steps:
+    # ==================================================================================================
+
+    # ==================================================================================================
+    # Set up parameters and ENV
+
+    # Override env based on github action trigger
+    - name: Setup global ENV
+      id: setup
+      env:
+        MATRIX_RANCHER: ${{ matrix.rancher }}
+        MATRIX_MODE: ${{ matrix.mode }}
+        EVENT_NAME: ${{ github.event_name }}
+        INPUT_KUBEWARDEN: ${{ inputs.kubewarden }}
+      run: |
+        RANCHER="$MATRIX_RANCHER"
+        KUBEWARDEN=
+
+        case "$EVENT_NAME" in
+          workflow_dispatch)
+            if [[ "$INPUT_KUBEWARDEN" != auto ]]; then KUBEWARDEN="$INPUT_KUBEWARDEN"; fi
+            # Translate input to semver constraint
+            RANCHER=${RANCHER/released/*}
+            RANCHER=${RANCHER%(devel)}
+            ;;
+          pull_request)
+            KUBEWARDEN=source
+            RANCHER="prime"
+            ;;
+          schedule)
+            [[ "$RANCHER" == c* ]] && KUBEWARDEN=github || KUBEWARDEN=prime;;
+          release)
+            KUBEWARDEN=github;;
+        esac
+
+        # Print matrix
+        echo "Event: $EVENT_NAME"
+        echo "Mode: $MATRIX_MODE"
+        echo "rancher=$RANCHER" | tee -a "$GITHUB_OUTPUT"
+        echo "kubewarden=$KUBEWARDEN" | tee -a "$GITHUB_OUTPUT"
+        echo "TESTBASE=$TESTBASE"
+        echo "TESTPOLICIES=$TESTPOLICIES"
+
+    # ==================================================================================================
+    # Create k3d cluster and install rancher
+    # Use local kuberlr to avoid version skew
+
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Install k3d
+      run: TAG="$K3D_VERSION" sudo --preserve-env=TAG k3d-install
+
+    - name: Install Rancher
+      uses: kubewarden/kubewarden-end-to-end-tests@4b6152474041a11b58a99da1d5ec1a2716503bc2 # main
+      with:
+        make: rancher
+      env:
+        RANCHER: ${{ steps.setup.outputs.rancher }}
+        K3S: ${{ env.K3S_VERSION }}
+        WORKER_COUNT: 1
+        CLUSTER_NAME: ${{ env.K3D_CLUSTER_NAME }}
+        DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+    # ==================================================================================================
+    # Setup playwright ENV and run tests
+    # https://rancher.github.io/dashboard/testing/e2e-test#setup-for-local-tests
+
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: '24'
+
+    - name: Build Kubewarden extension
+      if: steps.setup.outputs.kubewarden == 'source'
+      run: |
+        yarn install --ignore-engines
+        git diff --exit-code yarn.lock
+        VERSION=0.0.1 yarn build-pkg kubewarden
+
+    - name: Install playwright
+      working-directory: tests/kubewarden
+      run: |
+        yarn install
+        yarn playwright install chromium  # --with-deps not supported on opensuse
+
+    - name: Typecheck
+      if: github.event_name == 'pull_request'
+      run: npx tsc -p tests/kubewarden/tsconfig.json --noEmit
+
+    - name: Execute tests
+      timeout-minutes: 120
+      working-directory: tests/kubewarden
+      run: |
+        TFILTER="\/[01]0"                                     # Always run installation tests
+        [[ "$TESTBASE" == "true" ]] && TFILTER+=" \/[2-69]"   # Schedule everything as base test
+
+        # Policy tests are hitting artifacthub rate limits
+        # Filter out all policies except those starting with random letter
+        if [[ "$TESTPOLICIES" != "true" ]]; then
+          ex=$(yarn playwright test "\/90-" --reporter=list --list | grep -o 'install: .' | cut -d' ' -f2 | sort -fRu | sed 1d | paste -sd '')
+          GREPI="90-.*install: [$ex]"
+        fi
+
+        yarn playwright test ${TFILTER:-} ${GREPI:+--grep-invert "$GREPI"} -x
+      env:
+        MODE: ${{ matrix.mode }}
+        # Override OTEL operator version by github variable
+        OTEL_OPERATOR: ${{ vars.OTEL_OPERATOR }}
+        # Check that installed extension version matches release tag
+        UIVERSION: ${{ github.event_name == 'release' && inputs.tag || '' }}
+        ORIGIN: ${{ steps.setup.outputs.kubewarden }}
+        QASE_MODE: ${{ env.QASE == 'true' && 'testops' || 'off' }}
+        QASE_TESTOPS_API_TOKEN: ${{ secrets.QASE_APITOKEN }}
+        QASE_TESTOPS_RUN_TITLE: "Run[${{github.event_name}}]: UI[${{ steps.setup.outputs.kubewarden }}] - MODE[${{ matrix.mode }}] - RANCHER[${{ matrix.rancher }}] "
+        QASE_TESTOPS_RUN_DESCRIPTION: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        APPCO_USERNAME: ${{ secrets.APPCO_USERNAME }}
+        APPCO_PASSWORD: ${{ secrets.APPCO_PASSWORD }}
+
+    # ==================================================================================================
+    # Artifacts & Summary
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      if: always()
+      with:
+        name: playwright-report-${{ matrix.rancher }}-${{ matrix.mode }}
+        path: |
+          tests/kubewarden/playwright-report/index.html
+          tests/kubewarden/playwright-report/data/*.png
+        retention-days: 15
+
+    - name: Clean Up
+      if: always()
+      run: |
+        k3d cluster delete "$K3D_CLUSTER_NAME"

@@ -23,3 +23,13 @@ updates:
       day: "monday"
     cooldown:
       default-days: 7
+  - package-ecosystem: "npm"
+    directory: "/tests/kubewarden"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Prague"
+    labels: ["dependencies", "area/qa"]
+    cooldown:
+      default-days: 7

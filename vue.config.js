@@ -17,12 +17,15 @@ module.exports = () => {
       webpackConfig.resolve.alias.set('@runtime-enforcer', path.resolve(__dirname, 'pkg/runtime-enforcer'));
       // Add the @common alias pointing to the pkg/common folder, shared across extensions
       webpackConfig.resolve.alias.set('@common', path.resolve(__dirname, 'pkg/common'));
+      // Add the @kubewarden alias pointing to the pkg/kubewarden folder
+      webpackConfig.resolve.alias.set('@kubewarden', path.resolve(__dirname, 'pkg/kubewarden'));
     };
   } else {
     vendorConfig.chainWebpack = (webpackConfig) => {
       webpackConfig.resolve.alias.set('@vulnerability-scanner', path.resolve(__dirname, 'pkg/vulnerability-scanner'));
       webpackConfig.resolve.alias.set('@runtime-enforcer', path.resolve(__dirname, 'pkg/runtime-enforcer'));
       webpackConfig.resolve.alias.set('@common', path.resolve(__dirname, 'pkg/common'));
+      webpackConfig.resolve.alias.set('@kubewarden', path.resolve(__dirname, 'pkg/kubewarden'));
     };
   }
 

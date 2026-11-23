@@ -6,6 +6,8 @@ import cypress from "eslint-plugin-cypress";
 import jest from "eslint-plugin-jest";
 import globals from "globals";
 import vueParser from "vue-eslint-parser";
+import tsParser from "@typescript-eslint/parser";
+import stylistic from "@stylistic/eslint-plugin";
 
 export default [
   // Base ESLint recommended rules
@@ -14,6 +16,7 @@ export default [
   // --- Core Vue / TS / Jest / Cypress setup ---
   {
     files: ["**/*.{js,ts,vue}"],
+    ignores: ["tests/kubewarden/**"],
 
     languageOptions: {
       parser: vueParser,
@@ -144,6 +147,52 @@ export default [
       "@typescript-eslint/explicit-module-boundary-types": "off",
       "jest/prefer-expect-assertions": "off",
       "no-undef": "off",
+    },
+  },
+
+  // --- Kubewarden: the rules that were looser in kubewarden-ui ---
+  {
+    files: ["pkg/kubewarden/**/*.{js,ts,vue}", "tests/unit/mocks/**/*.ts"],
+    rules: {
+      "key-spacing": [
+        "warn",
+        {
+          align: {
+            beforeColon: false,
+            afterColon: true,
+            on: "value",
+            mode: "minimum",
+          },
+          multiLine: { beforeColon: false, afterColon: true },
+        },
+      ],
+      "no-console": "off",
+      "no-extra-boolean-cast": "off",
+      "vue/require-explicit-emits": "off",
+    },
+  },
+
+  // --- Kubewarden e2e: Playwright suite with its own no-semicolon style ---
+  {
+    files: ["tests/kubewarden/**/*.ts"],
+    languageOptions: {
+      parser: tsParser,
+      globals: { ...globals.browser, ...globals.node },
+    },
+    plugins: { "@stylistic": stylistic },
+    rules: {
+      ...stylistic.configs.recommended.rules,
+
+      "no-unused-vars": "off",
+      "no-empty": "off",
+      "@stylistic/padding-line-between-statements": "off",
+      "@stylistic/comma-dangle": ["error", "only-multiline"],
+      "@stylistic/space-before-function-paren": ["error", "never"],
+      "@stylistic/brace-style": ["error", "1tbs", { allowSingleLine: true }],
+      "@stylistic/space-infix-ops": ["error", { ignoreTypes: true }],
+      "@stylistic/key-spacing": ["error", { align: { mode: "minimum" } }],
+      "@stylistic/no-multi-spaces": ["error", { exceptions: { TSPropertySignature: true, PropertyDefinition: true } }],
+      "@stylistic/type-annotation-spacing": "off",
     },
   },
 

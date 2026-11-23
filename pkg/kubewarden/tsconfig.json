@@ -1,0 +1,41 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "target": "esnext",
+    "module": "esnext",
+    "strict": true,
+    "importHelpers": true,
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "preserveSymlinks": true,
+    "typeRoots": [
+      "../../node_modules",
+      "../../node_modules/@rancher/shell/types",
+      "./core",
+      "./types"
+    ],
+    "types": ["@types/node", "@types/lodash", "@types/jest", "jest", "rancher", "shell", "core"],
+    "lib": ["esnext", "dom", "dom.iterable", "scripthost"],
+    "paths": {
+      "@shell/*": ["../../node_modules/@rancher/shell/*"],
+      "@components/*": ["./node_modules/@rancher/components/*"],
+      "@/*": ["../../*"],
+      "@kubewarden/*": ["./*"],
+      "@tests/*": ["./tests/*"]
+    }
+  },
+  "include": [
+    "./**/*.ts",
+    "./**/*.d.ts",
+    "./**/*.tsx",
+    "./**/*.vue",
+    "../../node_modules/@rancher/shell/core/types.ts",
+    "../../node_modules/@rancher/shell/types/**/*.d.ts"
+  ],
+  "exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts"]
+}

@@ -1,8 +1,20 @@
 [default.extend-words]
 ba = "ba"
 aks = "aks"
+# kubewarden file name, see extend-ignore-re below
+contstants = "contstants"
 
 [files]
 extend-exclude = [
   "**/tmp/**"
+]
+
+[default]
+# Misspelled identifiers inherited from kubewarden-ui. Renaming them changes code, so they
+# are fixed separately: `removeable` is never read by Rancher (it expects `removable`).
+extend-ignore-re = [
+  "removeable:",
+  "kw-pr-incompatibile-banner",
+  "kw-table-custom-buttom",
+  "sbomscanner-vulnerabilility-reports-viewer-policy-server",
 ]
